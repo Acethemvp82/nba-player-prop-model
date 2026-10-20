@@ -28,3 +28,22 @@ def test_invalid_stats_not_treated_as_zero():
     result = normalize_player_boxscore({"statistics": {"points": None, "assists": -1}}, "1")
     assert result["points"] is None
     assert result["assists"] is None
+
+def test_completed_games_include_official_game_date():
+    games = [{"gameId": "123", "gameStatus": 3, "gameDateEst": "2026-10-19"}]
+    def load(_):
+        return [{"player_id": 1, "player": "Example",
+                 "statistics": {"minutes": "PT22M", "points": 12}}]
+    result = completed_game_observations(games, load)
+    assert result[0]["game_date"] == "2026-10-19"
+    from historical_stats import player_history_summaries
+    summary = player_history_summaries(result, as_of="2026-10-20")
+    assert summary[0]["points_last_5_avg"] == 12
+
+def test_missing_game_date_does_not_fabricate_history():
+    games = [{"gameId": "123", "gameStatus": 3}]
+    def load(_):
+        return [{"player_id": 1, "statistics": {"minutes": "PT12M", "points": 7}}]
+    result = completed_game_observations(games, load)
+    from historical_stats import player_history_summaries
+    assert player_history_summaries(result) == []
