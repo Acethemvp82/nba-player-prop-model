@@ -20,6 +20,11 @@ def _day(value):
         try:
             return date.fromisoformat(value[:10])
         except ValueError:
+            for fmt in ("%m/%d/%Y", "%m/%d/%Y %H:%M:%S", "%m/%d/%Y %I:%M:%S %p"):
+                try:
+                    return datetime.strptime(value, fmt).date()
+                except ValueError:
+                    continue
             return None
     return None
 
