@@ -5,6 +5,7 @@ No historical box scores are inferred from schedule entries.
 """
 from datetime import date
 from nba_data import NBADataError, _get_json
+from historical_stats import _day
 
 SCHEDULE_URL = "https://cdn.nba.com/static/json/staticData/scheduleLeagueV2_1.json"
 
@@ -36,7 +37,7 @@ def games_on(day, schedule=None):
         for game in entry.get("games", []):
             if not isinstance(game, dict):
                 continue
-            game_day = str(game.get("gameDateEst") or game.get("gameDate") or "")[:10]
-            if game_day == day.isoformat() and str(game.get("gameId") or "").isdigit():
+            game_day = _day(game.get("gameDateEst") or game.get("gameDate"))
+            if game_day == day and str(game.get("gameId") or "").isdigit():
                 games.append(game)
     return games
