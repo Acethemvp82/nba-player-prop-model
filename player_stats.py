@@ -1,5 +1,5 @@
 """Normalize NBA box-score statistics; never mistake results for projections."""
-from datetime import timedelta
+from datetime import datetime, timezone
 import re
 
 STAT_FIELDS = {
@@ -20,11 +20,12 @@ def parse_minutes(value):
     hours, minutes, seconds = match.groups()
     return round(int(hours or 0) * 60 + int(minutes or 0) + float(seconds or 0) / 60, 2)
 
-def normalize_player_boxscore(player, game_id, final=False):
+def normalize_player_boxscore(player, game_id, final=False, game_date=None):
     """Return one game observation, never a predictive input unless final=True."""
     stats = player.get("statistics") or {}
     record = {
         "game_id": str(game_id),
+        "game_date": game_date,
         "player_id": player.get("player_id"),
         "player": player.get("player"),
         "team": player.get("team"),
@@ -46,8 +47,16 @@ def completed_game_observations(games, player_loader):
         game_id = str(game.get("gameId") or "")
         if not game_id.isdigit():
             continue
+        # Prefer the official NBA game date; UTC tipoff is a fallback.
+        game_date = game.get("gameDateEst") or game.get("gameDate")
+        if not game_date and game.get("gameTimeUTC"):
+            try:
+                tipoff = datetime.fromisoformat(game["gameTimeUTC"].replace("Z", "+00:00"))
+                game_date = tipoff.astimezone(timezone.utc).date().isoformat()
+            except (TypeError, ValueError):
+                pass
         for player in player_loader(game_id):
-            record = normalize_player_boxscore(player, game_id, final=True)
+            record = normalize_player_boxscore(player, game_id, final=True, game_date=game_date)
             if record["player_id"] is not None and record["minutes"] is not None:
                 records.append(record)
     return records
