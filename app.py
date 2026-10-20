@@ -1,8 +1,10 @@
 """NBA Player Prop Model — live schedule and player feed preview."""
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date
 import pandas as pd
 import streamlit as st
 from nba_data import NBADataError, scoreboard, game_players
+from season_schedule import season_schedule
+from history_collection import recent_player_summaries
 
 st.set_page_config(page_title="NBA Player Prop Model", page_icon="🏀", layout="wide")
 st.title("🏀 NBA Player Prop Model")
@@ -96,3 +98,41 @@ with st.expander("Model methodology and safeguards"):
 - Only compare against timestamped, authorized sportsbook lines.
 - Track outcomes, calibration and performance without look-ahead bias.
 """)
+
+
+st.subheader("Historical player statistics — research preview")
+st.caption("Official completed-game box scores only. These are descriptive averages, not predictions or betting edges.")
+@st.cache_data(ttl=3600, show_spinner=False)
+def load_historical_summary(as_of, game_limit):
+    return recent_player_summaries(season_schedule(), as_of=as_of, max_games=game_limit)
+
+history_limit = st.select_slider("Recent completed games to retrieve", options=[10, 20, 40, 80], value=20)
+if st.button("Load historical player averages"):
+    try:
+        with st.spinner("Loading completed NBA game data..."):
+            historical = load_historical_summary(date.today().isoformat(), history_limit)
+        st.session_state["nba_historical_preview"] = historical
+        st.session_state["nba_historical_preview_date"] = date.today().isoformat()
+        st.session_state["nba_historical_preview_limit"] = history_limit
+    except (NBADataError, ValueError, TypeError, KeyError) as exc:
+        st.error(f"Historical data could not be loaded: {exc}")
+
+historical = st.session_state.get("nba_historical_preview")
+if historical:
+    st.caption(f"Historical sample as of {st.session_state.get('nba_historical_preview_date')}: "
+               f"{historical['games_loaded']} of {historical['games_requested']} requested games loaded "
+               f"({historical['eligible_games']} eligible games in schedule). "
+               "Season averages cover only the collected sample, not necessarily the full season.")
+    if historical["summaries"]:
+        fields = ["player", "team", "games_played", "minutes_last_5_avg",
+                  "points_last_5_avg", "rebounds_last_5_avg",
+                  "assists_last_5_avg", "threes_last_5_avg",
+                  "points_last_10_avg", "rebounds_last_10_avg",
+                  "assists_last_10_avg", "threes_last_10_avg"]
+        st.dataframe(pd.DataFrame(historical["summaries"])[fields],
+                     use_container_width=True, hide_index=True)
+    else:
+        st.warning("No usable completed-game player observations were returned.")
+    if historical["failed_games"]:
+        with st.expander(f"Historical box scores unavailable ({len(historical['failed_games'])})"):
+            st.dataframe(pd.DataFrame(historical["failed_games"]), hide_index=True)
