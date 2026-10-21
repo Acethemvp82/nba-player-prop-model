@@ -17,7 +17,10 @@ def build_pregame_baseline_board(observations, slate_date, min_games=5, player_i
     if player_ids is not None:
         if isinstance(player_ids, (str, bytes)):
             raise ValueError("player_ids must be a collection of player identifiers")
-        player_ids = {str(pid) for pid in player_ids}
+        try:
+            player_ids = {str(pid) for pid in player_ids}
+        except TypeError as exc:
+            raise ValueError("player_ids must be a collection of player identifiers") from exc
     summaries = player_history_summaries(observations, as_of=cutoff)
     forecasts = baseline_projections(summaries, min_games=min_games)
     if player_ids is not None:
