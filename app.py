@@ -7,6 +7,7 @@ from nba_data import NBADataError, scoreboard, game_players
 from season_schedule import season_schedule, games_on
 from espn_schedule import espn_games_on
 from espn_players import espn_game_players, espn_team_roster
+from espn_history import collect_espn_history
 from history_collection import recent_player_summaries, fetch_boxscore_players
 from projection_baseline import baseline_projections
 from pregame_roster import candidate_players
@@ -147,6 +148,34 @@ else:
     except NBADataError as exc:
         st.warning(f"Current-day NBA schedule unavailable from both feeds: {exc}")
 
+st.subheader("ESPN completed-game statistics — experimental")
+st.caption("Separate ESPN player IDs and verified final-game boxscores. "
+           "These observations are descriptive and are not yet used in projections.")
+@st.cache_data(ttl=3600, show_spinner=False)
+def load_espn_history(as_of, days, max_games):
+    return collect_espn_history(as_of, days=days, max_games=max_games)
+
+history_days = st.select_slider("ESPN history lookback (days)", options=[3, 7, 14, 21, 30], value=7)
+espn_game_budget = st.select_slider("ESPN historical game request limit", options=[5, 10, 20, 30, 50], value=10)
+if st.button("Load ESPN completed-game stats"):
+    with st.spinner("Checking completed ESPN boxscores..."):
+        espn_history = load_espn_history(slate_date.isoformat(), history_days, espn_game_budget)
+    st.session_state["espn_history_preview"] = espn_history
+    st.session_state["espn_history_parameters"] = (slate_date.isoformat(), history_days, espn_game_budget)
+if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), history_days, espn_game_budget):
+    espn_history = st.session_state.get("espn_history_preview")
+    if espn_history:
+        st.caption(f"Verified ESPN final games: {espn_history['games_loaded']} of "
+                   f"{espn_history['games_requested']} requested; "
+                   f"{len(espn_history['observations'])} player-game observations.")
+        if espn_history["failures"]:
+            st.warning(f"{len(espn_history['failures'])} schedule or boxscore requests failed validation.")
+            with st.expander("ESPN historical data errors"):
+                st.dataframe(pd.DataFrame(espn_history["failures"]), use_container_width=True, hide_index=True)
+        if espn_history["observations"]:
+            st.dataframe(pd.DataFrame(espn_history["observations"]),
+                         use_container_width=True, hide_index=True)
+
 st.subheader("Historical player statistics — research preview")
 st.caption("Official completed-game box scores only. These are descriptive averages, not predictions or betting edges.")
 @st.cache_data(ttl=86400, show_spinner=False)
@@ -167,6 +196,9 @@ if st.button("Refresh NBA feeds and cached history"):
     load_espn_slate.clear()
     load_espn_players.clear()
     load_espn_team_roster.clear()
+    load_espn_history.clear()
+    st.session_state.pop('espn_history_preview', None)
+    st.session_state.pop('espn_history_parameters', None)
     load_players.clear()
     load_schedule.clear()
     load_final_boxscore.clear()
