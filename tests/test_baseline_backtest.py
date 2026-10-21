@@ -37,3 +37,11 @@ def test_cutoff_and_duplicate_games():
 def test_insufficient_training_returns_no_accuracy_claim():
     result = baseline_backtest([game(1, 10)], "2026-10-03")
     assert all(r["evaluated"] == 0 and r["mae"] is None for r in result)
+
+
+def test_player_coverage_is_distinct_from_evaluated_appearances():
+    rows = [game(i, 10) for i in range(1, 6)]
+    rows.extend([game(6, 12), game(7, 14)])
+    result = {r["prop"]: r for r in baseline_backtest(rows, "2026-10-08")}
+    assert result["points"]["evaluated"] == 2
+    assert result["points"]["players_evaluated"] == 1
