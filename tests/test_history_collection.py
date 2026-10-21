@@ -200,3 +200,23 @@ def test_final_boxscore_rejects_malformed_team_objects(monkeypatch):
                  "homeTeam": ["unexpected"], "awayTeam": {"teamTricode": "NYK", "players": []}}})
     with pytest.raises(NBADataError, match="malformed team objects"):
         fetch_boxscore_players("123")
+
+
+def test_history_skips_non_ascii_numeric_game_ids():
+    schedule = [{"games": [
+        {"gameId": "１２３", "gameStatus": 3, "gameDateEst": "2026-10-19"},
+        {"gameId": "123", "gameStatus": 3, "gameDateEst": "2026-10-19"},
+    ]}]
+    called = []
+    result = collect_recent_history(schedule, "2026-10-20",
+                                    loader=lambda gid: called.append(gid) or [])
+    assert called == ["123"]
+    assert result["games_requested"] == 1
+
+
+def test_final_boxscore_rejects_boolean_game_id():
+    import pytest
+    from nba_data import NBADataError
+    from history_collection import fetch_boxscore_players
+    with pytest.raises(NBADataError, match="Invalid NBA game ID"):
+        fetch_boxscore_players(True)
