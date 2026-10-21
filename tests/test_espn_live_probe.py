@@ -216,3 +216,43 @@ def test_probe_accepts_final_through_full_statistics_pipeline():
     )
     assert result["players"] == 1
     assert result["errors"] == []
+
+
+def test_probe_rejects_changed_historical_average(monkeypatch):
+    import scripts.espn_live_probe as probe
+
+    real_averages = probe.espn_player_averages
+
+    def changed_averages(*args):
+        rows = real_averages(*args)
+        rows[0]["Points avg"] += 1
+        return rows
+
+    monkeypatch.setattr(probe, "espn_player_averages", changed_averages)
+    result = check_recent_finals(
+        date(2026, 10, 21), days=1,
+        schedule_loader=lambda _: [game("101")],
+        boxscore_loader=lambda _: [verified_player()],
+    )
+    assert result["players"] == 0
+    assert "averages changed player totals" in result["errors"][0]
+
+
+def test_probe_rejects_changed_recent_trend(monkeypatch):
+    import scripts.espn_live_probe as probe
+
+    real_trends = probe.espn_recent_trends
+
+    def changed_trends(*args):
+        rows = real_trends(*args)
+        rows[("espn:5", "BOS")]["points L5 avg"] += 1
+        return rows
+
+    monkeypatch.setattr(probe, "espn_recent_trends", changed_trends)
+    result = check_recent_finals(
+        date(2026, 10, 21), days=1,
+        schedule_loader=lambda _: [game("101")],
+        boxscore_loader=lambda _: [verified_player()],
+    )
+    assert result["players"] == 0
+    assert "trends changed player totals" in result["errors"][0]
