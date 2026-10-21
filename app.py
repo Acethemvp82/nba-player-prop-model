@@ -5,7 +5,7 @@ import pandas as pd
 import streamlit as st
 from nba_data import NBADataError, scoreboard, game_players
 from season_schedule import season_schedule, games_on
-from history_collection import recent_player_summaries
+from history_collection import recent_player_summaries, fetch_boxscore_players
 from projection_baseline import baseline_projections
 from pregame_roster import candidate_players
 
@@ -81,12 +81,17 @@ else:
 
 st.subheader("Historical player statistics — research preview")
 st.caption("Official completed-game box scores only. These are descriptive averages, not predictions or betting edges.")
+@st.cache_data(ttl=86400, show_spinner=False)
+def load_final_boxscore(game_id):
+    return fetch_boxscore_players(game_id)
+
 @st.cache_data(ttl=3600, show_spinner=False)
 def load_historical_summary(as_of, game_limit):
-    return recent_player_summaries(load_schedule(), as_of=as_of, max_games=game_limit)
+    return recent_player_summaries(load_schedule(), as_of=as_of,
+                                   max_games=game_limit, loader=load_final_boxscore)
 
 history_limit = st.select_slider("Recent completed games to retrieve", options=[10, 20, 40, 80, 160, 320], value=80)
-st.caption("Larger samples improve coverage but may require hundreds of NBA requests. Cached results are reused for one hour.")
+st.caption("Larger samples may require hundreds of NBA requests on first load. Verified final-game box scores are cached individually for 24 hours; aggregate summaries for one hour.")
 if st.button("Load historical player averages"):
     try:
         with st.spinner("Loading completed NBA game data..."):
