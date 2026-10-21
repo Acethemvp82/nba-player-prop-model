@@ -286,3 +286,30 @@ def test_empty_espn_scoreboard_day_is_valid_off_day():
     assert result["dates_checked"] == 1
     assert result["games_requested"] == 0
     assert result["failures"] == []
+
+
+def test_invalid_schedule_event_id_reports_missing_history():
+    for invalid_id in (None, "", "bad", "12a", 100, True):
+        fetched = []
+        result = collect_espn_history(
+            "2026-10-21", days=1, max_games=3,
+            schedule_loader=lambda _, invalid_id=invalid_id: [
+                game("100"), game(invalid_id)],
+            boxscore_loader=lambda eid: fetched.append(eid) or [player()],
+        )
+        assert fetched == []
+        assert result["games_requested"] == 0
+        assert result["games_loaded"] == 0
+        assert result["observations"] == []
+        assert len(result["failures"]) == 1
+        assert "Invalid schedule event ID" in result["failures"][0]["error"]
+
+
+def test_valid_schedule_event_ids_still_load():
+    result = collect_espn_history(
+        "2026-10-21", days=1, max_games=2,
+        schedule_loader=lambda _: [game("100"), game("101")],
+        boxscore_loader=lambda _: [player()],
+    )
+    assert result["games_loaded"] == 2
+    assert result["failures"] == []
