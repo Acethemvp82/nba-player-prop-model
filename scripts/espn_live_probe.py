@@ -9,6 +9,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from espn_history import collect_espn_history, espn_final_game_players
+from espn_averages import espn_player_averages
+from espn_trends import espn_recent_trends
 from espn_schedule import espn_games_on
 
 
@@ -97,6 +99,15 @@ def check_recent_finals(today=None, days=7, schedule_loader=espn_games_on,
                         or len(collected["observations"]) != len(players)
                         or collected["failures"]):
                     raise ValueError("ESPN history collector rejected final-game data")
+                cutoff = (date.fromisoformat(day) + timedelta(days=1)).isoformat()
+                averages = espn_player_averages(collected["observations"], cutoff)
+                trends = espn_recent_trends(collected["observations"], cutoff)
+                expected = {(row["player_id"], row["team"]) for row in players}
+                average_keys = {(row["Player ID"], row["Team"]) for row in averages}
+                if (average_keys != expected or set(trends) != expected
+                        or any(row["Sample games"] != 1 for row in averages)
+                        or any(row["Sample games"] != 1 for row in trends.values())):
+                    raise ValueError("ESPN averages or recent trends rejected final-game data")
             except Exception as exc:
                 errors.append(f"{day} event={event_id}: {type(exc).__name__}: {exc}")
                 continue
