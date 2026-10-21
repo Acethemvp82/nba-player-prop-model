@@ -84,3 +84,27 @@ def test_large_history_budget_remains_bounded():
     assert result["games_requested"] == 320
     assert result["eligible_games"] == 350
     assert len(calls) == 320
+
+
+def test_final_boxscore_rejects_missing_team_players(monkeypatch):
+    import pytest
+    from nba_data import NBADataError
+    from history_collection import fetch_boxscore_players
+    monkeypatch.setattr("history_collection._get_json", lambda _: {
+        "game": {"gameId": "123", "gameStatus": 3,
+                 "homeTeam": {"teamTricode": "BOS", "players": []},
+                 "awayTeam": {"teamTricode": "NYK"}}})
+    with pytest.raises(NBADataError, match="player lists"):
+        fetch_boxscore_players("123")
+
+
+def test_final_boxscore_rejects_duplicate_team_identity(monkeypatch):
+    import pytest
+    from nba_data import NBADataError
+    from history_collection import fetch_boxscore_players
+    monkeypatch.setattr("history_collection._get_json", lambda _: {
+        "game": {"gameId": "123", "gameStatus": 3,
+                 "homeTeam": {"teamTricode": "BOS", "players": []},
+                 "awayTeam": {"teamTricode": "BOS", "players": []}}})
+    with pytest.raises(NBADataError, match="team identities"):
+        fetch_boxscore_players("123")
