@@ -1,4 +1,4 @@
-from pregame_results import score_pregame_baselines, summarize_projection_errors, projection_grading_coverage
+from pregame_results import score_pregame_baselines, summarize_projection_errors, projection_grading_coverage, summarize_projection_errors_by_slate
 
 
 def forecast(**overrides):
@@ -110,3 +110,20 @@ def test_grading_coverage_empty_sample_has_no_percentage():
     assert projection_grading_coverage([], []) == {
         "eligible_forecasts": 0, "graded_forecasts": 0,
         "unmatched_forecasts": 0, "grading_coverage_pct": None}
+
+
+def test_per_slate_accuracy_keeps_dates_separate():
+    rows = [
+        {"slate_date": "2026-10-20", "prop": "points",
+         "projection_error": -3.0, "result_status": "verified_final"},
+        {"slate_date": "2026-10-21", "prop": "points",
+         "projection_error": 1.0, "result_status": "verified_final"},
+    ]
+    assert summarize_projection_errors_by_slate(rows) == [
+        {"slate_date": "2026-10-20", "prop": "points",
+         "graded_projections": 1, "mean_absolute_error": 3.0,
+         "mean_projection_bias": -3.0},
+        {"slate_date": "2026-10-21", "prop": "points",
+         "graded_projections": 1, "mean_absolute_error": 1.0,
+         "mean_projection_bias": 1.0},
+    ]
