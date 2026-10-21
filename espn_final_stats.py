@@ -58,20 +58,25 @@ def parse_final_espn_boxscore(payload, expected_event_id):
         for section in sections:
             if not isinstance(section, dict):
                 continue
-            # ESPN NBA summary boxscores commonly name their parallel
-            # stat headings "names"; other payloads use labels or keys.
-            labels = next((section[field] for field in ("names", "labels", "keys")
-                           if isinstance(section.get(field), list)), None)
             athletes = section.get("athletes")
-            if not isinstance(labels, list) or not isinstance(athletes, list):
+            if not isinstance(athletes, list):
                 continue
-            normalized = [label.strip().upper() if isinstance(label, str) else None
-                          for label in labels]
-            # Repeated stat headings make their corresponding values ambiguous.
+            # ESPN variants can include both human-readable "names" and
+            # abbreviated "labels". Choose the header array that actually
+            # contains every required stat, not simply the first array.
             required = ("PTS", "REB", "AST", "3PT")
-            if any(normalized.count(key) != 1 for key in required):
+            indexes = None
+            for field in ("labels", "names", "keys"):
+                labels = section.get(field)
+                if not isinstance(labels, list):
+                    continue
+                normalized = [label.strip().upper() if isinstance(label, str) else None
+                              for label in labels]
+                if all(normalized.count(key) == 1 for key in required):
+                    indexes = {key: normalized.index(key) for key in required}
+                    break
+            if indexes is None:
                 continue
-            indexes = {key: normalized.index(key) for key in required}
             for item in athletes:
                 if not isinstance(item, dict) or item.get("didNotPlay") is True or item.get("didNotPlay") == "true":
                     continue
