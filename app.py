@@ -13,6 +13,7 @@ from pregame_roster import candidate_players
 from matchup_validation import valid_game_player
 from opponent_stats import opponent_game_totals, opponent_sample_summary
 from roster_coverage import roster_coverage
+from team_source_coverage import team_source_coverage
 from history_quality import history_quality
 from baseline_backtest import baseline_backtest
 
@@ -376,6 +377,12 @@ if roster_listings:
                f"{coverage['players']} unique player/team listings "
                f"({coverage['feed_players']} from NBA/ESPN game feeds (ESPN unconfirmed), "
                f"{coverage['historical_candidates']} historical candidates).")
+if slate_teams:
+    with st.expander("Team-by-team roster coverage and data sources"):
+        st.caption("These are unique candidate listings, not confirmed active players. "
+                   "Zero listings may indicate a provider outage or an unpublished roster.")
+        st.dataframe(pd.DataFrame(team_source_coverage(roster_listings, slate_teams)),
+                     use_container_width=True, hide_index=True)
 board = pd.DataFrame(rows, columns=columns)
 if not board.empty:
     st.caption(f"{board['Player'].nunique()} players from available game feeds or historical candidates. Roster Source and Last Seen show where each listing came from; availability is not verified.")
