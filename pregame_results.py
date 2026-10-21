@@ -233,6 +233,19 @@ def summarize_unmatched_by_prop(forecasts, scored_rows):
     ]
 
 
+
+def summarize_unmatched_by_team(forecasts, scored_rows):
+    """Count ungraded projections by supplied team label; keep unknown separate."""
+    counts = {}
+    for row in list_unmatched_forecasts(forecasts, scored_rows):
+        team = row["team"].strip().upper() or "UNKNOWN"
+        counts[team] = counts.get(team, 0) + 1
+    return [
+        {"team": team, "unmatched_forecasts": count}
+        for team, count in sorted(counts.items(), key=lambda item: (-item[1], item[0]))
+    ]
+
+
 def summarize_grading_by_slate(forecasts, scored_rows):
     """Coverage by slate date; unmatched rows are not counted as losses."""
     dates = sorted({
