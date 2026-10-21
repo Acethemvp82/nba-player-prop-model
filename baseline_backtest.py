@@ -53,6 +53,7 @@ def baseline_backtest(observations, as_of, min_training_games=5):
     eligible_appearances = defaultdict(int)
     player_games = defaultdict(set)
     evaluated_dates = defaultdict(set)
+    squared_errors = defaultdict(list)
     for day in sorted(by_date):
         summaries = player_history_summaries(training, as_of=day)
         predictions = {(str(p["player_id"]), p["prop"]): p["baseline"]
@@ -67,6 +68,7 @@ def baseline_backtest(observations, as_of, min_training_games=5):
                 if (predicted is not None and isinstance(actual, (int, float))
                         and not isinstance(actual, bool) and isfinite(actual) and actual >= 0):
                     errors[prop].append(float(predicted) - float(actual))
+                    squared_errors[prop].append((float(predicted) - float(actual)) ** 2)
                     player_games[prop].add(str(row["player_id"]))
                     evaluated_dates[prop].add(day)
         training.extend(by_date[day])
@@ -84,6 +86,8 @@ def baseline_backtest(observations, as_of, min_training_games=5):
          "mae": round(sum(abs(e) for e in errors[prop]) / len(errors[prop]), 3)
          if errors[prop] else None,
          "mean_error": round(sum(errors[prop]) / len(errors[prop]), 3)
-         if errors[prop] else None}
+         if errors[prop] else None,
+         "rmse": round((sum(squared_errors[prop]) / len(squared_errors[prop])) ** 0.5, 3)
+         if squared_errors[prop] else None}
         for prop in PROPS
     ]
