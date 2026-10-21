@@ -178,7 +178,16 @@ def load_espn_history(as_of, days, max_games):
 
 history_days = st.select_slider("ESPN history lookback (days)", options=[3, 7, 14, 21, 30], value=7)
 espn_game_budget = st.select_slider("ESPN historical game request limit", options=[5, 10, 20, 30, 50], value=10)
-if st.button("Load ESPN completed-game stats"):
+refresh_espn_history = st.button(
+    "Refresh ESPN history from source",
+    help="Clear cached ESPN historical schedules, final boxscores, and assembled samples "
+         "before loading the selected slate again.",
+)
+if st.button("Load ESPN completed-game stats") or refresh_espn_history:
+    if refresh_espn_history:
+        load_espn_history.clear()
+        load_espn_history_schedule.clear()
+        load_espn_history_final.clear()
     # Clear stale samples before starting a new request, including failed ones.
     st.session_state.pop("espn_history_preview", None)
     st.session_state.pop("espn_history_parameters", None)
