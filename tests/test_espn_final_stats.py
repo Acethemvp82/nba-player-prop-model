@@ -159,3 +159,18 @@ def test_duplicate_matching_competitions_are_rejected():
     })
     with pytest.raises(NBADataError, match="ambiguous competitions"):
         parse_final_espn_boxscore(data, "4012")
+
+
+def test_descriptive_names_fall_back_to_abbreviated_labels():
+    data = sample()
+    section = data["boxscore"]["players"][0]["statistics"][0]
+    section["names"] = ["minutes", "threePointersMade", "rebounds", "assists", "points"]
+    assert parse_final_espn_boxscore(data, "4012")[0]["points"] == 24
+
+
+def test_invalid_labels_fall_back_to_valid_names():
+    data = sample()
+    section = data["boxscore"]["players"][0]["statistics"][0]
+    section["names"] = list(section["labels"])
+    section["labels"] = ["Minutes", "Three Pointers", "Rebounds", "Assists", "Points"]
+    assert parse_final_espn_boxscore(data, "4012")[0]["threes"] == 3
