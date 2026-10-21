@@ -1,5 +1,7 @@
 """Pure diagnostic summaries for ESPN historical coverage on a selected slate."""
 
+from datetime import date
+
 PROPS = ("points", "rebounds", "assists", "threes")
 
 
@@ -22,11 +24,21 @@ def espn_history_coverage(observations, scheduled_teams):
                 and game_id[5:].isascii() and game_id[5:].isdigit()
                 and all(type(row.get(prop)) is int and row[prop] >= 0 for prop in PROPS)):
             continue
+        game_date = row.get("game_date")
+        if not isinstance(game_date, str):
+            continue
+        try:
+            parsed_date = date.fromisoformat(game_date)
+        except ValueError:
+            continue
+        if parsed_date.isoformat() != game_date:
+            continue
         key = (player_id, game_id)
         records = grouped[team]
         if key in records:
             previous = records[key]
-            if previous is not None and any(previous[prop] != row[prop] for prop in PROPS):
+            if previous is not None and (previous["game_date"] != game_date
+                                        or any(previous[prop] != row[prop] for prop in PROPS)):
                 records[key] = None
         else:
             records[key] = row
