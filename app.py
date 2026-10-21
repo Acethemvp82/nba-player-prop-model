@@ -148,7 +148,7 @@ if historical and historical.get("observations"):
     backtest_rows = baseline_backtest(historical["observations"], slate_date)
     st.caption("Evaluates unadjusted baseline predictions using only prior-day observations. "
                "MAE is average absolute error in the prop's units; signed error is prediction minus actual. "
-               "Rejected and duplicate observation counts expose excluded records. "
+               "Invalid, duplicate, and on-or-after-cutoff observations are counted separately. "
                "This is NOT sportsbook profitability or calibrated OVER probability.")
     if any(item["evaluated"] for item in backtest_rows):
         st.dataframe(pd.DataFrame(backtest_rows), use_container_width=True, hide_index=True)
