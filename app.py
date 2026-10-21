@@ -17,6 +17,7 @@ from espn_history_health import espn_history_health
 from csv_export import safe_spreadsheet_cell
 from history_collection import recent_player_summaries, fetch_boxscore_players
 from projection_baseline import baseline_projections
+from pregame_results import score_pregame_baselines, summarize_projection_errors
 from pregame_roster import candidate_players
 from matchup_validation import valid_game_player
 from opponent_stats import opponent_game_totals, opponent_sample_summary
@@ -372,6 +373,39 @@ if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), h
                     mime="text/csv",
                     help="Date-frozen, unadjusted research projections only; no sportsbook lines or calibrated probabilities.",
                 )
+                with st.expander("Grade saved research baselines against loaded verified finals"):
+                    st.caption("Upload a previously saved ESPN research baselines CSV. "
+                               "Only matching verified final player-games already present "
+                               "in the loaded ESPN history sample can be graded; "
+                               "unmatched forecasts remain ungraded.")
+                    uploaded_baselines = st.file_uploader(
+                        "Saved ESPN research baselines CSV",
+                        type=["csv"], key="espn_baseline_results_upload")
+                    if uploaded_baselines is not None:
+                        try:
+                            saved = pd.read_csv(uploaded_baselines, dtype={"player_id": str, "slate_date": str})
+                            required = {"player_id", "slate_date", "prop", "baseline"}
+                            if not required.issubset(saved.columns):
+                                st.error("CSV missing required fields: " +
+                                         ", ".join(sorted(required - set(saved.columns))))
+                            else:
+                                graded = score_pregame_baselines(
+                                    saved.to_dict("records"), espn_history["observations"])
+                                if graded:
+                                    st.dataframe(pd.DataFrame(graded)[
+                                        ["player", "team", "slate_date", "prop", "baseline",
+                                         "actual", "projection_error", "absolute_error"]
+                                    ], use_container_width=True, hide_index=True)
+                                    st.dataframe(pd.DataFrame(summarize_projection_errors(graded)),
+                                                 use_container_width=True, hide_index=True)
+                                    st.caption(f"Graded {len(graded)} of {len(saved)} saved prop rows. "
+                                               "MAE and bias describe this matched sample only.")
+                                else:
+                                    st.info("No verified matching final player-games in the "
+                                            "currently loaded history sample. Select a later "
+                                            "as-of slate date and load the relevant finals.")
+                        except (ValueError, TypeError, KeyError, UnicodeError, pd.errors.ParserError) as exc:
+                            st.error(f"Could not grade the uploaded research CSV: {exc}")
             else:
                 st.info("No ESPN players meet the five-game minimum for automatic "
                         "pregame baseline projections in this historical sample.")
