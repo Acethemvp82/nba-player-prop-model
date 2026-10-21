@@ -174,3 +174,8 @@ def test_coverage_does_not_count_invalid_verified_result_keys():
          "prop": "invalid", "result_status": "verified_final"},
     ]
     assert projection_grading_coverage([forecast()], rows)["graded_forecasts"] == 0
+
+
+def test_missing_scored_rows_have_no_accuracy_summary():
+    assert summarize_projection_errors(None) == []
+    assert summarize_projection_errors_by_slate(None) == []
