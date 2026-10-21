@@ -9,6 +9,8 @@ from pregame_snapshot import snapshot_key, validate_pregame_snapshot
 def validate_snapshot_batch(rows, max_rows=100000):
     if not isinstance(rows, list):
         raise ValueError("Snapshots must be a JSON array")
+    if not rows:
+        raise ValueError("Snapshot array is empty")
     if len(rows) > max_rows:
         raise ValueError("Too many snapshots")
     seen = set()
