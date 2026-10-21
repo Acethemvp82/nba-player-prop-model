@@ -544,6 +544,29 @@ if not board.empty:
             ]
         st.caption("ESPN historical and L5/L10 averages use available verified pre-slate games (sample counts shown), not a "
                    "betting projection. Missing values indicate unavailable matched history.")
+        # Make missing ESPN history visible by prop; a roster listing alone
+        # does not establish any verified completed-game observations.
+        espn_coverage = board.groupby("Prop", sort=False).agg(
+            listed=("Player", "size"),
+            with_history=("ESPN Historical Avg", lambda values: int(values.notna().sum())),
+            with_five_games=("ESPN L5 Games", lambda values: int((values >= 5).sum())),
+            with_ten_games=("ESPN L10 Games", lambda values: int((values >= 10).sum())),
+        ).reset_index()
+        espn_coverage["History coverage %"] = (
+            100 * espn_coverage["with_history"] / espn_coverage["listed"]
+        ).round(1)
+        with st.expander("ESPN historical coverage by prop"):
+            st.caption("Counts refer to listed player-prop rows with matching ESPN IDs and "
+                       "verified final-game history, not confirmed active players.")
+            st.dataframe(espn_coverage.rename(columns={
+                "listed": "Listed player-props",
+                "with_history": "With verified history",
+                "with_five_games": "At least 5 games",
+                "with_ten_games": "At least 10 games",
+            }), use_container_width=True, hide_index=True)
+        if board["ESPN Historical Avg"].isna().any():
+            st.warning("Some player-prop rows have no verified matching ESPN history. "
+                       "Blank averages are unavailable data, not zero performance.")
 
     st.caption(f"{board['Player'].nunique()} players from available game feeds or historical candidates. Roster Source and Last Seen show where each listing came from; availability is not verified.")
     historical_board = st.session_state.get("nba_historical_preview")
