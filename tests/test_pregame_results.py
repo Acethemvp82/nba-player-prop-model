@@ -127,3 +127,8 @@ def test_per_slate_accuracy_keeps_dates_separate():
          "graded_projections": 1, "mean_absolute_error": 1.0,
          "mean_projection_bias": 1.0},
     ]
+
+
+def test_boolean_player_ids_never_grade_or_count_as_eligible():
+    assert score_pregame_baselines([forecast(player_id=True)], [final(player_id=True)]) == []
+    assert projection_grading_coverage([forecast(player_id=True)], [])["eligible_forecasts"] == 0
