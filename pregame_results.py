@@ -206,6 +206,21 @@ def summarize_unmatched_forecasts_by_slate(forecasts, scored_rows):
     ]
 
 
+
+def summarize_unmatched_by_player(forecasts, scored_rows):
+    """Group ungraded forecast counts by player and team across saved slates."""
+    counts = {}
+    for row in list_unmatched_forecasts(forecasts, scored_rows):
+        key = (row["player_id"], row["player"], row["team"])
+        counts[key] = counts.get(key, 0) + 1
+    return [
+        {"player_id": pid, "player": player, "team": team,
+         "unmatched_forecasts": count}
+        for (pid, player, team), count in sorted(
+            counts.items(), key=lambda item: (-item[1], item[0]))
+    ]
+
+
 def summarize_grading_by_slate(forecasts, scored_rows):
     """Coverage by slate date; unmatched rows are not counted as losses."""
     dates = sorted({
