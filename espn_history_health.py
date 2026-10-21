@@ -1,5 +1,7 @@
 """Summarize ESPN historical collection reliability without inferring missing stats."""
 
+from datetime import date
+
 
 def espn_history_health(history):
     """Descriptive completeness metrics from a bounded ESPN collection result."""
@@ -16,7 +18,22 @@ def espn_history_health(history):
         raise ValueError("Invalid ESPN history counters")
     if any(not isinstance(item, dict) for item in failures):
         raise ValueError("Invalid ESPN failure details")
+    verified_dates = []
+    for observation in observations:
+        if not isinstance(observation, dict):
+            continue
+        played = observation.get("game_date")
+        if not isinstance(played, str):
+            continue
+        try:
+            parsed = date.fromisoformat(played)
+        except ValueError:
+            continue
+        if parsed.isoformat() == played:
+            verified_dates.append(played)
     return {
+        "Oldest verified game": min(verified_dates) if verified_dates else None,
+        "Newest verified game": max(verified_dates) if verified_dates else None,
         "Schedule dates checked": scanned,
         "Final games requested": requested,
         "Verified final games": loaded,
