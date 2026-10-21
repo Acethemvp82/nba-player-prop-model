@@ -18,7 +18,8 @@ def test_verified_final_stats_are_parsed_with_namespaced_ids():
     rows = parse_final_espn_boxscore(sample(), "4012")
     assert rows == [{"player_id": "espn:22", "player": "Sample Guard",
                      "team": "NYK", "points": 24, "rebounds": 8,
-                     "assists": 6, "threes": 3, "source": "ESPN verified final boxscore"}]
+                     "assists": 6, "threes": 3, "minutes": 34.0,
+                     "is_final": True, "source": "ESPN verified final boxscore"}]
 
 
 def test_unfinished_game_rejected():
