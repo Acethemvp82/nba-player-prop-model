@@ -28,6 +28,7 @@ def espn_games_on(day):
     if not isinstance(events, list):
         raise NBADataError("Backup NBA schedule has no events list")
     games = []
+    seen = set()
     for event in events:
         if not isinstance(event, dict):
             continue
@@ -52,6 +53,10 @@ def espn_games_on(day):
                         sides[item["homeAway"]] = code
         if len(sides) != 2 or sides["home"] == sides["away"]:
             continue
+        matchup = (sides["away"], sides["home"])
+        if matchup in seen:
+            continue
+        seen.add(matchup)
         games.append({
             "gameId": None,  # ESPN IDs are not compatible with NBA boxscore URLs.
             "homeTeam": {"teamTricode": sides["home"]},
