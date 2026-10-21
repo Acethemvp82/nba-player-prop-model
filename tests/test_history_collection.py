@@ -108,3 +108,19 @@ def test_final_boxscore_rejects_duplicate_team_identity(monkeypatch):
                  "awayTeam": {"teamTricode": "BOS", "players": []}}})
     with pytest.raises(NBADataError, match="team identities"):
         fetch_boxscore_players("123")
+
+
+def test_duplicate_schedule_entries_count_once_even_when_budget_is_small():
+    schedule = [{"games": [
+        {"gameId": "100", "gameStatus": 3, "gameDateEst": "2026-10-19"},
+        {"gameId": "100", "gameStatus": 3, "gameDateEst": "2026-10-19"},
+        {"gameId": "101", "gameStatus": 3, "gameDateEst": "2026-10-18"},
+    ]}]
+    called = []
+    def loader(gid):
+        called.append(gid)
+        return []
+    result = collect_recent_history(schedule, "2026-10-20", max_games=1, loader=loader)
+    assert result["eligible_games"] == 2
+    assert result["games_requested"] == 1
+    assert called == ["100"]
