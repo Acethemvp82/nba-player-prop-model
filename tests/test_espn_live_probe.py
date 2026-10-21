@@ -167,3 +167,29 @@ def test_probe_requires_successful_historical_collection(monkeypatch):
     )
     assert result["players"] == 0
     assert "history collector rejected" in result["errors"][0]
+
+
+def test_probe_requires_averages_to_include_all_verified_players(monkeypatch):
+    import scripts.espn_live_probe as probe
+
+    monkeypatch.setattr(probe, "espn_player_averages", lambda *args: [])
+    result = check_recent_finals(
+        date(2026, 10, 21), days=1,
+        schedule_loader=lambda _: [game("101")],
+        boxscore_loader=lambda _: [verified_player()],
+    )
+    assert result["players"] == 0
+    assert "averages or recent trends" in result["errors"][0]
+
+
+def test_probe_requires_trends_to_include_all_verified_players(monkeypatch):
+    import scripts.espn_live_probe as probe
+
+    monkeypatch.setattr(probe, "espn_recent_trends", lambda *args: {})
+    result = check_recent_finals(
+        date(2026, 10, 21), days=1,
+        schedule_loader=lambda _: [game("101")],
+        boxscore_loader=lambda _: [verified_player()],
+    )
+    assert result["players"] == 0
+    assert "averages or recent trends" in result["errors"][0]
