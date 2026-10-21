@@ -9,6 +9,7 @@ from history_collection import recent_player_summaries, fetch_boxscore_players
 from projection_baseline import baseline_projections
 from pregame_roster import candidate_players
 from matchup_validation import valid_game_player
+from opponent_stats import opponent_game_totals
 
 st.set_page_config(page_title="NBA Player Prop Model", page_icon="🏀", layout="wide")
 st.title("🏀 NBA Player Prop Model")
@@ -133,6 +134,17 @@ if historical:
         with st.expander(f"Historical box scores unavailable ({len(historical['failed_games'])})"):
             st.dataframe(pd.DataFrame(historical["failed_games"]), hide_index=True)
 
+
+st.subheader("Opponent production allowed — historical research")
+if historical and historical.get("observations"):
+    opponent_rows = opponent_game_totals(historical["observations"], slate_date)
+    if opponent_rows:
+        st.caption("Observed player totals from collected final box scores, not verified complete-team defensive totals. No matchup adjustment is applied.")
+        st.dataframe(pd.DataFrame(opponent_rows), use_container_width=True, hide_index=True)
+    else:
+        st.info("No valid opponent observations in the selected historical sample.")
+else:
+    st.caption("Load historical player averages to inspect descriptive opponent totals.")
 
 st.subheader("Master Player Prop Board — data preview")
 categories = ["Points", "Rebounds", "Assists", "3-Pointers"]
