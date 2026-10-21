@@ -24,10 +24,12 @@ def test_history_excludes_slate_day_and_caps_requests():
         return [player()]
     result = collect_espn_history("2026-10-21", days=3, max_games=1,
                                   schedule_loader=schedule, boxscore_loader=boxscore)
-    assert checked == ["2026-10-20"]
+    assert checked == ["2026-10-20", "2026-10-19", "2026-10-18"]
     assert fetched == ["100"]
     assert result["games_loaded"] == 1
-    assert result["dates_checked"] == 1
+    assert result["dates_checked"] == 3
+    assert result["request_limit_reached"] is True
+    assert result["eligible_games_omitted"] == 1
     assert result["observations"][0]["game_date"] == "2026-10-20"
     assert result["observations"][0]["game_id"] == "espn:100"
 
