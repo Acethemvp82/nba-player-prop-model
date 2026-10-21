@@ -14,14 +14,14 @@ def roster_coverage(players, scheduled_teams):
         if not isinstance(player_id, (str, int)) or isinstance(player_id, bool):
             return False
         value = str(player_id)
-        if p.get("source") == "ESPN game summary (unconfirmed)":
+        if p.get("source") in ("ESPN game summary (unconfirmed)", "ESPN team roster (unconfirmed)"):
             return value.startswith("espn:") and value[5:].isascii() and value[5:].isdigit()
         return value.isascii() and value.isdigit()
 
     valid = [p for p in players if valid_id(p)]
     unique = {(str(p["player_id"]), p["team"]) for p in valid}
     feed = {(str(p["player_id"]), p["team"]) for p in valid
-            if p.get("source") in ("NBA game feed", "ESPN game summary (unconfirmed)")}
+            if p.get("source") in ("NBA game feed", "ESPN game summary (unconfirmed)", "ESPN team roster (unconfirmed)")}
     represented = {team for _, team in unique}
     return {"scheduled_teams": len(teams), "represented_teams": len(represented),
             "missing_teams": sorted(teams - represented),
