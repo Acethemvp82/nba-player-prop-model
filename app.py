@@ -402,10 +402,10 @@ if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), h
                             st.error("CSV missing required fields: " +
                                      ", ".join(sorted(required - set(saved.columns))))
                         else:
+                            saved_records = saved.to_dict("records")
                             graded = score_pregame_baselines(
-                                saved.to_dict("records"), espn_history["observations"])
-                            coverage = projection_grading_coverage(
-                                saved.to_dict("records"), graded)
+                                saved_records, espn_history["observations"])
+                            coverage = projection_grading_coverage(saved_records, graded)
                             st.caption(
                                 f"Grading coverage: {coverage['graded_forecasts']} of "
                                 f"{coverage['eligible_forecasts']} eligible forecasts "
@@ -419,7 +419,7 @@ if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), h
                                     st.caption("These projections are ungraded, not recorded as misses.")
                                     missing_breakdown = pd.DataFrame(
                                         summarize_unmatched_forecasts_by_slate(
-                                            saved.to_dict("records"), graded))
+                                            saved_records, graded))
                                     st.dataframe(missing_breakdown,
                                                  use_container_width=True, hide_index=True)
                                     st.download_button(
@@ -431,7 +431,7 @@ if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), h
                             if coverage["unmatched_forecasts"]:
                                 with st.expander("Individual unmatched player projections"):
                                     unmatched_players = pd.DataFrame(
-                                        list_unmatched_forecasts(saved.to_dict("records"), graded))
+                                        list_unmatched_forecasts(saved_records, graded))
                                     st.caption("Ungraded projections only; missing finals are not losses.")
                                     st.dataframe(unmatched_players,
                                                  use_container_width=True, hide_index=True)
@@ -444,7 +444,7 @@ if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), h
                             if coverage["unmatched_forecasts"]:
                                 with st.expander("Unmatched forecast counts by player"):
                                     player_coverage = pd.DataFrame(
-                                        summarize_unmatched_by_player(saved.to_dict("records"), graded))
+                                        summarize_unmatched_by_player(saved_records, graded))
                                     st.caption("Players with the most ungraded saved projections appear first.")
                                     st.dataframe(player_coverage,
                                                  use_container_width=True, hide_index=True)
@@ -457,7 +457,7 @@ if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), h
                             if coverage["unmatched_forecasts"]:
                                 with st.expander("Unmatched forecast counts by prop"):
                                     prop_coverage = pd.DataFrame(
-                                        summarize_unmatched_by_prop(saved.to_dict("records"), graded))
+                                        summarize_unmatched_by_prop(saved_records, graded))
                                     st.caption("Counts represent missing verified finals, not losing projections.")
                                     st.dataframe(prop_coverage,
                                                  use_container_width=True, hide_index=True)
@@ -470,7 +470,7 @@ if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), h
                             if coverage["unmatched_forecasts"]:
                                 with st.expander("Unmatched forecast counts by team"):
                                     team_coverage = pd.DataFrame(
-                                        summarize_unmatched_by_team(saved.to_dict("records"), graded))
+                                        summarize_unmatched_by_team(saved_records, graded))
                                     st.caption("UNKNOWN means no team label was supplied in the saved forecast.")
                                     st.dataframe(team_coverage,
                                                  use_container_width=True, hide_index=True)
@@ -484,7 +484,7 @@ if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), h
                                 with st.expander("Unmatched forecasts by team and prop"):
                                     team_prop_coverage = pd.DataFrame(
                                         summarize_unmatched_by_team_and_prop(
-                                            saved.to_dict("records"), graded))
+                                            saved_records, graded))
                                     st.caption("Team and prop breakdown of ungraded forecasts; not betting losses.")
                                     st.dataframe(team_prop_coverage,
                                                  use_container_width=True, hide_index=True)
@@ -509,7 +509,7 @@ if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), h
                                 st.caption("Unmatched forecasts indicate missing verified finals, "
                                            "not automatically incorrect predictions.")
                                 slate_coverage = pd.DataFrame(
-                                    summarize_grading_by_slate(saved.to_dict("records"), graded))
+                                    summarize_grading_by_slate(saved_records, graded))
                                 st.dataframe(slate_coverage,
                                              use_container_width=True, hide_index=True)
                                 st.download_button(
