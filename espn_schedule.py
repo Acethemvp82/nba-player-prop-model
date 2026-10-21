@@ -66,6 +66,8 @@ def espn_games_on(day):
         seen.add(matchup)
         games.append({
             "gameId": None,  # ESPN IDs are not compatible with NBA boxscore URLs.
+            "espnEventId": str(event.get("id")) if str(event.get("id") or "").isascii()
+                           and str(event.get("id") or "").isdigit() else None,
             "homeTeam": {"teamTricode": sides["home"]},
             "awayTeam": {"teamTricode": sides["away"]},
             "gameTimeUTC": event.get("date"),
