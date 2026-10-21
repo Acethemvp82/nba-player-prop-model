@@ -108,6 +108,19 @@ def check_recent_finals(today=None, days=7, schedule_loader=espn_games_on,
                         or any(row["Sample games"] != 1 for row in averages)
                         or any(row["Sample games"] != 1 for row in trends.values())):
                     raise ValueError("ESPN averages or recent trends rejected final-game data")
+                by_player = {(row["player_id"], row["team"]): row for row in players}
+                for row in averages:
+                    key = (row["Player ID"], row["Team"])
+                    original = by_player[key]
+                    if any(row[f"{prop.title()} avg"] != original[prop]
+                           for prop in ("points", "rebounds", "assists", "threes")):
+                        raise ValueError("ESPN historical averages changed player totals")
+                for key, values in trends.items():
+                    original = by_player[key]
+                    if any(values[f"{prop} L5 avg"] != original[prop]
+                           or values[f"{prop} L10 avg"] != original[prop]
+                           for prop in ("points", "rebounds", "assists", "threes")):
+                        raise ValueError("ESPN historical trends changed player totals")
             except Exception as exc:
                 errors.append(f"{day} event={event_id}: {type(exc).__name__}: {exc}")
                 continue
