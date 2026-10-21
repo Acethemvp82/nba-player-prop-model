@@ -161,3 +161,17 @@ def test_invalid_schedule_is_rejected():
     from nba_data import NBADataError
     with pytest.raises(NBADataError, match="schedule"):
         collect_recent_history(None, "2026-10-20")
+
+
+def test_final_boxscore_skips_malformed_players_and_stats(monkeypatch):
+    from history_collection import fetch_boxscore_players
+    monkeypatch.setattr("history_collection._get_json", lambda _: {
+        "game": {"gameId": "123", "gameStatus": 3,
+                 "homeTeam": {"teamTricode": "BOS", "players": [
+                     None, "invalid", {"personId": 7, "name": "Example",
+                                       "statistics": "invalid"}]},
+                 "awayTeam": {"teamTricode": "NYK", "players": []}}})
+    players = fetch_boxscore_players("123")
+    assert len(players) == 1
+    assert players[0]["player_id"] == 7
+    assert players[0]["statistics"] == {}
