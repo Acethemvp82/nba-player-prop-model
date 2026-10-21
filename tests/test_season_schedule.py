@@ -38,3 +38,19 @@ def test_malformed_schedule_game_lists_are_ignored():
     schedule = [{"games": None}, {"games": "invalid"},
                 {"games": [{"gameId": "0022600001", "gameDateEst": "2026-10-20"}]}]
     assert len(games_on("2026-10-20", schedule)) == 1
+
+
+def test_malformed_league_schedule_is_reported(monkeypatch):
+    import season_schedule
+    from nba_data import NBADataError
+    monkeypatch.setattr(season_schedule, "_get_json", lambda _: {"leagueSchedule": ["bad"]})
+    with pytest.raises(NBADataError, match="gameDates list"):
+        season_schedule.season_schedule()
+
+
+def test_schedule_rejects_unicode_digit_game_id():
+    schedule = [{"games": [
+        {"gameId": "１２３", "gameDateEst": "2026-10-20"},
+        {"gameId": "123", "gameDateEst": "2026-10-20"},
+    ]}]
+    assert [game["gameId"] for game in games_on("2026-10-20", schedule)] == ["123"]
