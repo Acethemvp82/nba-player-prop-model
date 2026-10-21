@@ -120,3 +120,18 @@ def projection_grading_coverage(forecasts, scored_rows):
     return {"eligible_forecasts": len(keys), "graded_forecasts": count,
             "unmatched_forecasts": len(keys) - count,
             "grading_coverage_pct": round(100 * count / len(keys), 1) if keys else None}
+
+
+def summarize_projection_errors_by_slate(scored_rows):
+    """Per-date, per-prop error summary for longitudinal research exports."""
+    dates = {}
+    for row in scored_rows or []:
+        if (not isinstance(row, dict) or row.get("result_status") != "verified_final"
+                or not isinstance(row.get("slate_date"), str)):
+            continue
+        dates.setdefault(row["slate_date"], []).append(row)
+    output = []
+    for day in sorted(dates):
+        for summary in summarize_projection_errors(dates[day]):
+            output.append({"slate_date": day, **summary})
+    return output
