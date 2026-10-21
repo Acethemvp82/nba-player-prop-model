@@ -42,9 +42,9 @@ def espn_recent_trends(observations, as_of):
     ownership = {}
     cross_team_conflicts = set()
     for (pid, team), games in grouped.items():
-        for gid, observation in games.items():
-            if observation is None:
-                continue
+        for gid in games:
+            # Even a conflicted entry claims this athlete/game for its team.
+            # Otherwise an opposing-team row could survive the exclusion.
             player_game = (pid, gid)
             previous_team = ownership.setdefault(player_game, team)
             if previous_team != team:
