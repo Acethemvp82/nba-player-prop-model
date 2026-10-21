@@ -125,3 +125,9 @@ def test_duplicate_required_stat_headings_do_not_produce_observations():
         section["athletes"][0]["stats"].append("1")
         with pytest.raises(NBADataError, match="no validated"):
             parse_final_espn_boxscore(data, "4012")
+
+
+@pytest.mark.parametrize("event_id", [True, False, None, 40.12, [], {}])
+def test_invalid_expected_event_id_types_are_rejected(event_id):
+    with pytest.raises(NBADataError, match="Invalid ESPN event ID"):
+        parse_final_espn_boxscore(sample(), event_id)
