@@ -8,7 +8,10 @@ def roster_coverage(players, scheduled_teams):
     """
     teams = {str(team) for team in scheduled_teams if isinstance(team, str) and team}
     valid = [p for p in players if isinstance(p, dict)
-             and p.get("player_id") is not None and p.get("team") in teams]
+             and isinstance(p.get("player_id"), (str, int))
+             and not isinstance(p.get("player_id"), bool)
+             and str(p["player_id"]).isascii() and str(p["player_id"]).isdigit()
+             and p.get("team") in teams]
     unique = {(str(p["player_id"]), p["team"]) for p in valid}
     feed = {(str(p["player_id"]), p["team"]) for p in valid
             if p.get("source") == "NBA game feed"}
