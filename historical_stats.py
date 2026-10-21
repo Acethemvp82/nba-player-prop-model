@@ -17,6 +17,9 @@ def _day(value):
     if isinstance(value, date):
         return value
     if isinstance(value, str):
+        value = value.strip()
+        if not value:
+            return None
         try:
             return date.fromisoformat(value)
         except ValueError:
