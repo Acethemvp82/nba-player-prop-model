@@ -1,4 +1,4 @@
-from pregame_results import score_pregame_baselines, summarize_projection_errors, projection_grading_coverage, summarize_projection_errors_by_slate, summarize_grading_by_slate, summarize_unmatched_forecasts_by_slate, list_unmatched_forecasts
+from pregame_results import score_pregame_baselines, summarize_projection_errors, projection_grading_coverage, summarize_projection_errors_by_slate, summarize_grading_by_slate, summarize_unmatched_forecasts_by_slate, list_unmatched_forecasts, summarize_unmatched_by_player
 
 
 def forecast(**overrides):
@@ -241,3 +241,18 @@ def test_unmatched_breakdown_handles_zero_matches_and_no_forecasts():
     ]
     assert list_unmatched_forecasts(None, None) == []
     assert summarize_unmatched_forecasts_by_slate(None, None) == []
+
+
+def test_unmatched_player_summary_counts_distinct_props_and_dates():
+    forecasts = [
+        forecast(), forecast(),
+        forecast(prop="assists"), forecast(slate_date="2026-10-22"),
+        forecast(player_id="espn:999", player="Other", prop="rebounds"),
+    ]
+    graded = score_pregame_baselines(forecasts, [final()])
+    assert summarize_unmatched_by_player(forecasts, graded) == [
+        {"player_id": "espn:123", "player": "Example", "team": "",
+         "unmatched_forecasts": 2},
+        {"player_id": "espn:999", "player": "Other", "team": "",
+         "unmatched_forecasts": 1},
+    ]
