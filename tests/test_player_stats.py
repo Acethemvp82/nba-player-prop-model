@@ -47,3 +47,11 @@ def test_missing_game_date_does_not_fabricate_history():
     result = completed_game_observations(games, load)
     from historical_stats import player_history_summaries
     assert player_history_summaries(result) == []
+
+
+def test_string_final_status_is_accepted():
+    games = [{"gameId": "321", "gameStatus": "3", "gameDateEst": "2026-10-19"}]
+    result = completed_game_observations(games, lambda _: [
+        {"player_id": 4, "statistics": {"minutes": "PT15M", "points": 8}}])
+    assert len(result) == 1
+    assert result[0]["points"] == 8
