@@ -161,10 +161,22 @@ def load_espn_history(as_of, days, max_games):
 history_days = st.select_slider("ESPN history lookback (days)", options=[3, 7, 14, 21, 30], value=7)
 espn_game_budget = st.select_slider("ESPN historical game request limit", options=[5, 10, 20, 30, 50], value=10)
 if st.button("Load ESPN completed-game stats"):
-    with st.spinner("Checking completed ESPN boxscores..."):
-        espn_history = load_espn_history(slate_date.isoformat(), history_days, espn_game_budget)
-    st.session_state["espn_history_preview"] = espn_history
-    st.session_state["espn_history_parameters"] = (slate_date.isoformat(), history_days, espn_game_budget)
+    # Clear stale samples before starting a new request, including failed ones.
+    st.session_state.pop("espn_history_preview", None)
+    st.session_state.pop("espn_history_parameters", None)
+    st.session_state.pop("espn_history_error", None)
+    try:
+        with st.spinner("Checking completed ESPN boxscores..."):
+            espn_history = load_espn_history(slate_date.isoformat(), history_days, espn_game_budget)
+    except (NBADataError, ValueError, TypeError, KeyError, OSError) as exc:
+        st.session_state["espn_history_error"] = str(exc)
+    else:
+        st.session_state["espn_history_preview"] = espn_history
+        st.session_state["espn_history_parameters"] = (slate_date.isoformat(), history_days, espn_game_budget)
+if st.session_state.get("espn_history_error"):
+    st.error("ESPN history could not be loaded: "
+             + st.session_state["espn_history_error"]
+             + ". Previous historical values have been cleared.")
 if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), history_days, espn_game_budget):
     espn_history = st.session_state.get("espn_history_preview")
     if espn_history:
