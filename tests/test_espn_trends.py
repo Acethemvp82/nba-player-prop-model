@@ -44,3 +44,9 @@ def test_trends_reject_noncanonical_team_codes():
     invalid = [{**row("2026-10-19", "103", 20), "team": team}
                for team in ("bos", "B0S")]
     assert espn_recent_trends(invalid, "2026-10-21") == {}
+
+
+def test_trends_exclude_cross_team_athlete_game_conflict():
+    first = row("2026-10-19", "100", 20)
+    second = {**first, "team": "NYK"}
+    assert espn_recent_trends([first, second], "2026-10-21") == {}
