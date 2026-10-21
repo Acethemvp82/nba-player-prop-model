@@ -12,6 +12,7 @@ from matchup_validation import valid_game_player
 from opponent_stats import opponent_game_totals, opponent_sample_summary
 from roster_coverage import roster_coverage
 from history_quality import history_quality
+from baseline_backtest import baseline_backtest
 
 st.set_page_config(page_title="NBA Player Prop Model", page_icon="🏀", layout="wide")
 st.title("🏀 NBA Player Prop Model")
@@ -140,6 +141,19 @@ if historical:
         with st.expander(f"Historical box scores unavailable ({len(historical['failed_games'])})"):
             st.dataframe(pd.DataFrame(historical["failed_games"]), hide_index=True)
 
+
+st.subheader("Walk-forward baseline accuracy — historical research")
+if historical and historical.get("observations"):
+    backtest_rows = baseline_backtest(historical["observations"], slate_date)
+    st.caption("Evaluates unadjusted baseline predictions using only prior-day observations. "
+               "MAE is average absolute error in the prop's units; signed error is prediction minus actual. "
+               "This is NOT sportsbook profitability or calibrated OVER probability.")
+    if any(item["evaluated"] for item in backtest_rows):
+        st.dataframe(pd.DataFrame(backtest_rows), use_container_width=True, hide_index=True)
+    else:
+        st.info("Not enough prior player appearances to calculate a walk-forward accuracy sample.")
+else:
+    st.caption("Load historical player averages to inspect retrospective baseline accuracy.")
 
 st.subheader("Opponent production allowed — historical research")
 if historical and historical.get("observations"):
