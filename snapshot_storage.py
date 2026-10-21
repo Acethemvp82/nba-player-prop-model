@@ -28,10 +28,16 @@ def save_snapshot(row, directory):
     path = directory / filename
     try:
         with path.open("x", encoding="utf-8") as handle:
-            json.dump(row, handle, sort_keys=True, allow_nan=False)
-            handle.write("\n")
-            handle.flush()
-            os.fsync(handle.fileno())
+            try:
+                json.dump(row, handle, sort_keys=True, allow_nan=False)
+                handle.write("\n")
+                handle.flush()
+                os.fsync(handle.fileno())
+            except BaseException:
+                # Exclusive creation can leave a partial file on write failure.
+                # Remove only the file this call just created.
+                path.unlink(missing_ok=True)
+                raise
     except FileExistsError:
         return False, path
     return True, path
