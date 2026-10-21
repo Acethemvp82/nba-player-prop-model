@@ -126,6 +126,9 @@ if historical:
                f"{historical['games_loaded']} of {historical['games_requested']} requested games loaded "
                f"({historical['eligible_games']} eligible games in schedule). "
                "Season averages cover only the collected sample, not necessarily the full season.")
+    if historical["games_loaded"] < historical["games_requested"]:
+        st.warning("Historical sample is incomplete: some requested final box scores were unavailable. "
+                   "Baselines and backtests may be biased toward successfully loaded games.")
     quality = history_quality(historical.get("observations", []), slate_date)
     with st.expander("Historical sample quality"):
         st.caption("Counts describe only the collected box scores. They do not prove full-season coverage or predict outcomes.")
