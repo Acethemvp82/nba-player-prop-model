@@ -203,3 +203,22 @@ def test_espn_schedule_rejects_ambiguous_three_competitor_event():
 
     with patch("espn_schedule.requests.get", return_value=Response()):
         assert espn_games_on("2026-10-21") == []
+
+
+def test_espn_schedule_completed_flag_requires_explicit_boolean():
+    class Response:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            def event(eid, completed):
+                return {"id": eid, "competitions": [{"competitors": [
+                    {"homeAway": "home", "team": {"abbreviation": "BOS"}},
+                    {"homeAway": "away", "team": {"abbreviation": "NYK"}},
+                ]}], "status": {"type": {"completed": completed}}}
+            return {"events": [event("40101", True), event("40102", False),
+                               event("40103", "false")]}
+
+    with patch("espn_schedule.requests.get", return_value=Response()):
+        games = espn_games_on("2026-10-21")
+    assert [game["espnCompleted"] for game in games] == [True, False, None]
