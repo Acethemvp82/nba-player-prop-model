@@ -8,6 +8,8 @@ from nba_data import NBADataError
 from historical_stats import _day
 
 ESPN_URL = "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard"
+# ESPN occasionally uses two-letter team abbreviations; NBA feeds use tricodes.
+ESPN_TO_NBA = {"NY": "NYK", "GS": "GSW", "SA": "SAS", "NO": "NOP"}
 
 
 def espn_games_on(day):
@@ -42,15 +44,14 @@ def espn_games_on(day):
             team = item.get("team")
             if isinstance(team, dict):
                 abbreviation = team.get("abbreviation")
-                if (isinstance(abbreviation, str) and len(abbreviation) == 3
-                        and abbreviation.isascii() and abbreviation.isalpha()):
-                    sides[item["homeAway"]] = abbreviation.upper()
+                if (isinstance(abbreviation, str) and abbreviation.isascii()
+                        and abbreviation.isalpha()):
+                    code = abbreviation.upper()
+                    code = ESPN_TO_NBA.get(code, code)
+                    if len(code) == 3:
+                        sides[item["homeAway"]] = code
         if len(sides) != 2 or sides["home"] == sides["away"]:
             continue
-        # ESPN commonly uses NY for New York and GS for Golden State.
-        # Never invent an NBA tricode from an unrecognized abbreviation.
-        normalized = {"NYK": "NYK", "GSW": "GSW"}
-        sides = {side: normalized.get(code, code) for side, code in sides.items()}
         games.append({
             "gameId": None,  # ESPN IDs are not compatible with NBA boxscore URLs.
             "homeTeam": {"teamTricode": sides["home"]},
