@@ -110,8 +110,9 @@ def espn_team_roster(team_id, expected_team):
         else:
             expanded.append(entry)
     for athlete in expanded:
-        identifier = athlete.get("id")
-        name = athlete.get("displayName")
+        profile = athlete.get("athlete") if isinstance(athlete.get("athlete"), dict) else athlete
+        identifier = profile.get("id")
+        name = profile.get("displayName")
         if (not isinstance(identifier, (str, int)) or isinstance(identifier, bool)
                 or not str(identifier).isascii() or not str(identifier).isdigit()
                 or not isinstance(name, str) or not name.strip()):
