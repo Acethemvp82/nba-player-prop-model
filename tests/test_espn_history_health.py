@@ -173,3 +173,22 @@ def test_history_health_rejects_invalid_omitted_counts(invalid):
             "eligible_games_omitted": invalid,
             "failures": [], "observations": [],
         })
+
+
+def test_history_truncation_matches_omitted_games():
+    result = espn_history_health({
+        "games_requested": 1, "games_loaded": 1, "dates_checked": 1,
+        "request_limit_reached": True, "eligible_games_omitted": 2,
+        "history_truncated": True, "failures": [], "observations": [],
+    })
+    assert result["History truncated by limit"] is True
+
+
+@pytest.mark.parametrize("truncated,omitted", [(True, 0), (False, 2), ("yes", 2)])
+def test_inconsistent_history_truncation_is_rejected(truncated, omitted):
+    with pytest.raises(ValueError, match="truncation"):
+        espn_history_health({
+            "games_requested": 1, "games_loaded": 1, "dates_checked": 1,
+            "eligible_games_omitted": omitted, "history_truncated": truncated,
+            "failures": [], "observations": [],
+        })
