@@ -12,6 +12,7 @@ from espn_history import collect_espn_history, espn_final_game_players
 from espn_averages import espn_player_averages
 from espn_trends import espn_recent_trends
 from espn_history_coverage import espn_history_coverage
+from csv_export import safe_spreadsheet_cell
 from history_collection import recent_player_summaries, fetch_boxscore_players
 from projection_baseline import baseline_projections
 from pregame_roster import candidate_players
@@ -623,6 +624,8 @@ if not board.empty:
     # betting fields as blanks rather than inventing lines or probabilities.
     if not visible_board.empty:
         export_board = visible_board.copy()
+        for column in export_board.select_dtypes(include=["object", "str"]).columns:
+            export_board[column] = export_board[column].map(safe_spreadsheet_cell)
         export_board.insert(0, "Research Status", "UNCONFIRMED — NOT A BETTING BOARD")
         st.download_button(
             "Download filtered NBA research board (CSV)",
