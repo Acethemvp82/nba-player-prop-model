@@ -13,15 +13,19 @@ from espn_schedule import espn_games_on
 
 
 def check_recent_finals(today=None, days=7, schedule_loader=espn_games_on,
-                        boxscore_loader=espn_final_game_players):
+                        boxscore_loader=espn_final_game_players, max_attempts=12):
     """Try multiple recent finals, preserving errors for troubleshooting.
 
     One unavailable boxscore should not mask another valid final game.
     """
+    if not isinstance(max_attempts, int) or isinstance(max_attempts, bool) or max_attempts < 1:
+        raise ValueError("max_attempts must be a positive integer")
     today = today or datetime.now(timezone.utc).date()
     errors = []
     completed = 0
     for offset in range(1, days + 1):
+        if completed >= max_attempts:
+            break
         day = (today - timedelta(days=offset)).isoformat()
         try:
             games = schedule_loader(day)
@@ -32,6 +36,8 @@ def check_recent_finals(today=None, days=7, schedule_loader=espn_games_on,
             errors.append(f"{day} schedule: invalid game collection")
             continue
         for game in games:
+            if completed >= max_attempts:
+                break
             if not isinstance(game, dict) or game.get("espnCompleted") is not True:
                 continue
             event_id = game.get("espnEventId")
