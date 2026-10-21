@@ -39,7 +39,8 @@ def espn_player_averages(observations, as_of):
         unique = {}
         for day, row in games:
             game_id = row.get("game_id")
-            if isinstance(game_id, str) and game_id.startswith("espn:"):
+            if (isinstance(game_id, str) and game_id.startswith("espn:")
+                    and game_id[5:].isascii() and game_id[5:].isdigit()):
                 unique.setdefault(game_id, row)
         if not unique:
             continue
