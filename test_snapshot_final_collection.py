@@ -40,6 +40,20 @@ class FinalCollectionTests(unittest.TestCase):
                                          lambda _: [player()], max_games=1)
         self.assertEqual(result["games_omitted_by_limit"], 1)
 
+    def test_missing_statistics_quarantines_game(self):
+        empty = player()
+        empty["statistics"] = {}
+        result = collect_snapshot_finals([snapshot(1)], lambda _: [empty])
+        self.assertEqual(result["games_loaded"], 0)
+        self.assertEqual(result["final_players"], [])
+        self.assertEqual(len(result["failures"]), 1)
+
+    def test_missing_team_quarantines_game(self):
+        malformed = player()
+        malformed["team"] = None
+        result = collect_snapshot_finals([snapshot(1)], lambda _: [malformed])
+        self.assertEqual(result["games_loaded"], 0)
+
     def test_duplicate_player_quarantines_game(self):
         result = collect_snapshot_finals([snapshot(1)],
                                          lambda _: [player(), player()])
