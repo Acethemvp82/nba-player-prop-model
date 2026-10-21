@@ -7,6 +7,7 @@ from nba_data import NBADataError, scoreboard, game_players
 from season_schedule import season_schedule, games_on
 from history_collection import recent_player_summaries
 from projection_baseline import baseline_projections
+from pregame_roster import candidate_players
 
 st.set_page_config(page_title="NBA Player Prop Model", page_icon="🏀", layout="wide")
 st.title("🏀 NBA Player Prop Model")
@@ -106,6 +107,30 @@ for game in slate_rows:
                 "Edge": None,
                 "Confidence": "Not calculated",
             })
+history_for_slate = st.session_state.get("nba_historical_preview")
+if st.session_state.get("nba_historical_preview_date") != slate_date.isoformat():
+    history_for_slate = None
+if history_for_slate and history_for_slate.get("summaries"):
+    candidates = candidate_players(slate_games, history_for_slate["summaries"], slate_date)
+    known = {(str(item["Player ID"]), item["Team"]) for item in rows}
+    for candidate in candidates:
+        key = (str(candidate["player_id"]), candidate["team"])
+        if key in known:
+            continue
+        for game in slate_rows:
+            teams = game["Matchup"].split(" @ ")
+            if candidate["team"] not in teams:
+                continue
+            opponent = teams[0] if candidate["team"] == teams[1] else teams[1]
+            for prop in selected:
+                rows.append({"Game": game["Matchup"], "Player": candidate["player"],
+                             "Player ID": candidate["player_id"], "Team": candidate["team"],
+                             "Opponent": opponent, "Prop": prop, "FanDuel Line": None,
+                             "Over Odds": None, "Projection": None,
+                             "Over Probability": None, "Edge": None,
+                             "Confidence": "Historical candidate; unconfirmed"})
+            known.add(key)
+            break
 board = pd.DataFrame(rows, columns=columns)
 if not board.empty:
     st.caption(f"{board['Player'].nunique()} unique players listed in available game feeds; not necessarily the complete active NBA roster.")
