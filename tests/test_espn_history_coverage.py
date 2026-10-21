@@ -63,3 +63,12 @@ def test_coverage_excludes_athlete_assigned_to_two_teams_in_one_game():
     assert len(coverage) == 2
     assert all(row["Player-game records"] == 0 for row in coverage)
     assert all(row["Historical players"] == 0 for row in coverage)
+
+
+def test_coverage_excludes_other_team_when_first_team_has_conflicting_duplicates():
+    original = record("BOS", 7, 100)
+    conflicting = {**original, "points": 19}
+    other_team = record("NYK", 7, 100)
+    rows = espn_history_coverage([original, conflicting, other_team], {"BOS", "NYK"})
+    assert all(row["Player-game records"] == 0 for row in rows)
+    assert all(row["Historical players"] == 0 for row in rows)
