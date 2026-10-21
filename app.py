@@ -324,7 +324,7 @@ elif slate_teams:
 if roster_listings:
     st.caption(f"Roster coverage: {coverage['represented_teams']}/{coverage['scheduled_teams']} scheduled teams; "
                f"{coverage['players']} unique player/team listings "
-               f"({coverage['feed_players']} from game feeds, "
+               f"({coverage['feed_players']} from NBA/ESPN game feeds (ESPN unconfirmed), "
                f"{coverage['historical_candidates']} historical candidates).")
 board = pd.DataFrame(rows, columns=columns)
 if not board.empty:
