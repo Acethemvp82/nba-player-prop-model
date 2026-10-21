@@ -95,6 +95,13 @@ def collect_espn_history(as_of, days=7, max_games=30,
                     else None
                 )
                 if expected_teams is not None:
+                    # A verified game has two distinct teams. Incomplete schedule
+                    # metadata must not silently turn into a one-team filter.
+                    if len(expected_teams) != 2 or any(
+                            not isinstance(team, str) or len(team) != 3
+                            or not team.isascii() or not team.isalpha()
+                            or not team.isupper() for team in expected_teams):
+                        raise NBADataError("Invalid ESPN scheduled matchup teams")
                     valid_players = [player for player in valid_players
                                      if player["team"] in expected_teams]
                 if not valid_players:
