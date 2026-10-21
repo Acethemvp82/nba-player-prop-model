@@ -35,7 +35,7 @@ def scoreboard(day: date | None = None) -> list[dict]:
 
 def game_players(game_id: str) -> list[dict]:
     """Read players listed in the public live box score for a game."""
-    if not str(game_id).isdigit():
+    if not isinstance(game_id, (str, int)) or isinstance(game_id, bool) or not str(game_id).isascii() or not str(game_id).isdigit():
         raise NBADataError("Invalid NBA game ID.")
     payload = _get_json(f"{BASE}/boxscore/boxscore_{game_id}.json")
     game = payload.get("game")
