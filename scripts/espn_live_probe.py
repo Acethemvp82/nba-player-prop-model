@@ -8,7 +8,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from espn_history import espn_final_game_players
+from espn_history import collect_espn_history, espn_final_game_players
 from espn_schedule import espn_games_on
 
 
@@ -84,6 +84,19 @@ def check_recent_finals(today=None, days=7, schedule_loader=espn_games_on,
                     if key in seen_players:
                         raise ValueError("Duplicate player observation")
                     seen_players.add(key)
+                # Exercise the same collector used by the Streamlit historical
+                # panel, without issuing a second request to ESPN.
+                from datetime import date
+                collected = collect_espn_history(
+                    date.fromisoformat(day) + timedelta(days=1), days=1,
+                    max_games=1,
+                    schedule_loader=lambda _: [game],
+                    boxscore_loader=lambda _: players,
+                )
+                if (collected["games_loaded"] != 1
+                        or len(collected["observations"]) != len(players)
+                        or collected["failures"]):
+                    raise ValueError("ESPN history collector rejected final-game data")
             except Exception as exc:
                 errors.append(f"{day} event={event_id}: {type(exc).__name__}: {exc}")
                 continue
