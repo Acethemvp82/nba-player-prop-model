@@ -906,7 +906,14 @@ with st.expander("Evaluate saved predictions against final box scores"):
         st.session_state.pop("tracker_report", None)
         st.session_state.pop("tracker_collection_audit", None)
         st.session_state.pop("tracker_collection_failures", None)
-    if st.button("Evaluate locally saved predictions", key="tracker_evaluate_local"):
+    from snapshot_storage import load_snapshots
+    local_tracker_data = load_snapshots("pregame_snapshots")
+    st.caption(f"Local prediction records ready to evaluate: "
+               f"{len(local_tracker_data['snapshots'])}")
+    if not local_tracker_data["snapshots"]:
+        st.info("Capture a pregame prediction above to enable local result tracking.")
+    if st.button("Evaluate locally saved predictions", key="tracker_evaluate_local",
+                 disabled=not bool(local_tracker_data["snapshots"])):
         try:
             from automatic_tracking import refresh_saved_tracking
             with st.spinner("Fetching final NBA box scores for saved predictions..."):
