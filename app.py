@@ -853,7 +853,8 @@ with st.expander("Evaluate saved predictions against final box scores"):
                 from snapshot_final_collection import collect_snapshot_finals
                 from tracking_pipeline import evaluate_tracked_slate
 
-                snapshot_rows = json.load(snapshot_upload)
+                from snapshot_batch import validate_snapshot_batch
+                snapshot_rows = validate_snapshot_batch(json.load(snapshot_upload))
                 if not isinstance(snapshot_rows, list) or len(snapshot_rows) > 100000:
                     raise ValueError("Snapshots must be a JSON array of at most 100,000 records.")
                 if not all(isinstance(row, dict) for row in snapshot_rows):
@@ -887,7 +888,8 @@ with st.expander("Evaluate saved predictions against final box scores"):
                 from tracking_pipeline import evaluate_tracked_slate
                 from pregame_snapshot import validate_pregame_snapshot
 
-                snapshot_rows = json.load(snapshot_upload)
+                from snapshot_batch import validate_snapshot_batch
+                snapshot_rows = validate_snapshot_batch(json.load(snapshot_upload))
                 final_rows = json.load(finals_upload)
                 if not isinstance(snapshot_rows, list) or not isinstance(final_rows, list):
                     raise ValueError("Both files must contain JSON arrays.")
@@ -905,6 +907,8 @@ with st.expander("Evaluate saved predictions against final box scores"):
                     snapshot_rows, final_rows, min_samples=int(minimum_tracked_samples)
                 )
                 st.session_state["tracker_report"] = result
+                st.session_state.pop("tracker_collection_audit", None)
+                st.session_state.pop("tracker_collection_failures", None)
             except (ValueError, TypeError, KeyError, UnicodeError, json.JSONDecodeError) as exc:
                 st.session_state.pop("tracker_report", None)
                 st.error(f"Could not evaluate uploaded tracking data: {exc}")
