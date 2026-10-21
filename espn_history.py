@@ -104,6 +104,13 @@ def collect_espn_history(as_of, days=7, max_games=30,
                                      if player["team"] in expected_teams]
                 if not valid_players:
                     raise NBADataError("No validated ESPN player observations for this matchup")
+                # An athlete cannot represent both opponents in one final game.
+                player_teams = {}
+                for player in valid_players:
+                    pid = player["player_id"]
+                    previous_team = player_teams.setdefault(pid, player["team"])
+                    if previous_team != player["team"]:
+                        raise NBADataError("ESPN athlete assigned to both teams in one game")
                 # A provider response may repeat the same athlete in multiple
                 # stat sections. Count one verified player-game per ESPN ID/team.
                 unique_players = {}
