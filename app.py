@@ -175,6 +175,13 @@ if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), h
         if espn_history["games_loaded"] < espn_history["games_requested"]:
             st.warning("ESPN historical sample is incomplete. Do not interpret these averages "
                        "as full-season or last-N-game statistics.")
+        if espn_history["games_requested"] >= espn_game_budget:
+            st.info("ESPN history reached the selected game-request limit. Results cover "
+                    "only the sampled games, not necessarily every completed game "
+                    "in the lookback window.")
+        if espn_history["dates_checked"] < history_days:
+            st.info("Only part of the selected date range was scanned because the "
+                    "game-request limit was reached.")
         if espn_history["failures"]:
             st.warning(f"{len(espn_history['failures'])} schedule or boxscore requests failed validation.")
             with st.expander("ESPN historical data errors"):
