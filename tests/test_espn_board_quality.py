@@ -17,3 +17,9 @@ def test_history_status_rejects_inconsistent_counts():
     assert history_sample_status(5, 4, 3) == "Invalid history metadata"
     assert history_sample_status(True, 1, 1) == "Invalid history metadata"
     assert history_sample_status(-1, 0, 0) == "Invalid history metadata"
+
+
+def test_history_status_treats_dataframe_nan_as_missing():
+    nan = float("nan")
+    assert history_sample_status(nan, nan, nan) == "No verified history"
+    assert history_sample_status(3, nan, nan) == "Limited verified history"
