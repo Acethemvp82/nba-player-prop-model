@@ -8,7 +8,7 @@ from nba_data import NBADataError, scoreboard, game_players
 from season_schedule import season_schedule, games_on
 from espn_schedule import espn_games_on
 from espn_players import espn_game_players, espn_team_roster
-from espn_history import collect_espn_history
+from espn_history import collect_espn_history, espn_final_game_players
 from espn_averages import espn_player_averages
 from espn_trends import espn_recent_trends
 from espn_history_coverage import espn_history_coverage
@@ -156,8 +156,22 @@ st.subheader("ESPN completed-game statistics — experimental")
 st.caption("Separate ESPN player IDs and verified final-game boxscores. "
            "These observations are descriptive and are not yet used in projections.")
 @st.cache_data(ttl=3600, show_spinner=False)
+def load_espn_history_schedule(day):
+    return espn_games_on(day)
+
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def load_espn_history_final(event_id):
+    return espn_final_game_players(event_id)
+
+
+@st.cache_data(ttl=3600, show_spinner=False)
 def load_espn_history(as_of, days, max_games):
-    return collect_espn_history(as_of, days=days, max_games=max_games)
+    return collect_espn_history(
+        as_of, days=days, max_games=max_games,
+        schedule_loader=load_espn_history_schedule,
+        boxscore_loader=load_espn_history_final,
+    )
 
 history_days = st.select_slider("ESPN history lookback (days)", options=[3, 7, 14, 21, 30], value=7)
 espn_game_budget = st.select_slider("ESPN historical game request limit", options=[5, 10, 20, 30, 50], value=10)
