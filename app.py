@@ -252,13 +252,15 @@ for game in slate_rows:
     try:
         if game["Game ID"]:
             players = load_players(game["Game ID"])
-        elif game.get("ESPN Event ID"):
-            try:
-                players = load_espn_players(game["ESPN Event ID"])
-                source = "ESPN game summary (unconfirmed)"
-            except NBADataError:
-                players = []
-                source = "ESPN team roster (unconfirmed)"
+        elif game.get("ESPN Event ID") or game.get("ESPN Team IDs"):
+            players = []
+            source = "ESPN team roster (unconfirmed)"
+            if game.get("ESPN Event ID"):
+                try:
+                    players = load_espn_players(game["ESPN Event ID"])
+                    source = "ESPN game summary (unconfirmed)"
+                except NBADataError:
+                    pass
             # Game summaries can contain only one team's athletes before tipoff.
             # Fill missing teams from their own roster endpoint, without
             # duplicating summary athletes or upgrading candidate status.
