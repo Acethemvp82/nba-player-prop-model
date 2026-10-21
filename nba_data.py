@@ -27,7 +27,8 @@ def scoreboard(day: date | None = None) -> list[dict]:
     if day is not None and day != date.today():
         raise NBADataError("Historical/future date-specific schedule is not connected yet.")
     payload = _get_json(f"{BASE}/scoreboard/todaysScoreboard_00.json")
-    games = payload.get("scoreboard", {}).get("games")
+    board = payload.get("scoreboard")
+    games = board.get("games") if isinstance(board, dict) else None
     if not isinstance(games, list):
         raise NBADataError("NBA scoreboard response has no games list.")
     return [game for game in games if isinstance(game, dict)]
@@ -48,6 +49,7 @@ def game_players(game_id: str) -> list[dict]:
         players = team.get("players")
         if not isinstance(players, list):
             continue
+        other = game.get("awayTeam" if side == "homeTeam" else "homeTeam")
         for player in players:
             if not isinstance(player, dict):
                 continue
@@ -55,7 +57,7 @@ def game_players(game_id: str) -> list[dict]:
                 "player_id": player.get("personId"),
                 "player": player.get("name"),
                 "team": team.get("teamTricode"),
-                "opponent": (game.get("awayTeam" if side == "homeTeam" else "homeTeam") or {}).get("teamTricode"),
+                "opponent": (other.get("teamTricode") if isinstance(other, dict) else None),
                 "status": player.get("status"),
                 "statistics": player.get("statistics", {}),
             })
