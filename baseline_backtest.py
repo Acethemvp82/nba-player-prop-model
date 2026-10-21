@@ -45,6 +45,7 @@ def baseline_backtest(observations, as_of, min_training_games=5):
         by_date[day].append(row)
     training = []
     errors = defaultdict(list)
+    eligible_appearances = defaultdict(int)
     player_games = defaultdict(set)
     evaluated_dates = defaultdict(set)
     for day in sorted(by_date):
@@ -54,6 +55,9 @@ def baseline_backtest(observations, as_of, min_training_games=5):
         for row in by_date[day]:
             for prop in PROPS:
                 actual = row.get(prop)
+                if (isinstance(actual, (int, float)) and not isinstance(actual, bool)
+                        and isfinite(actual) and actual >= 0):
+                    eligible_appearances[prop] += 1
                 predicted = predictions.get((str(row["player_id"]), prop))
                 if (predicted is not None and isinstance(actual, (int, float))
                         and not isinstance(actual, bool) and isfinite(actual) and actual >= 0):
@@ -64,6 +68,9 @@ def baseline_backtest(observations, as_of, min_training_games=5):
     return [
         {"prop": prop, "evaluated": len(errors[prop]),
          "players_evaluated": len(player_games[prop]),
+         "eligible_appearances": eligible_appearances[prop],
+         "coverage_pct": round(100 * len(errors[prop]) / eligible_appearances[prop], 1)
+         if eligible_appearances[prop] else None,
          "dates_evaluated": len(evaluated_dates[prop]),
          "first_evaluation_date": min(evaluated_dates[prop]).isoformat() if evaluated_dates[prop] else None,
          "last_evaluation_date": max(evaluated_dates[prop]).isoformat() if evaluated_dates[prop] else None,
