@@ -594,7 +594,31 @@ if not board.empty:
         board = board.sort_values(["Prop", "Historical baseline", "Player"], ascending=[True, False, True], na_position="last")
     if "Historical baseline" in board.columns:
         st.caption("Historical averages are ordered within each prop category, not across incomparable stats. This is not an OVER edge ranking.")
-    st.dataframe(board.drop(columns=["Player ID"]), use_container_width=True, hide_index=True)
+    # Research-only filtering: do not infer missing samples as zero or alter
+    # projections, betting probabilities, or the underlying player ranking.
+    visible_board = board
+    if "ESPN Sample Games" in board.columns:
+        min_verified_games = st.select_slider(
+            "Minimum verified ESPN games (research view)",
+            options=[0, 1, 3, 5, 10],
+            value=0,
+            help="0 shows every listed player. Higher values hide rows without enough "
+                 "matching verified ESPN final-game observations.",
+        )
+        if min_verified_games:
+            visible_board = board.loc[
+                pd.to_numeric(board["ESPN Sample Games"], errors="coerce")
+                .fillna(0).ge(min_verified_games)
+            ]
+            st.caption(
+                f"Showing {len(visible_board)} of {len(board)} player-prop rows with "
+                f"at least {min_verified_games} verified ESPN games. "
+                "This is a sample-size filter, not a betting recommendation."
+            )
+            if visible_board.empty:
+                st.warning("No player-prop rows meet the selected historical sample minimum. "
+                           "Reduce the filter to view more players.")
+    st.dataframe(visible_board.drop(columns=["Player ID"]), use_container_width=True, hide_index=True)
 else:
     if selected:
         st.warning("No player listings available yet. Some box scores may not publish rosters before tipoff.")
