@@ -334,6 +334,27 @@ if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), h
                            "verified sample below. Not calibrated betting projections.")
                 st.dataframe(pd.DataFrame(averages).drop(columns=["Player ID"]),
                              use_container_width=True, hide_index=True)
+            # ESPN observations remain in their own athlete-ID namespace.
+            # Forecasts are date-frozen and never use games on the slate date.
+            from pregame_baseline_board import build_pregame_baseline_board
+            espn_forecasts = build_pregame_baseline_board(
+                espn_history["observations"], slate_date.isoformat(), min_games=5
+            )
+            if espn_forecasts:
+                st.subheader("ESPN pregame baseline projections — research")
+                st.caption("Automatically generated from verified ESPN final-game samples "
+                           "strictly before the slate date. These are unadjusted statistical "
+                           "forecasts, not FanDuel lines or betting probabilities. "
+                           "The selected lookback may omit player games.")
+                forecast_frame = pd.DataFrame(espn_forecasts)
+                display_fields = ["player", "team", "prop", "baseline",
+                                  "sample_games", "recent_minutes", "slate_date"]
+                st.dataframe(forecast_frame[
+                    [col for col in display_fields if col in forecast_frame.columns]
+                ], use_container_width=True, hide_index=True)
+            else:
+                st.info("No ESPN players meet the five-game minimum for automatic "
+                        "pregame baseline projections in this historical sample.")
             trends = espn_recent_trends(espn_history["observations"], slate_date.isoformat())
             if trends:
                 st.caption("ESPN L5/L10: averages use up to 5 or 10 verified games available "
