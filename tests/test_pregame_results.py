@@ -162,3 +162,15 @@ def test_per_slate_accuracy_ignores_impossible_dates():
          "graded_projections": 1, "mean_absolute_error": 2.0,
          "mean_projection_bias": -2.0}
     ]
+
+
+def test_coverage_does_not_count_invalid_verified_result_keys():
+    rows = [
+        {"player_id": True, "slate_date": "2026-10-21",
+         "prop": "points", "result_status": "verified_final"},
+        {"player_id": "espn:123", "slate_date": "2026-02-30",
+         "prop": "points", "result_status": "verified_final"},
+        {"player_id": "espn:123", "slate_date": "2026-10-21",
+         "prop": "invalid", "result_status": "verified_final"},
+    ]
+    assert projection_grading_coverage([forecast()], rows)["graded_forecasts"] == 0
