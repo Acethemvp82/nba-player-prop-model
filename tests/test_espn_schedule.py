@@ -136,3 +136,36 @@ def test_espn_fallback_does_not_turn_missing_scores_into_zero():
         game = espn_games_on("2026-10-21")[0]
     assert game["homeScore"] is None
     assert game["awayScore"] is None
+
+
+def test_espn_team_ids_remain_separate_from_nba_game_ids():
+    class Response:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {"events": [{"id": "401555555", "competitions": [{"competitors": [
+                {"homeAway": "home", "team": {"abbreviation": "NY", "id": "18"}},
+                {"homeAway": "away", "team": {"abbreviation": "BOS", "id": "2"}},
+            ]}]}]}
+    with patch("espn_schedule.requests.get", return_value=Response()):
+        game = espn_games_on("2026-10-21")[0]
+    assert game["gameId"] is None
+    assert game["espnEventId"] == "401555555"
+    assert game["espnTeamIds"] == {"home": "18", "away": "2"}
+
+
+def test_espn_team_ids_available_even_if_event_id_is_missing():
+    class Response:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {"events": [{"competitions": [{"competitors": [
+                {"homeAway": "home", "team": {"abbreviation": "NY", "id": "18"}},
+                {"homeAway": "away", "team": {"abbreviation": "BOS", "id": "2"}},
+            ]}]}]}
+    with patch("espn_schedule.requests.get", return_value=Response()):
+        game = espn_games_on("2026-10-21")[0]
+    assert game["espnEventId"] is None
+    assert game["espnTeamIds"]["home"] == "18"
