@@ -191,6 +191,7 @@ if load_espn_history_clicked or refresh_espn_history:
     st.session_state.pop("espn_history_error", None)
     st.session_state.pop("espn_history_error_parameters", None)
     st.session_state.pop("espn_history_loaded_at_utc", None)
+    st.session_state.pop("espn_history_refresh_type", None)
     try:
         with st.spinner("Checking completed ESPN boxscores..."):
             if refresh_espn_history:
@@ -206,6 +207,9 @@ if load_espn_history_clicked or refresh_espn_history:
         st.session_state["espn_history_preview"] = espn_history
         st.session_state["espn_history_parameters"] = (slate_date.isoformat(), history_days, espn_game_budget)
         st.session_state["espn_history_loaded_at_utc"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        st.session_state["espn_history_refresh_type"] = (
+            "Source refresh requested" if refresh_espn_history else "Standard load (cache eligible)"
+        )
 if (st.session_state.get("espn_history_error")
         and st.session_state.get("espn_history_error_parameters") == (
             slate_date.isoformat(), history_days, espn_game_budget)):
@@ -219,8 +223,10 @@ if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), h
             st.caption(
                 "ESPN history last loaded: "
                 + st.session_state["espn_history_loaded_at_utc"]
-                + " UTC. Standard loads may reuse cached data; use Refresh ESPN history "
-                  "from source to invalidate the historical caches."
+                + " UTC. Mode: "
+                + st.session_state.get("espn_history_refresh_type", "Unknown")
+                + ". Standard loads may reuse cached data; a source refresh clears "
+                  "the historical caches before requesting the sample."
             )
         st.caption(f"Verified ESPN final games: {espn_history['games_loaded']} of "
                    f"{espn_history['games_requested']} requested across "
