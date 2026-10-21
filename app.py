@@ -2,6 +2,7 @@
 from datetime import datetime, timezone, date
 from zoneinfo import ZoneInfo
 import pandas as pd
+import requests
 import streamlit as st
 from nba_data import NBADataError, scoreboard, game_players
 from season_schedule import season_schedule, games_on
@@ -168,7 +169,7 @@ if st.button("Load ESPN completed-game stats"):
     try:
         with st.spinner("Checking completed ESPN boxscores..."):
             espn_history = load_espn_history(slate_date.isoformat(), history_days, espn_game_budget)
-    except (NBADataError, ValueError, TypeError, KeyError, OSError) as exc:
+    except (NBADataError, ValueError, TypeError, KeyError, OSError, requests.RequestException) as exc:
         st.session_state["espn_history_error"] = str(exc)
     else:
         st.session_state["espn_history_preview"] = espn_history
