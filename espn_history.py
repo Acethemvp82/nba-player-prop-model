@@ -64,22 +64,23 @@ def collect_espn_history(as_of, days=7, max_games=30,
             continue
         # Completed games must have a valid, distinct matchup when the
         # scoreboard supplies teams. Partial team metadata is not trustworthy.
+        matchup_invalid = False
         for game in games:
             home, away = game.get("homeTeam"), game.get("awayTeam")
             if home is None and away is None:
                 continue  # Legacy injected schedules may only provide event IDs.
             if not isinstance(home, dict) or not isinstance(away, dict):
                 failures.append({"date": day.isoformat(), "error": "Incomplete schedule matchup"})
+                matchup_invalid = True
                 break
             codes = (home.get("teamTricode"), away.get("teamTricode"))
             if any(not isinstance(code, str) or len(code) != 3
                    or not code.isascii() or not code.isalpha() or not code.isupper()
                    for code in codes) or codes[0] == codes[1]:
                 failures.append({"date": day.isoformat(), "error": "Invalid schedule matchup"})
+                matchup_invalid = True
                 break
-        else:
-            pass
-        if failures and failures[-1].get("date") == day.isoformat():
+        if matchup_invalid:
             continue
         # Duplicate event IDs inside one scoreboard date may indicate a
         # malformed provider response. Refuse the date instead of quietly
