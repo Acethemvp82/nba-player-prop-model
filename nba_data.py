@@ -30,7 +30,7 @@ def scoreboard(day: date | None = None) -> list[dict]:
     games = payload.get("scoreboard", {}).get("games")
     if not isinstance(games, list):
         raise NBADataError("NBA scoreboard response has no games list.")
-    return games
+    return [game for game in games if isinstance(game, dict)]
 
 def game_players(game_id: str) -> list[dict]:
     """Read players listed in the public live box score for a game."""
