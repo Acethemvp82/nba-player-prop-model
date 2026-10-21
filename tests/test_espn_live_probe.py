@@ -142,3 +142,11 @@ def test_probe_accepts_valid_scheduled_matchup():
         boxscore_loader=lambda _: [verified_player()],
     )
     assert result["players"] == 1
+
+
+def test_probe_rejects_invalid_lookback_days():
+    import pytest
+
+    for days in (0, 31, True, 1.5):
+        with pytest.raises(ValueError, match="days"):
+            check_recent_finals(date(2026, 10, 21), days=days)
