@@ -94,6 +94,20 @@ def test_conflicting_duplicate_final_boxscore_rows_are_rejected():
         parse_final_espn_boxscore(data, "4012")
 
 
+def test_conflicting_duplicate_minutes_are_rejected():
+    data = sample()
+    section = data["boxscore"]["players"][0]["statistics"][0]
+    original = section["athletes"][0]
+    changed = list(original["stats"])
+    changed[0] = "35"
+    section["athletes"].append({
+        "athlete": dict(original["athlete"]),
+        "stats": changed,
+    })
+    with pytest.raises(NBADataError, match="Conflicting ESPN final stats"):
+        parse_final_espn_boxscore(data, "4012")
+
+
 def test_identical_duplicate_final_boxscore_rows_are_counted_once():
     data = sample()
     section = data["boxscore"]["players"][0]["statistics"][0]
