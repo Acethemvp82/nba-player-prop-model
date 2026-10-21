@@ -221,6 +221,18 @@ def summarize_unmatched_by_player(forecasts, scored_rows):
     ]
 
 
+
+def summarize_unmatched_by_prop(forecasts, scored_rows):
+    """Count ungraded unique projections by statistical category."""
+    counts = {prop: 0 for prop in PROPS}
+    for row in list_unmatched_forecasts(forecasts, scored_rows):
+        counts[row["prop"]] += 1
+    return [
+        {"prop": prop, "unmatched_forecasts": counts[prop]}
+        for prop in PROPS if counts[prop]
+    ]
+
+
 def summarize_grading_by_slate(forecasts, scored_rows):
     """Coverage by slate date; unmatched rows are not counted as losses."""
     dates = sorted({
