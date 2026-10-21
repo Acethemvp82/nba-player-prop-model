@@ -36,8 +36,10 @@ except NBADataError as exc:
 
 game_rows = []
 for game in games:
-    home = game.get("homeTeam") or {}
-    away = game.get("awayTeam") or {}
+    home = game.get("homeTeam")
+    away = game.get("awayTeam")
+    home = home if isinstance(home, dict) else {}
+    away = away if isinstance(away, dict) else {}
     game_rows.append({
         "Game ID": str(game.get("gameId") or ""),
         "Matchup": f'{away.get("teamTricode", "?")} @ {home.get("teamTricode", "?")}',
@@ -59,8 +61,10 @@ except NBADataError as exc:
 st.caption(f"{len(slate_games)} scheduled games for {slate_date}")
 slate_rows = []
 for scheduled in slate_games:
-    home = scheduled.get("homeTeam") or {}
-    away = scheduled.get("awayTeam") or {}
+    home = scheduled.get("homeTeam")
+    away = scheduled.get("awayTeam")
+    home = home if isinstance(home, dict) else {}
+    away = away if isinstance(away, dict) else {}
     slate_rows.append({
         "Game ID": str(scheduled.get("gameId") or ""),
         "Matchup": f'{away.get("teamTricode", "?")} @ {home.get("teamTricode", "?")}',
@@ -241,9 +245,9 @@ if history_for_slate and history_for_slate.get("summaries"):
             break
 # Data-quality diagnostics: expose incomplete roster coverage instead of
 # presenting a partial slate as if every team were represented.
-slate_teams = {str((game.get(side) or {}).get("teamTricode"))
+slate_teams = {str(game[side]["teamTricode"])
                for game in slate_games for side in ("homeTeam", "awayTeam")
-               if (game.get(side) or {}).get("teamTricode")}
+               if isinstance(game.get(side), dict) and game[side].get("teamTricode")}
 coverage = roster_coverage(roster_listings, slate_teams)
 if not selected:
     st.info("Select at least one prop category to populate the master board.")
