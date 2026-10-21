@@ -20,7 +20,8 @@ def score_pregame_baselines(forecasts, final_observations):
         if not isinstance(row, dict) or row.get("is_final") is not True:
             continue
         pid, day = row.get("player_id"), row.get("game_date")
-        if not isinstance(pid, (str, int)) or not isinstance(day, str):
+        if (not isinstance(pid, (str, int)) or isinstance(pid, bool)
+                or not isinstance(day, str)):
             continue
         key = (str(pid), day)
         finals.setdefault(key, []).append(row)
@@ -32,8 +33,8 @@ def score_pregame_baselines(forecasts, final_observations):
             continue
         pid, day, prop = row.get("player_id"), row.get("slate_date"), row.get("prop")
         baseline = row.get("baseline")
-        if (not isinstance(pid, (str, int)) or not isinstance(day, str)
-                or prop not in PROPS or type(baseline) not in (int, float)
+        if (not isinstance(pid, (str, int)) or isinstance(pid, bool)
+                or not isinstance(day, str) or prop not in PROPS or type(baseline) not in (int, float)
                 or not isfinite(baseline) or baseline < 0):
             continue
         # Only a verified final for the same player and slate date can score.
@@ -107,8 +108,8 @@ def projection_grading_coverage(forecasts, scored_rows):
             continue
         pid, day, prop = row.get("player_id"), row.get("slate_date"), row.get("prop")
         baseline = row.get("baseline")
-        if (not isinstance(pid, (str, int)) or not isinstance(day, str)
-                or prop not in PROPS or type(baseline) not in (int, float)
+        if (not isinstance(pid, (str, int)) or isinstance(pid, bool)
+                or not isinstance(day, str) or prop not in PROPS or type(baseline) not in (int, float)
                 or not isfinite(baseline) or baseline < 0):
             continue
         keys.add((str(pid), day, prop))
