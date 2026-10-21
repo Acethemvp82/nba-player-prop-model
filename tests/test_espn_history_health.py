@@ -144,3 +144,13 @@ def test_history_health_reports_request_limit():
     })
     assert health["Request limit reached"] is True
     assert health["Final-game success %"] == 100.0
+    assert health["Status"] == "Request budget reached; all requested finals loaded"
+
+
+@pytest.mark.parametrize("invalid", ["true", 1, None, [], {}])
+def test_history_health_rejects_invalid_request_limit_flags(invalid):
+    with pytest.raises(ValueError, match="request-limit"):
+        espn_history_health({
+            "games_requested": 1, "games_loaded": 1, "dates_checked": 1,
+            "request_limit_reached": invalid, "failures": [], "observations": [],
+        })
