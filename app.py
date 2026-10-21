@@ -8,6 +8,7 @@ from season_schedule import season_schedule, games_on
 from espn_schedule import espn_games_on
 from espn_players import espn_game_players, espn_team_roster
 from espn_history import collect_espn_history
+from espn_averages import espn_player_averages
 from history_collection import recent_player_summaries, fetch_boxscore_players
 from projection_baseline import baseline_projections
 from pregame_roster import candidate_players
@@ -173,8 +174,15 @@ if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), h
             with st.expander("ESPN historical data errors"):
                 st.dataframe(pd.DataFrame(espn_history["failures"]), use_container_width=True, hide_index=True)
         if espn_history["observations"]:
-            st.dataframe(pd.DataFrame(espn_history["observations"]),
-                         use_container_width=True, hide_index=True)
+            averages = espn_player_averages(espn_history["observations"], slate_date.isoformat())
+            if averages:
+                st.caption("ESPN historical averages: descriptive only, based on the limited "
+                           "verified sample below. Not calibrated betting projections.")
+                st.dataframe(pd.DataFrame(averages).drop(columns=["Player ID"]),
+                             use_container_width=True, hide_index=True)
+            with st.expander("Individual verified ESPN player-game observations"):
+                st.dataframe(pd.DataFrame(espn_history["observations"]),
+                             use_container_width=True, hide_index=True)
 
 st.subheader("Historical player statistics — research preview")
 st.caption("Official completed-game box scores only. These are descriptive averages, not predictions or betting edges.")
