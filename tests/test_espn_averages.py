@@ -56,3 +56,12 @@ def test_all_conflicted_games_produce_no_averages():
     assert espn_player_averages([
         {**base, "points": 30}, {**base, "points": 99}
     ], "2026-10-21") == []
+
+
+def test_conflicting_dates_for_same_game_are_excluded():
+    base = {"player_id": "espn:12", "player": "Player One", "team": "BOS",
+            "source": "ESPN verified final boxscore", "game_id": "espn:101",
+            "points": 20, "rebounds": 6, "assists": 4, "threes": 2}
+    rows = [{**base, "game_date": "2026-10-18"},
+            {**base, "game_date": "2026-10-19"}]
+    assert espn_player_averages(rows, "2026-10-21") == []
