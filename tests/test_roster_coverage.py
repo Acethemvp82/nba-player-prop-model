@@ -54,3 +54,30 @@ def test_invalid_player_identifiers_do_not_inflate_roster_coverage():
     result = roster_coverage(players, {"BOS", "NYK"})
     assert result["players"] == 1
     assert result["missing_teams"] == ["BOS"]
+
+
+def test_namespaced_espn_players_count_as_unconfirmed_feed_listings():
+    result = roster_coverage([
+        {"player_id": "espn:123", "team": "NYK",
+         "source": "ESPN game summary (unconfirmed)"},
+        {"player_id": "espn:123", "team": "NYK",
+         "source": "ESPN game summary (unconfirmed)"},
+        {"player_id": 77, "team": "BOS", "source": "NBA game feed"},
+    ], {"NYK", "BOS"})
+    assert result["represented_teams"] == 2
+    assert result["players"] == 2
+    assert result["feed_players"] == 2
+    assert result["historical_candidates"] == 0
+
+
+def test_untrusted_espn_ids_do_not_inflate_coverage():
+    result = roster_coverage([
+        {"player_id": "espn:１２３", "team": "NYK",
+         "source": "ESPN game summary (unconfirmed)"},
+        {"player_id": "espn:abc", "team": "NYK",
+         "source": "ESPN game summary (unconfirmed)"},
+        {"player_id": "123", "team": "NYK",
+         "source": "ESPN game summary (unconfirmed)"},
+    ], {"NYK"})
+    assert result["players"] == 0
+    assert result["missing_teams"] == ["NYK"]
