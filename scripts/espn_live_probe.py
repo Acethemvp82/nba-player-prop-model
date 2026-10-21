@@ -28,11 +28,15 @@ def check_recent_finals(today=None, days=7, schedule_loader=espn_games_on,
         except Exception as exc:
             errors.append(f"{day} schedule: {type(exc).__name__}: {exc}")
             continue
+        if not isinstance(games, list):
+            errors.append(f"{day} schedule: invalid game collection")
+            continue
         for game in games:
             if not isinstance(game, dict) or game.get("espnCompleted") is not True:
                 continue
             event_id = game.get("espnEventId")
-            if not event_id:
+            if not (isinstance(event_id, str) and event_id.isascii()
+                    and event_id.isdigit()):
                 continue
             completed += 1
             try:
