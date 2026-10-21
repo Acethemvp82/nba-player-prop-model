@@ -85,7 +85,8 @@ st.caption("Official completed-game box scores only. These are descriptive avera
 def load_historical_summary(as_of, game_limit):
     return recent_player_summaries(load_schedule(), as_of=as_of, max_games=game_limit)
 
-history_limit = st.select_slider("Recent completed games to retrieve", options=[10, 20, 40, 80], value=20)
+history_limit = st.select_slider("Recent completed games to retrieve", options=[10, 20, 40, 80, 160, 320], value=80)
+st.caption("Larger samples improve coverage but may require hundreds of NBA requests. Cached results are reused for one hour.")
 if st.button("Load historical player averages"):
     try:
         with st.spinner("Loading completed NBA game data..."):
