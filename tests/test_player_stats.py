@@ -55,3 +55,14 @@ def test_string_final_status_is_accepted():
         {"player_id": 4, "statistics": {"minutes": "PT15M", "points": 8}}])
     assert len(result) == 1
     assert result[0]["points"] == 8
+
+
+def test_nonfinite_stats_are_missing_not_zero():
+    result = normalize_player_boxscore({
+        "statistics": {"points": float("nan"), "reboundsTotal": float("inf"),
+                       "assists": float("-inf"), "threePointersMade": 2}
+    }, "999")
+    assert result["points"] is None
+    assert result["rebounds"] is None
+    assert result["assists"] is None
+    assert result["threes"] == 2
