@@ -12,24 +12,52 @@ from espn_history import espn_final_game_players
 from espn_schedule import espn_games_on
 
 
-def main():
-    # Check several recent dates: off-days should not cause false failures.
-    for offset in range(1, 8):
-        day = (datetime.now(timezone.utc).date() - timedelta(days=offset)).isoformat()
-        games = espn_games_on(day)
+def check_recent_finals(today=None, days=7, schedule_loader=espn_games_on,
+                        boxscore_loader=espn_final_game_players):
+    """Try multiple recent finals, preserving errors for troubleshooting.
+
+    One unavailable boxscore should not mask another valid final game.
+    """
+    today = today or datetime.now(timezone.utc).date()
+    errors = []
+    completed = 0
+    for offset in range(1, days + 1):
+        day = (today - timedelta(days=offset)).isoformat()
+        try:
+            games = schedule_loader(day)
+        except Exception as exc:
+            errors.append(f"{day} schedule: {type(exc).__name__}: {exc}")
+            continue
         for game in games:
-            if game.get("espnCompleted") is not True:
+            if not isinstance(game, dict) or game.get("espnCompleted") is not True:
                 continue
             event_id = game.get("espnEventId")
             if not event_id:
                 continue
-            players = espn_final_game_players(event_id)
-            if not players:
-                raise RuntimeError("Final ESPN game produced no player observations")
-            print(f"PASS ESPN final game {day} event={event_id}: "
-                  f"{len(players)} validated player rows")
-            return 0
-    print("FAIL: No completed ESPN NBA games found in the previous seven days",
+            completed += 1
+            try:
+                players = boxscore_loader(event_id)
+                if not players:
+                    raise ValueError("No validated player observations")
+            except Exception as exc:
+                errors.append(f"{day} event={event_id}: {type(exc).__name__}: {exc}")
+                continue
+            return {"date": day, "event_id": event_id, "players": len(players),
+                    "completed": completed, "errors": errors}
+    return {"date": None, "event_id": None, "players": 0,
+            "completed": completed, "errors": errors}
+
+
+def main():
+    result = check_recent_finals()
+    for error in result["errors"]:
+        print(f"WARNING: {error}", file=sys.stderr)
+    if result["players"]:
+        print(f"PASS ESPN final game {result['date']} event={result['event_id']}: "
+              f"{result['players']} validated player rows")
+        return 0
+    print(f"FAIL: No verified ESPN final-game player rows; "
+          f"{result['completed']} completed games attempted in seven days",
           file=sys.stderr)
     return 1
 
