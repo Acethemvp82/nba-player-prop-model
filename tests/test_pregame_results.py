@@ -50,3 +50,10 @@ def test_duplicate_forecasts_count_once():
     rows = score_pregame_baselines([forecast(), forecast()], [final()])
     assert len(rows) == 1
     assert rows[0]["absolute_error"] == 2.5
+
+
+def test_mismatched_teams_are_not_scored():
+    assert score_pregame_baselines(
+        [forecast(team="BOS")], [final(team="NYK")]) == []
+    assert len(score_pregame_baselines(
+        [forecast(team="BOS")], [final(team="BOS")])) == 1
