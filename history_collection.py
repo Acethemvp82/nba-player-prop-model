@@ -8,7 +8,8 @@ from player_stats import completed_game_observations
 from historical_stats import _day, player_history_summaries
 
 def fetch_boxscore_players(game_id):
-    if not str(game_id).isdigit():
+    if (not isinstance(game_id, (str, int)) or isinstance(game_id, bool)
+            or not str(game_id).isascii() or not str(game_id).isdigit()):
         raise NBADataError("Invalid NBA game ID")
     payload = _get_json(f"{BASE}/boxscore/boxscore_{game_id}.json")
     game = payload.get("game")
@@ -70,7 +71,8 @@ def collect_recent_history(schedule, as_of, max_games=80, loader=fetch_boxscore_
             # Only the final boxscore loader establishes finality.
             played = _day(game.get("gameDateEst") or game.get("gameDate")) or entry_day
             gid = str(game.get("gameId") or "")
-            if played is not None and played < cutoff and gid.isdigit():
+            if (played is not None and played < cutoff and gid.isascii()
+                    and gid.isdigit()):
                 eligible.append((played, gid, {**game, "gameDateEst": played.isoformat()}))
     eligible.sort(key=lambda item: (item[0], item[1]), reverse=True)
     selected = []
