@@ -42,15 +42,20 @@ def collect_recent_history(schedule, as_of, max_games=80, loader=fetch_boxscore_
         raise ValueError("max_games must be between 1 and 500")
     eligible = []
     for entry in schedule:
+        if not isinstance(entry, dict):
+            continue
+        entry_day = _day(entry.get("gameDate"))
         for game in entry.get("games", []):
+            if not isinstance(game, dict):
+                continue
             # Static schedules can have stale statuses; finality is verified
             # against each box score by the default loader.
             if str(game.get("gameStatus")) == "2":
                 continue
-            played = _day(game.get("gameDateEst") or game.get("gameDate"))
+            played = _day(game.get("gameDateEst") or game.get("gameDate")) or entry_day
             gid = str(game.get("gameId") or "")
             if played is not None and played < cutoff and gid.isdigit():
-                eligible.append((played, gid, game))
+                eligible.append((played, gid, {**game, "gameDateEst": played.isoformat()}))
     eligible.sort(key=lambda item: (item[0], item[1]), reverse=True)
     selected = []
     seen = set()
