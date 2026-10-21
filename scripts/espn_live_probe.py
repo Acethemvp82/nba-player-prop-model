@@ -49,6 +49,19 @@ def check_recent_finals(today=None, days=7, schedule_loader=espn_games_on,
                 players = boxscore_loader(event_id)
                 if not isinstance(players, list) or not players:
                     raise ValueError("No validated player observations")
+                # Cross-check the verified summary against the scoreboard matchup.
+                home, away = game.get("homeTeam"), game.get("awayTeam")
+                expected_teams = None
+                if home is not None or away is not None:
+                    if not isinstance(home, dict) or not isinstance(away, dict):
+                        raise ValueError("Incomplete scheduled matchup")
+                    expected_teams = {home.get("teamTricode"), away.get("teamTricode")}
+                    if (len(expected_teams) != 2
+                            or any(not isinstance(team, str) or len(team) != 3
+                                   or not team.isascii() or not team.isalpha()
+                                   or not team.isupper() for team in expected_teams)):
+                        raise ValueError("Invalid scheduled matchup")
+                seen_players = set()
                 # A probe must never pass on a malformed or unverified row.
                 for player in players:
                     if not isinstance(player, dict):
@@ -63,6 +76,12 @@ def check_recent_finals(today=None, days=7, schedule_loader=espn_games_on,
                             or any(type(player.get(stat)) is not int or player[stat] < 0
                                    for stat in ("points", "rebounds", "assists", "threes"))):
                         raise ValueError("Unverified or invalid player observation")
+                    if expected_teams is not None and team not in expected_teams:
+                        raise ValueError("Player team does not match scheduled game")
+                    key = (pid, team)
+                    if key in seen_players:
+                        raise ValueError("Duplicate player observation")
+                    seen_players.add(key)
             except Exception as exc:
                 errors.append(f"{day} event={event_id}: {type(exc).__name__}: {exc}")
                 continue
