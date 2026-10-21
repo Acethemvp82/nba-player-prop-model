@@ -89,6 +89,9 @@ def check_recent_finals(today=None, days=7, schedule_loader=espn_games_on,
                             or not pid[5:].isascii() or not pid[5:].isdigit()
                             or not isinstance(team, str) or len(team) != 3
                             or not team.isascii() or not team.isalpha() or not team.isupper()
+                            or player.get("is_final") is not True
+                            or type(player.get("minutes")) not in (int, float)
+                            or not 0 < player["minutes"] <= 60
                             or any(type(player.get(stat)) is not int or player[stat] < 0
                                    for stat in ("points", "rebounds", "assists", "threes"))):
                         raise ValueError("Unverified or invalid player observation")
