@@ -131,3 +131,21 @@ def test_duplicate_required_stat_headings_do_not_produce_observations():
 def test_invalid_expected_event_id_types_are_rejected(event_id):
     with pytest.raises(NBADataError, match="Invalid ESPN event ID"):
         parse_final_espn_boxscore(sample(), event_id)
+
+
+def test_espn_nba_names_headers_are_parsed():
+    data = sample()
+    section = data["boxscore"]["players"][0]["statistics"][0]
+    section["names"] = section.pop("labels")
+    rows = parse_final_espn_boxscore(data, "4012")
+    assert len(rows) == 1
+    assert rows[0]["points"] == 24
+    assert rows[0]["threes"] == 3
+
+
+def test_names_headers_take_priority_over_nonstat_labels():
+    data = sample()
+    section = data["boxscore"]["players"][0]["statistics"][0]
+    section["names"] = section.pop("labels")
+    section["labels"] = ["Minutes", "Three Pointers", "Rebounds", "Assists", "Points"]
+    assert parse_final_espn_boxscore(data, "4012")[0]["points"] == 24
