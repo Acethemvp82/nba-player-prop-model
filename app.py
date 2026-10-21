@@ -830,9 +830,9 @@ if historical:
 st.divider()
 st.subheader("Pregame prediction tracking — research preview")
 st.caption("Upload previously captured pre-tipoff prediction snapshots and verified final NBA player "
-           "statistics as JSON arrays. This tool does not capture predictions automatically, "
-           "fetch final results, or verify that uploaded timestamps are authentic. ESPN IDs "
-           "cannot be matched to NBA IDs.")
+           "statistics as JSON arrays, or refresh final NBA box scores for uploaded snapshots. "
+           "Predictions are not captured automatically and uploaded timestamps are not independently "
+           "authenticated. ESPN IDs cannot be matched to NBA IDs.")
 with st.expander("Evaluate saved predictions against final box scores"):
     snapshot_upload = st.file_uploader(
         "Pregame snapshot JSON (array)", type=["json"], key="tracker_snapshots"
@@ -844,6 +844,40 @@ with st.expander("Evaluate saved predictions against final box scores"):
         "Minimum observations for probability accuracy", min_value=2,
         max_value=10000, value=30, step=1, key="tracker_min_samples"
     )
+    if st.button("Fetch NBA finals for uploaded predictions", key="tracker_fetch_finals"):
+        if snapshot_upload is None:
+            st.warning("Upload pregame snapshots first.")
+        else:
+            try:
+                import json
+                from snapshot_final_collection import collect_snapshot_finals
+                from tracking_pipeline import evaluate_tracked_slate
+
+                snapshot_rows = json.load(snapshot_upload)
+                if not isinstance(snapshot_rows, list) or len(snapshot_rows) > 100000:
+                    raise ValueError("Snapshots must be a JSON array of at most 100,000 records.")
+                if not all(isinstance(row, dict) for row in snapshot_rows):
+                    raise ValueError("Each snapshot must be a JSON object.")
+                with st.spinner("Checking NBA final box scores..."):
+                    fetched = collect_snapshot_finals(snapshot_rows, max_games=20)
+                report = evaluate_tracked_slate(
+                    snapshot_rows, fetched["final_players"],
+                    min_samples=int(minimum_tracked_samples)
+                )
+                st.session_state["tracker_report"] = report
+                st.session_state["tracker_collection_audit"] = {
+                    "Games requested": fetched["games_requested"],
+                    "Games loaded": fetched["games_loaded"],
+                    "Games omitted by limit": fetched["games_omitted_by_limit"],
+                    "Failed games": len(fetched["failures"]),
+                }
+                st.session_state["tracker_collection_failures"] = fetched["failures"]
+            except (ValueError, TypeError, KeyError, UnicodeError, json.JSONDecodeError,
+                    OSError, requests.RequestException) as exc:
+                st.session_state.pop("tracker_report", None)
+                st.session_state.pop("tracker_collection_audit", None)
+                st.session_state.pop("tracker_collection_failures", None)
+                st.error(f"Could not fetch final results: {exc}")
     if st.button("Evaluate uploaded predictions", key="tracker_evaluate"):
         if snapshot_upload is None or finals_upload is None:
             st.warning("Upload both JSON files before evaluating.")
@@ -874,6 +908,13 @@ with st.expander("Evaluate saved predictions against final box scores"):
             except (ValueError, TypeError, KeyError, UnicodeError, json.JSONDecodeError) as exc:
                 st.session_state.pop("tracker_report", None)
                 st.error(f"Could not evaluate uploaded tracking data: {exc}")
+    if st.session_state.get("tracker_collection_audit"):
+        st.dataframe(pd.DataFrame([st.session_state["tracker_collection_audit"]]),
+                     use_container_width=True, hide_index=True)
+        if st.session_state.get("tracker_collection_failures"):
+            with st.expander("Final box-score retrieval failures"):
+                st.dataframe(pd.DataFrame(st.session_state["tracker_collection_failures"]),
+                             use_container_width=True, hide_index=True)
     report = st.session_state.get("tracker_report")
     if report:
         st.caption("Research-only diagnostics. Missing final results are not losses; "
