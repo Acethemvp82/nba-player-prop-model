@@ -17,7 +17,7 @@ from espn_history_health import espn_history_health
 from csv_export import safe_spreadsheet_cell
 from history_collection import recent_player_summaries, fetch_boxscore_players
 from projection_baseline import baseline_projections
-from pregame_results import score_pregame_baselines, summarize_projection_errors, projection_grading_coverage
+from pregame_results import score_pregame_baselines, summarize_projection_errors, projection_grading_coverage, summarize_projection_errors_by_slate
 from pregame_roster import candidate_players
 from matchup_validation import valid_game_player
 from opponent_stats import opponent_game_totals, opponent_sample_summary
@@ -408,6 +408,12 @@ if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), h
                                     ], use_container_width=True, hide_index=True)
                                     st.dataframe(pd.DataFrame(summarize_projection_errors(graded)),
                                                  use_container_width=True, hide_index=True)
+                                    with st.expander("Accuracy by slate date"):
+                                        st.caption("Per-slate errors use only verified matched finals. "
+                                                   "Low sample counts may be unstable.")
+                                        st.dataframe(
+                                            pd.DataFrame(summarize_projection_errors_by_slate(graded)),
+                                            use_container_width=True, hide_index=True)
                                     graded_export = pd.DataFrame(graded).copy()
                                     for column in graded_export.select_dtypes(include=["object", "string"]).columns:
                                         graded_export[column] = graded_export[column].map(safe_spreadsheet_cell)
