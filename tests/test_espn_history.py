@@ -225,3 +225,37 @@ def test_history_rejects_entire_game_with_unrelated_team_player():
     assert result["observations"] == []
     assert len(result["failures"]) == 1
     assert "outside scheduled matchup" in result["failures"][0]["error"]
+
+
+def test_history_continues_after_network_boxscore_failure():
+    import requests
+
+    result = collect_espn_history(
+        "2026-10-21", days=1, max_games=2,
+        schedule_loader=lambda _: [game("100"), game("101")],
+        boxscore_loader=lambda eid: (_ for _ in ()).throw(
+            requests.Timeout("ESPN timeout")) if eid == "100" else [player()],
+    )
+    assert result["games_requested"] == 2
+    assert result["games_loaded"] == 1
+    assert len(result["observations"]) == 1
+    assert len(result["failures"]) == 1
+    assert "timeout" in result["failures"][0]["error"]
+
+
+def test_history_continues_after_network_schedule_failure():
+    import requests
+
+    def schedule(day):
+        if day == "2026-10-20":
+            raise requests.ConnectionError("ESPN unavailable")
+        return [game("101")]
+
+    result = collect_espn_history(
+        "2026-10-21", days=2, max_games=2,
+        schedule_loader=schedule,
+        boxscore_loader=lambda _: [player()],
+    )
+    assert result["dates_checked"] == 2
+    assert result["games_loaded"] == 1
+    assert len(result["failures"]) == 1
