@@ -912,6 +912,12 @@ with st.expander("Evaluate saved predictions against final box scores"):
                f"{len(local_tracker_data['snapshots'])}")
     if not local_tracker_data["snapshots"]:
         st.info("Capture a pregame prediction above to enable local result tracking.")
+    if local_tracker_data["snapshots"]:
+        st.caption("Locally stored snapshots are not durable across all hosting restarts. "
+                   "Export your JSON backup after capturing predictions.")
+    if local_tracker_data["invalid_files"]:
+        st.warning(f"{len(local_tracker_data['invalid_files'])} local snapshot file(s) "
+                   "failed validation and will not be scored.")
     if st.button("Evaluate locally saved predictions", key="tracker_evaluate_local",
                  disabled=not bool(local_tracker_data["snapshots"])):
         try:
