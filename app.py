@@ -3,7 +3,7 @@ from datetime import datetime, timezone, date
 import pandas as pd
 import streamlit as st
 from nba_data import NBADataError, scoreboard, game_players
-from season_schedule import season_schedule
+from season_schedule import season_schedule, games_on
 from history_collection import recent_player_summaries
 from projection_baseline import baseline_projections
 
@@ -42,6 +42,28 @@ for game in games:
         "Status": game.get("gameStatusText") or "Unknown",
         "Tipoff (UTC)": game.get("gameTimeUTC") or "Not available",
     })
+
+st.subheader("Scheduled NBA slate")
+@st.cache_data(ttl=3600, show_spinner=False)
+def load_schedule():
+    return season_schedule()
+
+slate_day = st.date_input("Slate date", value=date.today())
+try:
+    slate_games = games_on(slate_day, schedule=load_schedule())
+    slate_rows = []
+    for game in slate_games:
+        home, away = game.get("homeTeam") or {}, game.get("awayTeam") or {}
+        slate_rows.append({
+            "Matchup": f'{away.get("teamTricode", "?")} @ {home.get("teamTricode", "?")}',
+            "Status": game.get("gameStatusText") or "Scheduled",
+        })
+    if slate_rows:
+        st.dataframe(pd.DataFrame(slate_rows), use_container_width=True, hide_index=True)
+    else:
+        st.warning("No scheduled games found for this date in the NBA season feed.")
+except (NBADataError, ValueError, TypeError, KeyError) as exc:
+    st.error(f"Could not load the selected NBA slate: {exc}")
 
 st.subheader("Today's NBA games")
 if game_rows:
