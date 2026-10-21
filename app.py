@@ -452,6 +452,19 @@ if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), h
                                 st.progress(coverage["graded_forecasts"] /
                                             coverage["eligible_forecasts"],
                                             text="Verified results coverage")
+                            with st.expander("Grading coverage by slate date"):
+                                st.caption("Unmatched forecasts indicate missing verified finals, "
+                                           "not automatically incorrect predictions.")
+                                slate_coverage = pd.DataFrame(
+                                    summarize_grading_by_slate(saved.to_dict("records"), graded))
+                                st.dataframe(slate_coverage,
+                                             use_container_width=True, hide_index=True)
+                                st.download_button(
+                                    "Download per-slate grading coverage CSV",
+                                    data=slate_coverage.to_csv(index=False),
+                                    file_name=f"nba_slate_grading_coverage_{slate_date.isoformat()}.csv",
+                                    mime="text/csv",
+                                )
                             if graded:
                                 st.dataframe(pd.DataFrame(graded)[
                                     ["player", "team", "slate_date", "prop", "baseline",
@@ -480,19 +493,6 @@ if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), h
                                         file_name=f"nba_per_slate_projection_accuracy_{slate_date.isoformat()}.csv",
                                         mime="text/csv",
                                         help="Verified matched forecasts only; includes sample counts, MAE, and bias.",
-                                    )
-                                with st.expander("Grading coverage by slate date"):
-                                    st.caption("Unmatched forecasts indicate missing verified finals, "
-                                               "not automatically incorrect predictions.")
-                                    slate_coverage = pd.DataFrame(
-                                        summarize_grading_by_slate(saved.to_dict("records"), graded))
-                                    st.dataframe(slate_coverage,
-                                                 use_container_width=True, hide_index=True)
-                                    st.download_button(
-                                        "Download per-slate grading coverage CSV",
-                                        data=slate_coverage.to_csv(index=False),
-                                        file_name=f"nba_slate_grading_coverage_{slate_date.isoformat()}.csv",
-                                        mime="text/csv",
                                     )
                                 graded_export = pd.DataFrame(graded).copy()
                                 for column in graded_export.select_dtypes(include=["object", "string"]).columns:
