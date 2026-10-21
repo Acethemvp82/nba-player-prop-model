@@ -43,3 +43,10 @@ Deployment target remains branch `main`, entrypoint `app.py`. The dashboard iden
 itself as “Rebuild milestone 1 · Baseline + matchup context”. A successful local
 Streamlit health check or GitHub push does not verify the hosted app; confirm this
 marker at the deployed URL before claiming the release is live.
+
+Public app URL: https://nba-player-prop-model-khyfkxphyrocqpsqpk4vsh.streamlit.app/
+
+Hosted inspection after milestone 1 found the old `NBA feed preview v0.2` UI,
+while its source button pointed at this repository, `main`, `app.py`. The public
+page did not expose owner reboot controls. Do not count this deployment as updated
+until the rebuild milestone marker is visibly present.
