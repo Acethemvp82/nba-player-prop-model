@@ -1,4 +1,4 @@
-from pregame_results import score_pregame_baselines, summarize_projection_errors
+from pregame_results import score_pregame_baselines, summarize_projection_errors, projection_grading_coverage
 
 
 def forecast(**overrides):
@@ -96,3 +96,17 @@ def test_final_without_valid_minutes_is_not_graded():
 def test_missing_forecast_or_final_collection_returns_no_grades():
     assert score_pregame_baselines(None, [final()]) == []
     assert score_pregame_baselines([forecast()], None) == []
+
+
+def test_grading_coverage_counts_unique_matched_and_unmatched_forecasts():
+    forecasts = [forecast(), forecast(), forecast(player_id="espn:456")]
+    scored = score_pregame_baselines(forecasts, [final()])
+    assert projection_grading_coverage(forecasts, scored) == {
+        "eligible_forecasts": 2, "graded_forecasts": 1,
+        "unmatched_forecasts": 1, "grading_coverage_pct": 50.0}
+
+
+def test_grading_coverage_empty_sample_has_no_percentage():
+    assert projection_grading_coverage([], []) == {
+        "eligible_forecasts": 0, "graded_forecasts": 0,
+        "unmatched_forecasts": 0, "grading_coverage_pct": None}
