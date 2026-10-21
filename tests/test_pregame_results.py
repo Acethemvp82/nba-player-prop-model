@@ -44,3 +44,9 @@ def test_impossible_final_threes_are_not_scored():
         [forecast(prop="threes", baseline=2.0)],
         [final(points=5, threes=3)])
     assert rows == []
+
+
+def test_duplicate_forecasts_count_once():
+    rows = score_pregame_baselines([forecast(), forecast()], [final()])
+    assert len(rows) == 1
+    assert rows[0]["absolute_error"] == 2.5
