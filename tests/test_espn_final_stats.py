@@ -115,3 +115,13 @@ def test_same_athlete_on_two_teams_rejects_final_boxscore():
         }]})
     with pytest.raises(NBADataError, match="both teams"):
         parse_final_espn_boxscore(data, "4012")
+
+
+def test_duplicate_required_stat_headings_do_not_produce_observations():
+    for heading in ("PTS", "REB", "AST", "3PT"):
+        data = sample()
+        section = data["boxscore"]["players"][0]["statistics"][0]
+        section["labels"].append(" " + heading.lower() + " ")
+        section["athletes"][0]["stats"].append("1")
+        with pytest.raises(NBADataError, match="no validated"):
+            parse_final_espn_boxscore(data, "4012")
