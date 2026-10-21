@@ -29,10 +29,13 @@ def fetch_boxscore_players(game_id):
         team = game.get(side) or {}
         other = game.get(opposite) or {}
         for p in team.get("players") or []:
+            if not isinstance(p, dict):
+                continue
+            stats = p.get("statistics")
             players.append({"player_id": p.get("personId"), "player": p.get("name"),
                             "team": team.get("teamTricode"),
                             "opponent": other.get("teamTricode"),
-                            "statistics": p.get("statistics") or {}})
+                            "statistics": stats if isinstance(stats, dict) else {}})
     return players
 
 def collect_recent_history(schedule, as_of, max_games=80, loader=fetch_boxscore_players):
