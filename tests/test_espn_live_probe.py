@@ -150,3 +150,20 @@ def test_probe_rejects_invalid_lookback_days():
     for days in (0, 31, True, 1.5):
         with pytest.raises(ValueError, match="days"):
             check_recent_finals(date(2026, 10, 21), days=days)
+
+
+def test_probe_requires_successful_historical_collection(monkeypatch):
+    import scripts.espn_live_probe as probe
+
+    def failed_collection(*args, **kwargs):
+        return {"games_loaded": 0, "observations": [],
+                "failures": [{"error": "collector rejected data"}]}
+
+    monkeypatch.setattr(probe, "collect_espn_history", failed_collection)
+    result = check_recent_finals(
+        date(2026, 10, 21), days=1,
+        schedule_loader=lambda _: [game("101")],
+        boxscore_loader=lambda _: [verified_player()],
+    )
+    assert result["players"] == 0
+    assert "history collector rejected" in result["errors"][0]
