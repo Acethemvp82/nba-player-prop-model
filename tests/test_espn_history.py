@@ -86,3 +86,16 @@ def test_unknown_finality_still_requires_verified_boxscore():
         boxscore_loader=lambda eid: fetched.append(eid) or [player()])
     assert fetched == ["100"]
     assert result["games_loaded"] == 1
+
+
+def test_missing_player_name_or_invalid_team_never_loads():
+    for changes in ({"player": ""}, {"team": "XX"}, {"team": "bos"},
+                    {"player": None}, {"team": None}):
+        bad = {**player(), **changes}
+        result = collect_espn_history(
+            "2026-10-21", days=1, max_games=1,
+            schedule_loader=lambda _: [game("100")],
+            boxscore_loader=lambda _: [bad])
+        assert result["games_loaded"] == 0
+        assert result["observations"] == []
+        assert len(result["failures"]) == 1
