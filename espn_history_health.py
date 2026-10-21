@@ -26,6 +26,8 @@ def espn_history_health(history):
         raise ValueError("Invalid ESPN omitted-game count")
     if omitted and not limit_reached:
         raise ValueError("ESPN omitted games require a reached request limit")
+    if limit_reached and requested == 0:
+        raise ValueError("ESPN request limit cannot be reached without requests")
     truncated = history.get("history_truncated", omitted > 0)
     if type(truncated) is not bool or truncated != (omitted > 0):
         raise ValueError("Inconsistent ESPN truncation flag")
