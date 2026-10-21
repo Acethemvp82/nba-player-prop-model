@@ -44,3 +44,18 @@ def test_invalid_player_payload_is_reported():
     assert result["games_loaded"] == 0
     assert len(result["failed_games"]) == 1
     assert result["observations"] == []
+
+
+def test_stale_schedule_status_uses_verified_boxscore_loader():
+    schedule = [{"games": [{"gameId": "555", "gameStatus": 1,
+                             "gameDateEst": "2026-10-18"}]}]
+    called = []
+    def verified_final_loader(gid):
+        called.append(gid)
+        return [{"player_id": 7, "player": "Test", "team": "BOS",
+                 "statistics": {"minutes": "PT25M", "points": 16}}]
+    result = collect_recent_history(schedule, "2026-10-20",
+                                    loader=verified_final_loader)
+    assert called == ["555"]
+    assert result["games_loaded"] == 1
+    assert result["observations"][0]["points"] == 16
