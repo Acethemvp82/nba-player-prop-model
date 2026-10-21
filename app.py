@@ -406,6 +406,12 @@ if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), h
                             graded = score_pregame_baselines(
                                 saved_records, espn_history["observations"])
                             coverage = projection_grading_coverage(saved_records, graded)
+                            if not coverage["eligible_forecasts"]:
+                                st.warning(
+                                    "No eligible projections were found. Check player IDs, "
+                                    "slate dates (YYYY-MM-DD), supported props, and "
+                                    "nonnegative numeric baselines in the uploaded CSV."
+                                )
                             st.caption(
                                 f"Grading coverage: {coverage['graded_forecasts']} of "
                                 f"{coverage['eligible_forecasts']} eligible forecasts "
