@@ -46,3 +46,31 @@ def opponent_game_totals(observations, as_of):
                 record[prop + "_allowed_observed"] = None
         output.append(record)
     return sorted(output, key=lambda r: (r["opponent"], r["game_id"], r["offense_team"]))
+
+
+def opponent_sample_summary(game_totals, min_players=8):
+    """Summarize observed game totals with explicit coverage screening.
+
+    min_players is a data-completeness screening threshold, NOT a
+    validated guarantee of full NBA box-score coverage. No predictive
+    adjustment or defense ranking is computed here.
+    """
+    if isinstance(min_players, bool) or not isinstance(min_players, int) or min_players < 1:
+        raise ValueError("min_players must be a positive integer")
+    by_team = defaultdict(list)
+    for row in game_totals:
+        if row.get("players_observed", 0) >= min_players:
+            by_team[row["opponent"]].append(row)
+    results = []
+    for opponent, games in sorted(by_team.items()):
+        item = {"opponent": opponent, "screened_games": len(games),
+                "min_players_required": min_players}
+        for prop in PROPS:
+            key = prop + "_allowed_observed"
+            values = [game.get(key) for game in games]
+            valid = [v for v in values if isinstance(v, (int, float))
+                     and not isinstance(v, bool) and isfinite(v) and v >= 0]
+            item[prop + "_observed_avg"] = round(sum(valid) / len(valid), 2) if valid else None
+            item[prop + "_valid_games"] = len(valid)
+        results.append(item)
+    return results
