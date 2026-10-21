@@ -276,7 +276,10 @@ for game in slate_rows:
     # A pregame NBA boxscore can list only one team. Supplement missing
     # teams without replacing valid NBA athletes or mixing ID namespaces.
     matchup = game["Matchup"].split(" @ ")
-    missing_teams = (set(matchup) - {p.get("team") for p in players}
+    missing_teams = (set(matchup) - {p.get("team") for p in players
+                                      if isinstance(p, dict) and
+                                      (p.get("source") != "NBA game feed" or
+                                       valid_game_player(p, game["Matchup"]))}
                      if len(matchup) == 2 else set())
     if missing_teams and (game.get("ESPN Event ID") or game.get("ESPN Team IDs")):
         fallback_players = []
