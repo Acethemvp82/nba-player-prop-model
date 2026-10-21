@@ -44,6 +44,16 @@ class PregameBaselineBoardTests(unittest.TestCase):
         self.assertEqual(build_pregame_baseline_board(rows, "2026-10-21",
                                                       player_ids=["999"]), [])
 
+    def test_player_filter_rejects_string_instead_of_collection(self):
+        rows = [game("2026-10-10", i, 10) for i in range(1, 6)]
+        with self.assertRaisesRegex(ValueError, "player_ids"):
+            build_pregame_baseline_board(rows, "2026-10-21", player_ids="456")
+
+    def test_player_filter_accepts_explicit_identifier_collection(self):
+        rows = [game("2026-10-10", i, 10) for i in range(1, 6)]
+        result = build_pregame_baseline_board(rows, "2026-10-21", player_ids={"456"})
+        self.assertEqual(len(result), 4)
+
     def test_invalid_cutoff(self):
         with self.assertRaises(ValueError):
             build_pregame_baseline_board([], "not-a-date")
