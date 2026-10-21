@@ -61,8 +61,21 @@ def collect_espn_history(as_of, days=7, max_games=30,
                 players = boxscore_loader(eid)
                 if not isinstance(players, list) or not players:
                     raise NBADataError("No validated ESPN boxscore players")
+                valid_players = [
+                    player for player in players
+                    if isinstance(player, dict)
+                    and player.get("source") == "ESPN verified final boxscore"
+                    and isinstance(player.get("player_id"), str)
+                    and player["player_id"].startswith("espn:")
+                    and player["player_id"][5:].isascii()
+                    and player["player_id"][5:].isdigit()
+                    and all(type(player.get(prop)) is int and player[prop] >= 0
+                            for prop in ("points", "rebounds", "assists", "threes"))
+                ]
+                if not valid_players:
+                    raise NBADataError("No validated ESPN player observations")
                 games_loaded += 1
-                for player in players:
+                for player in valid_players:
                     observations.append({**player, "game_id": f"espn:{eid}",
                                          "game_date": day.isoformat()})
             except (NBADataError, ValueError, TypeError, KeyError) as exc:
