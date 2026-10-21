@@ -18,8 +18,12 @@ def _day(value):
         return value
     if isinstance(value, str):
         try:
-            return date.fromisoformat(value[:10])
+            return date.fromisoformat(value)
         except ValueError:
+            try:
+                return datetime.fromisoformat(value.replace("Z", "+00:00")).date()
+            except ValueError:
+                pass
             for fmt in ("%m/%d/%Y", "%m/%d/%Y %H:%M:%S", "%m/%d/%Y %I:%M:%S %p"):
                 try:
                     return datetime.strptime(value, fmt).date()
