@@ -203,7 +203,9 @@ if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), h
                    f"{espn_history.get('dates_checked', '?')} schedule dates checked; "
                    f"{len(espn_history['observations'])} player-game observations.")
         with st.expander("ESPN retrieval health"):
-            st.caption("Success rate covers requested final boxscores, not every scheduled NBA game.")
+            st.caption("Final-game success covers only requested boxscores. Schedule coverage "
+                       "measures checked dates, and a reached request limit means the "
+                       "historical sample may exclude additional games.")
             st.dataframe(pd.DataFrame([espn_history_health(espn_history)]),
                          use_container_width=True, hide_index=True)
         if any("event_id" not in failure for failure in espn_history["failures"]):
