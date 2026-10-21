@@ -37,7 +37,7 @@ def parse_final_espn_boxscore(payload, expected_event_id):
     if not isinstance(groups, list):
         raise NBADataError("ESPN final game has no player boxscore")
     output = []
-    seen = set()
+    seen = {}
     for group in groups:
         if not isinstance(group, dict):
             continue
@@ -91,13 +91,17 @@ def parse_final_espn_boxscore(payload, expected_event_id):
                 if None in (points, rebounds, assists, threes):
                     continue
                 key = (aid, code)
+                row = {"player_id": f"espn:{aid}", "player": name.strip(),
+                       "team": code, "points": points, "rebounds": rebounds,
+                       "assists": assists, "threes": threes,
+                       "source": "ESPN verified final boxscore"}
                 if key in seen:
+                    if any(seen[key][stat] != row[stat]
+                           for stat in ("points", "rebounds", "assists", "threes")):
+                        raise NBADataError("Conflicting ESPN final stats for one athlete")
                     continue
-                seen.add(key)
-                output.append({"player_id": f"espn:{aid}", "player": name.strip(),
-                               "team": code, "points": points, "rebounds": rebounds,
-                               "assists": assists, "threes": threes,
-                               "source": "ESPN verified final boxscore"})
+                seen[key] = row
+                output.append(row)
     if not output:
         raise NBADataError("ESPN final boxscore has no validated player statistics")
     return output
