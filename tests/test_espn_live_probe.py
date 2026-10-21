@@ -300,3 +300,12 @@ def test_probe_rejects_missing_player_name():
     )
     assert result["players"] == 0
     assert "invalid player observation" in result["errors"][0]
+
+
+def test_probe_rejects_threes_greater_than_possible_points():
+    row = dict(verified_player(), points=8, threes=3)
+    result = check_recent_finals(date(2026, 10, 21), days=1,
+        schedule_loader=lambda _: [game('101')],
+        boxscore_loader=lambda _: [row])
+    assert result['players'] == 0
+    assert 'three-pointers exceed recorded points' in result['errors'][0]
