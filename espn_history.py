@@ -184,6 +184,7 @@ def collect_espn_history(as_of, days=7, max_games=30,
     return {"observations": observations, "dates_checked": dates_checked,
             "request_limit_reached": games_requested >= max_games,
             "eligible_games_omitted": omitted_eligible_games,
+            "history_truncated": omitted_eligible_games > 0,
             "games_requested": games_requested,
             "games_loaded": games_loaded, "failures": failures,
             "source": "ESPN verified final boxscores"}
