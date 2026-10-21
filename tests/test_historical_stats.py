@@ -49,3 +49,11 @@ def test_malformed_observation_is_ignored():
     rows = [None, "bad", game(123, "2026-01-01", 15)]
     result = player_history_summaries(rows)
     assert result[0]["games_played"] == 1
+
+
+def test_date_parser_rejects_trailing_garbage_but_accepts_iso_timestamp():
+    from historical_stats import _day
+    from datetime import date
+    assert _day("2026-10-20garbage") is None
+    assert _day("2026-10-20T19:30:00Z") == date(2026, 10, 20)
+    assert _day("2026-10-20T19:30:00-04:00") == date(2026, 10, 20)
