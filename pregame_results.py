@@ -13,6 +13,8 @@ def score_pregame_baselines(forecasts, final_observations):
     Returns one row per valid matched forecast. Multiple final games for the same
     player/date are ambiguous and are excluded rather than guessed.
     """
+    if forecasts is None or final_observations is None:
+        return []
     finals = {}
     for row in final_observations:
         if not isinstance(row, dict) or row.get("is_final") is not True:
