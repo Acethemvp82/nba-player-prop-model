@@ -825,3 +825,73 @@ if historical:
     else:
         st.info("No players have sufficient completed-game observations for baselines yet. "
                 "Collect more historical games to build a reliable sample.")
+
+
+st.divider()
+st.subheader("Pregame prediction tracking — research preview")
+st.caption("Upload previously captured pre-tipoff prediction snapshots and verified final NBA player "
+           "statistics as JSON arrays. This tool does not capture predictions automatically, "
+           "fetch final results, or verify that uploaded timestamps are authentic. ESPN IDs "
+           "cannot be matched to NBA IDs.")
+with st.expander("Evaluate saved predictions against final box scores"):
+    snapshot_upload = st.file_uploader(
+        "Pregame snapshot JSON (array)", type=["json"], key="tracker_snapshots"
+    )
+    finals_upload = st.file_uploader(
+        "Final NBA player statistics JSON (array)", type=["json"], key="tracker_finals"
+    )
+    minimum_tracked_samples = st.number_input(
+        "Minimum observations for probability accuracy", min_value=2,
+        max_value=10000, value=30, step=1, key="tracker_min_samples"
+    )
+    if st.button("Evaluate uploaded predictions", key="tracker_evaluate"):
+        if snapshot_upload is None or finals_upload is None:
+            st.warning("Upload both JSON files before evaluating.")
+        else:
+            try:
+                import json
+                from tracking_pipeline import evaluate_tracked_slate
+                from pregame_snapshot import validate_pregame_snapshot
+
+                snapshot_rows = json.load(snapshot_upload)
+                final_rows = json.load(finals_upload)
+                if not isinstance(snapshot_rows, list) or not isinstance(final_rows, list):
+                    raise ValueError("Both files must contain JSON arrays.")
+                if len(snapshot_rows) > 100000 or len(final_rows) > 100000:
+                    raise ValueError("Files exceed the 100,000-row evaluation limit.")
+                if any(not isinstance(r, dict) for r in final_rows):
+                    raise ValueError("Final statistics must contain JSON objects.")
+                if any(not str(r.get("game_id") or "").isascii()
+                       or not str(r.get("game_id") or "").isdigit()
+                       or not str(r.get("player_id") or "").isascii()
+                       or not str(r.get("player_id") or "").isdigit()
+                       for r in final_rows):
+                    raise ValueError("Final statistics require numeric NBA game/player IDs, not ESPN IDs.")
+                result = evaluate_tracked_slate(
+                    snapshot_rows, final_rows, min_samples=int(minimum_tracked_samples)
+                )
+                st.session_state["tracker_report"] = result
+            except (ValueError, TypeError, KeyError, UnicodeError, json.JSONDecodeError) as exc:
+                st.session_state.pop("tracker_report", None)
+                st.error(f"Could not evaluate uploaded tracking data: {exc}")
+    report = st.session_state.get("tracker_report")
+    if report:
+        st.caption("Research-only diagnostics. Missing final results are not losses; "
+                   "pushes are excluded from probability scoring.")
+        st.dataframe(pd.DataFrame([report["audit"]]), hide_index=True,
+                     use_container_width=True)
+        summary = [{k: v for k, v in item.items() if k not in ("buckets", "exclusions")}
+                   for item in report["calibration"]]
+        st.dataframe(pd.DataFrame(summary), hide_index=True, use_container_width=True)
+        if report["scored"]:
+            scored_export = pd.DataFrame(report["scored"])
+            st.dataframe(scored_export, hide_index=True, use_container_width=True)
+            safe_export = scored_export.copy()
+            for column in safe_export.select_dtypes(include=["object", "string"]).columns:
+                safe_export[column] = safe_export[column].map(safe_spreadsheet_cell)
+            st.download_button(
+                "Download tracked results CSV",
+                safe_export.to_csv(index=False).encode("utf-8"),
+                file_name="nba_tracked_results.csv", mime="text/csv",
+                key="tracker_download_results"
+            )
