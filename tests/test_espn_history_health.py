@@ -212,3 +212,17 @@ def test_request_limit_cannot_be_reached_without_requests():
             "request_limit_reached": True, "eligible_games_omitted": 0,
             "failures": [], "observations": [],
         })
+
+
+def test_failed_final_games_take_priority_over_budget_truncation_status():
+    health = espn_history_health({
+        "games_requested": 2, "games_loaded": 1, "dates_checked": 2,
+        "request_limit_reached": True, "eligible_games_omitted": 3,
+        "history_truncated": True,
+        "failures": [{"date": "2026-10-20", "event_id": "100",
+                      "error": "Invalid final boxscore"}],
+        "observations": [],
+    })
+    assert health["History truncated by limit"] is True
+    assert health["Failed final-game requests"] == 1
+    assert health["Status"] == "Partial historical retrieval"
