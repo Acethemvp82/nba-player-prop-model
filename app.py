@@ -3,7 +3,7 @@ from datetime import datetime, timezone, date
 import pandas as pd
 import streamlit as st
 from nba_data import NBADataError, scoreboard, game_players
-from season_schedule import season_schedule, games_on
+from season_schedule import season_schedule, games_on, games_on
 from history_collection import recent_player_summaries
 from projection_baseline import baseline_projections
 
@@ -65,6 +65,14 @@ try:
 except (NBADataError, ValueError, TypeError, KeyError) as exc:
     st.error(f"Could not load the selected NBA slate: {exc}")
 
+st.subheader("Upcoming NBA slate")
+slate_date = st.date_input("Slate date", value=date.today())
+try:
+    slate_games = games_on(slate_date, season_schedule())
+except NBADataError as exc:
+    st.warning(str(exc))
+    slate_games = []
+st.caption(f"{len(slate_games)} scheduled games for {slate_date}")
 st.subheader("Today's NBA games")
 if game_rows:
     st.dataframe(pd.DataFrame(game_rows).drop(columns=["Game ID"]), use_container_width=True, hide_index=True)
