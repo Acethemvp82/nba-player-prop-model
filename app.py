@@ -80,6 +80,10 @@ for scheduled in slate_games:
         "Game ID": str(scheduled.get("gameId") or ""),
         "Matchup": f'{away.get("teamTricode", "?")} @ {home.get("teamTricode", "?")}',
         "Status": scheduled.get("gameStatusText") or "Scheduled",
+        "Score": (f'{away["teamTricode"]} {scheduled["awayScore"]} - '
+                  f'{home["teamTricode"]} {scheduled["homeScore"]}')
+                 if isinstance(scheduled.get("awayScore"), int)
+                 and isinstance(scheduled.get("homeScore"), int) else None,
         "Tipoff (UTC)": scheduled.get("gameTimeUTC") or "Not available",
     })
 if slate_rows:
@@ -100,8 +104,12 @@ else:
             for game in fallback_today:
                 home = game["homeTeam"]["teamTricode"]
                 away = game["awayTeam"]["teamTricode"]
+                score = (f'{away} {game["awayScore"]} - {home} {game["homeScore"]}'
+                         if isinstance(game.get("awayScore"), int)
+                         and isinstance(game.get("homeScore"), int) else None)
                 fallback_rows.append({"Matchup": f"{away} @ {home}",
                                       "Status": game["gameStatusText"],
+                                      "Score": score,
                                       "Tipoff (UTC)": game["gameTimeUTC"]})
             st.info("Showing ESPN schedule-only fallback for today. Player box scores are not connected.")
             st.dataframe(pd.DataFrame(fallback_rows), use_container_width=True, hide_index=True)
