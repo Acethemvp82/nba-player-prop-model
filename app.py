@@ -348,7 +348,8 @@ if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), h
                            "The selected lookback may omit player games.")
                 forecast_frame = pd.DataFrame(espn_forecasts)
                 display_fields = ["player", "team", "prop", "baseline",
-                                  "sample_games", "recent_minutes", "slate_date"]
+                                  "sample_games", "history_coverage", "recent_minutes",
+                                  "last_game_date", "days_since_last_game", "slate_date"]
                 st.dataframe(forecast_frame[
                     [col for col in display_fields if col in forecast_frame.columns]
                 ], use_container_width=True, hide_index=True)
