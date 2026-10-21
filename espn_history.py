@@ -175,8 +175,9 @@ def collect_espn_history(as_of, days=7, max_games=30,
                     if previous is not None:
                         # Identical repeated rows are harmless, but conflicting
                         # boxscore totals make the entire game untrustworthy.
-                        if any(previous[prop] != player[prop]
-                               for prop in ("points", "rebounds", "assists", "threes", "minutes")):
+                        if (previous["player"] != player["player"]
+                                or any(previous[prop] != player[prop]
+                                       for prop in ("points", "rebounds", "assists", "threes", "minutes"))):
                             raise NBADataError("Conflicting ESPN stats for the same athlete")
                         continue
                     unique_players[key] = player
