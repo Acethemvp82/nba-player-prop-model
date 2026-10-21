@@ -584,24 +584,9 @@ if not board.empty:
     if espn_history_board and espn_history_board.get("observations"):
         averages = espn_player_averages(espn_history_board["observations"], slate_date.isoformat())
         average_lookup = {(item["Player ID"], item["Team"]): item for item in averages}
-        # Only verified, pre-slate observations that survived the averages
-        # validation can supply a player's latest sampled game date.
-        latest_verified_game = {}
-        for observation in espn_history_board["observations"]:
-            key = (observation.get("player_id"), observation.get("team"))
-            played = observation.get("game_date")
-            if key not in average_lookup or not isinstance(played, str):
-                continue
-            try:
-                parsed_date = date.fromisoformat(played)
-            except ValueError:
-                continue
-            if parsed_date.isoformat() != played or parsed_date >= slate_date:
-                continue
-            latest_verified_game[key] = max(
-                played, latest_verified_game.get(key, played))
         board["ESPN Latest Verified Game"] = [
-            latest_verified_game.get((str(row["Player ID"]), row["Team"]))
+            average_lookup.get((str(row["Player ID"]), row["Team"]), {}).get(
+                "Latest verified game")
             for _, row in board.iterrows()
         ]
         board["ESPN Days Since Sample"] = [
