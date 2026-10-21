@@ -84,3 +84,21 @@ def test_espn_invalid_team_abbreviations_are_excluded():
 
     with patch("espn_schedule.requests.get", return_value=Response()):
         assert espn_games_on("2026-10-21") == []
+
+
+def test_duplicate_espn_matchups_are_not_listed_twice():
+    class Response:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            event = {"competitions": [{"competitors": [
+                {"homeAway": "home", "team": {"abbreviation": "NY"}},
+                {"homeAway": "away", "team": {"abbreviation": "BOS"}},
+            ]}]}
+            return {"events": [event, event]}
+
+    with patch("espn_schedule.requests.get", return_value=Response()):
+        games = espn_games_on("2026-10-21")
+    assert len(games) == 1
+    assert games[0]["homeTeam"]["teamTricode"] == "NYK"
