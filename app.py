@@ -208,9 +208,18 @@ if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), h
                            "in this limited lookback. They are not guaranteed complete "
                            "last-5 or last-10 NBA game samples.")
                 with st.expander("ESPN recent player trends (verified sample)"):
-                    st.dataframe(pd.DataFrame(trends).drop(
-                        columns=["Player ID"], errors="ignore"),
-                        use_container_width=True, hide_index=True)
+                    names = {
+                        (row["player_id"], row["team"]): row["player"]
+                        for row in espn_history["observations"]
+                        if isinstance(row, dict) and all(
+                            key in row for key in ("player_id", "team", "player"))
+                    }
+                    trend_rows = [
+                        {"Player": names.get(key, key[0]), "Team": key[1], **values}
+                        for key, values in sorted(trends.items())
+                    ]
+                    st.dataframe(pd.DataFrame(trend_rows),
+                                 use_container_width=True, hide_index=True)
             with st.expander("Individual verified ESPN player-game observations"):
                 st.dataframe(pd.DataFrame(espn_history["observations"]),
                              use_container_width=True, hide_index=True)
