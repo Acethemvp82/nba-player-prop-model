@@ -216,13 +216,17 @@ if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), h
         if espn_history["games_loaded"] < espn_history["games_requested"]:
             st.warning("ESPN historical sample is incomplete. Do not interpret these averages "
                        "as full-season or last-N-game statistics.")
-        if espn_history.get("request_limit_reached", False):
-            st.info("ESPN history reached the selected game-request limit. Results cover "
-                    "only the sampled games, not necessarily every completed game "
-                    "in the lookback window.")
-        if espn_history["dates_checked"] < history_days:
-            st.info("Only part of the selected date range was scanned because the "
-                    "game-request limit was reached.")
+        omitted_games = espn_history.get("eligible_games_omitted", 0)
+        if omitted_games:
+            st.warning(
+                f"ESPN history skipped {omitted_games} eligible scheduled game(s) "
+                "because of the request limit. Increase the game-request limit "
+                "for broader coverage; these averages are not full-season statistics."
+            )
+        elif espn_history.get("request_limit_reached", False):
+            st.info("The ESPN request limit was reached, but no additional eligible "
+                    "games were found in the scanned dates. This does not guarantee "
+                    "complete historical coverage.")
         if espn_history["games_loaded"] > 0 and espn_history["games_loaded"] < 10:
             st.caption("Small verified sample: fewer than 10 completed games loaded "
                        "across the entire requested lookback. Individual player "
