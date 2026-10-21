@@ -18,6 +18,8 @@ def espn_history_health(history):
         raise ValueError("Invalid ESPN history counters")
     if any(not isinstance(item, dict) for item in failures):
         raise ValueError("Invalid ESPN failure details")
+    schedule_failures = sum("event_id" not in item for item in failures)
+    boxscore_failures = sum("event_id" in item for item in failures)
     verified_dates = []
     for observation in observations:
         if not isinstance(observation, dict):
@@ -39,9 +41,13 @@ def espn_history_health(history):
         "Verified final games": loaded,
         "Failed final-game requests": requested - loaded,
         "Schedule or boxscore errors": len(failures),
+        "Failed schedule dates": schedule_failures,
+        "Failed boxscore validations": boxscore_failures,
         "Verified player-game records": len(observations),
         "Final-game success %": round(100 * loaded / requested, 1) if requested else None,
-        "Status": ("No final games requested" if not requested
+        "Status": ("Schedule retrieval errors; no finals requested"
+                   if not requested and schedule_failures
+                   else "No final games requested" if not requested
                    else "Partial historical retrieval" if loaded < requested or failures
                    else "All requested finals loaded"),
     }
