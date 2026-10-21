@@ -46,6 +46,13 @@ def score_pregame_baselines(forecasts, final_observations):
         actual = candidates[0].get(prop)
         if type(actual) is not int or actual < 0:
             continue
+        # Uploaded CSVs must not turn absent player/team fields into false
+        # identity matches. Require agreement whenever both names are present.
+        if (isinstance(row.get("player"), str)
+                and isinstance(candidates[0].get("player"), str)
+                and row["player"].strip().casefold()
+                != candidates[0]["player"].strip().casefold()):
+            continue
         if (row.get("team") is not None and candidates[0].get("team") is not None
                 and row["team"] != candidates[0]["team"]):
             continue
