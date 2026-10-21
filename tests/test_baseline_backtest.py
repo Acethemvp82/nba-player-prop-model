@@ -1,0 +1,39 @@
+from baseline_backtest import baseline_backtest
+
+
+def game(day, points, game_id=None):
+    return {"game_id": game_id or str(day), "game_date": f"2026-10-{day:02d}",
+            "is_final": True, "player_id": 10, "player": "Example",
+            "team": "BOS", "minutes": 30, "points": points,
+            "rebounds": 6, "assists": 4, "threes": 2}
+
+
+def test_walk_forward_uses_only_prior_days():
+    rows = [game(i, 10) for i in range(1, 6)]
+    rows.append(game(6, 20))
+    results = {r["prop"]: r for r in baseline_backtest(rows, "2026-10-07")}
+    assert results["points"]["evaluated"] == 1
+    assert results["points"]["mae"] == 10
+    assert results["points"]["mean_error"] == -10
+    assert results["rebounds"]["mae"] == 0
+
+
+def test_same_day_results_do_not_leak_into_training():
+    rows = [game(i, 10) for i in range(1, 6)]
+    rows.extend([game(6, 20, "600"), game(6, 30, "601")])
+    result = {r["prop"]: r for r in baseline_backtest(rows, "2026-10-07")}
+    assert result["points"]["evaluated"] == 2
+    assert result["points"]["mae"] == 15
+
+
+def test_cutoff_and_duplicate_games():
+    rows = [game(i, 10) for i in range(1, 6)]
+    rows += [game(6, 20), game(6, 99), game(7, 100)]
+    result = {r["prop"]: r for r in baseline_backtest(rows, "2026-10-07")}
+    assert result["points"]["evaluated"] == 1
+    assert result["points"]["mae"] == 10
+
+
+def test_insufficient_training_returns_no_accuracy_claim():
+    result = baseline_backtest([game(1, 10)], "2026-10-03")
+    assert all(r["evaluated"] == 0 and r["mae"] is None for r in result)
