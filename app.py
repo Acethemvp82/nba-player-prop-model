@@ -97,6 +97,23 @@ for scheduled in slate_games:
                  and isinstance(scheduled.get("homeScore"), int) else None,
         "Tipoff (UTC)": scheduled.get("gameTimeUTC") or "Not available",
     })
+# Attach ESPN identifiers to NBA-scheduled matchups for independent player-feed fallback.
+# Match only exact away/home tricodes; never substitute ESPN IDs for NBA IDs.
+if slate_rows and any(row["Game ID"] for row in slate_rows):
+    try:
+        espn_matches = {}
+        for event in load_espn_slate(slate_date.isoformat()):
+            away = event["awayTeam"]["teamTricode"]
+            home = event["homeTeam"]["teamTricode"]
+            espn_matches[f"{away} @ {home}"] = event
+        for row in slate_rows:
+            match = espn_matches.get(row["Matchup"])
+            if match:
+                row["ESPN Event ID"] = match.get("espnEventId")
+                row["ESPN Team IDs"] = match.get("espnTeamIds") or {}
+    except NBADataError:
+        pass
+
 if slate_rows:
     st.dataframe(pd.DataFrame(slate_rows).drop(columns=["Game ID", "ESPN Event ID", "ESPN Team IDs"]),
                  use_container_width=True, hide_index=True)
@@ -254,9 +271,26 @@ for game in slate_rows:
             try:
                 players = load_players(game["Game ID"])
             except NBADataError as nba_exc:
-                failures.append(f'{game["Matchup"]}: NBA player feed unavailable ({nba_exc})')
+                failures.append(f'{game["Matchup"]}: NBA player feed unavailable ({nba_exc}); trying ESPN fallback')
                 players = []
-                continue
+                source = "ESPN team roster (unconfirmed)"
+                if game.get("ESPN Event ID"):
+                    try:
+                        players = load_espn_players(game["ESPN Event ID"])
+                        source = "ESPN game summary (unconfirmed)"
+                    except NBADataError:
+                        pass
+                matchup = game["Matchup"].split(" @ ")
+                if len(matchup) == 2:
+                    present = {p.get("team") for p in players}
+                    for side, team_code in (("away", matchup[0]), ("home", matchup[1])):
+                        if team_code not in present:
+                            team_id = (game.get("ESPN Team IDs") or {}).get(side)
+                            if team_id:
+                                try:
+                                    players.extend(load_espn_team_roster(team_id, team_code))
+                                except NBADataError as roster_exc:
+                                    failures.append(f'{team_code}: {roster_exc}')
         elif game.get("ESPN Event ID") or game.get("ESPN Team IDs"):
             players = []
             source = "ESPN team roster (unconfirmed)"
