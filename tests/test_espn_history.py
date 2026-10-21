@@ -376,3 +376,23 @@ def test_valid_scoreboard_matchup_still_loads():
     )
     assert result["games_loaded"] == 1
     assert result["failures"] == []
+
+
+def test_request_budget_counts_distinct_omitted_games_across_all_dates():
+    fixtures = {
+        "2026-10-20": [game("100"), game("101")],
+        "2026-10-19": [game("101"), game("102")],
+        "2026-10-18": [game("103"), game("104")],
+    }
+    fetched = []
+    result = collect_espn_history(
+        "2026-10-21", days=3, max_games=2,
+        schedule_loader=lambda day: fixtures[day],
+        boxscore_loader=lambda eid: fetched.append(eid) or [player()],
+    )
+    assert fetched == ["100", "101"]
+    assert result["dates_checked"] == 3
+    assert result["games_requested"] == 2
+    assert result["eligible_games_omitted"] == 3
+    assert result["request_limit_reached"] is True
+    assert result["failures"] == []
