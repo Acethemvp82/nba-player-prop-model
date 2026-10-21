@@ -83,8 +83,22 @@ def collect_espn_history(as_of, days=7, max_games=30,
                     and all(type(player.get(prop)) is int and player[prop] >= 0
                             for prop in ("points", "rebounds", "assists", "threes"))
                 ]
+                # When the scoreboard provides both teams, never attach player
+                # statistics from an unrelated matchup to this game.
+                home = game.get("homeTeam")
+                away = game.get("awayTeam")
+                expected_teams = (
+                    {home["teamTricode"], away["teamTricode"]}
+                    if isinstance(home, dict) and isinstance(away, dict)
+                    and isinstance(home.get("teamTricode"), str)
+                    and isinstance(away.get("teamTricode"), str)
+                    else None
+                )
+                if expected_teams is not None:
+                    valid_players = [player for player in valid_players
+                                     if player["team"] in expected_teams]
                 if not valid_players:
-                    raise NBADataError("No validated ESPN player observations")
+                    raise NBADataError("No validated ESPN player observations for this matchup")
                 # A provider response may repeat the same athlete in multiple
                 # stat sections. Count one verified player-game per ESPN ID/team.
                 unique_players = {}
