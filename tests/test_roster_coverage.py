@@ -81,3 +81,12 @@ def test_untrusted_espn_ids_do_not_inflate_coverage():
     ], {"NYK"})
     assert result["players"] == 0
     assert result["missing_teams"] == ["NYK"]
+
+
+def test_espn_team_roster_candidates_are_counted_but_not_confirmed():
+    result = roster_coverage([
+        {"player_id": "espn:400", "team": "NYK",
+         "source": "ESPN team roster (unconfirmed)"},
+    ], {"NYK", "BOS"})
+    assert result["feed_players"] == 1
+    assert result["missing_teams"] == ["BOS"]
