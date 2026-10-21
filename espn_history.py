@@ -49,6 +49,12 @@ def collect_espn_history(as_of, days=7, max_games=30,
         if not isinstance(games, list):
             failures.append({"date": day.isoformat(), "error": "Invalid schedule"})
             continue
+        # A scoreboard response with zero games is valid on off days.
+        # However, a partially malformed response must not silently turn
+        # into an apparently complete sample for that date.
+        if any(not isinstance(game, dict) for game in games):
+            failures.append({"date": day.isoformat(), "error": "Malformed schedule game entry"})
+            continue
         for game in games:
             if games_requested >= max_games:
                 break
