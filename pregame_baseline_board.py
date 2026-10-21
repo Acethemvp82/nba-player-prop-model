@@ -1,6 +1,6 @@
 """Generate date-frozen NBA player baseline forecasts for research.
 
-Uses completed NBA player games strictly before the slate date. Does not
+Uses completed NBA or ESPN player games strictly before the slate date. Does not
 invent sportsbook lines, opponent adjustments, or calibrated probabilities.
 """
 from historical_stats import _day, player_history_summaries
@@ -21,7 +21,11 @@ def build_pregame_baseline_board(observations, slate_date, min_games=5, player_i
     if player_ids is not None:
         forecasts = [row for row in forecasts if str(row["player_id"]) in player_ids]
     summary_by_id = {str(row["player_id"]): row for row in summaries}
-    return [{**row, "last_game_date": summary_by_id[str(row["player_id"])]["last_game_date"],
+    return [{**row, "research_readiness": (
+                 "stale_history" if (cutoff - _day(summary_by_id[str(row["player_id"])]["last_game_date"])).days > 14
+                 else "limited_sample" if row["sample_games"] < 10
+                 else "history_ready"),
+             "last_game_date": summary_by_id[str(row["player_id"])]["last_game_date"],
              "days_since_last_game": (cutoff - _day(summary_by_id[str(row["player_id"])]["last_game_date"])).days,
              "history_coverage": ("limited" if row["sample_games"] < 10 else "established"),
              "slate_date": cutoff.isoformat(),
