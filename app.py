@@ -122,7 +122,7 @@ if historical:
 st.subheader("Master Player Prop Board — data preview")
 categories = ["Points", "Rebounds", "Assists", "3-Pointers"]
 selected = st.multiselect("Prop categories", categories, default=categories)
-columns = ["Game", "Player", "Player ID", "Team", "Opponent", "Prop", "FanDuel Line", "Over Odds", "Projection", "Over Probability", "Edge", "Confidence"]
+columns = ["Game", "Player", "Player ID", "Team", "Opponent", "Roster Source", "Last Seen", "Prop", "FanDuel Line", "Over Odds", "Projection", "Over Probability", "Edge", "Confidence"]
 rows = []
 failures = []
 for game in slate_rows:
@@ -143,6 +143,8 @@ for game in slate_rows:
                 "Player ID": player.get("player_id"),
                 "Team": player.get("team"),
                 "Opponent": player.get("opponent"),
+                "Roster Source": "NBA game feed",
+                "Last Seen": None,
                 "Prop": prop,
                 "FanDuel Line": None,
                 "Over Odds": None,
@@ -169,7 +171,8 @@ if history_for_slate and history_for_slate.get("summaries"):
             for prop in selected:
                 rows.append({"Game": game["Matchup"], "Player": candidate["player"],
                              "Player ID": candidate["player_id"], "Team": candidate["team"],
-                             "Opponent": opponent, "Prop": prop, "FanDuel Line": None,
+                             "Opponent": opponent, "Roster Source": "Historical candidate (unconfirmed)",
+                             "Last Seen": candidate["last_seen"], "Prop": prop, "FanDuel Line": None,
                              "Over Odds": None, "Projection": None,
                              "Over Probability": None, "Edge": None,
                              "Confidence": "Historical candidate; unconfirmed"})
@@ -177,7 +180,7 @@ if history_for_slate and history_for_slate.get("summaries"):
             break
 board = pd.DataFrame(rows, columns=columns)
 if not board.empty:
-    st.caption(f"{board['Player'].nunique()} players from available game feeds or historical candidates; availability is unconfirmed.")
+    st.caption(f"{board['Player'].nunique()} players from available game feeds or historical candidates. Roster Source and Last Seen show where each listing came from; availability is not verified.")
     historical_board = st.session_state.get("nba_historical_preview")
     if st.session_state.get("nba_historical_preview_date") != slate_date.isoformat():
         historical_board = None
