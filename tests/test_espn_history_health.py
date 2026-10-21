@@ -114,3 +114,24 @@ def test_zero_scanned_days_have_no_schedule_coverage_percentage():
     })
     assert health["Schedule dates usable"] == 0
     assert health["Schedule coverage %"] is None
+
+
+def test_undated_schedule_failure_does_not_claim_complete_coverage():
+    health = espn_history_health({
+        "games_requested": 1, "games_loaded": 1, "dates_checked": 4,
+        "failures": [{"error": "scoreboard timeout"}],
+        "observations": [],
+    })
+    assert health["Schedule dates usable"] is None
+    assert health["Schedule coverage %"] is None
+    assert health["Status"] == "Partial historical retrieval"
+
+
+def test_dated_schedule_failure_preserves_measurable_coverage():
+    health = espn_history_health({
+        "games_requested": 1, "games_loaded": 1, "dates_checked": 4,
+        "failures": [{"date": "2026-10-20", "error": "scoreboard timeout"}],
+        "observations": [],
+    })
+    assert health["Schedule dates usable"] == 3
+    assert health["Schedule coverage %"] == 75.0
