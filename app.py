@@ -5,6 +5,7 @@ import pandas as pd
 import streamlit as st
 from nba_data import NBADataError, scoreboard, game_players
 from season_schedule import season_schedule, games_on
+from espn_schedule import espn_games_on
 from history_collection import recent_player_summaries, fetch_boxscore_players
 from projection_baseline import baseline_projections
 from pregame_roster import candidate_players
@@ -56,8 +57,14 @@ slate_date = st.date_input("Slate date", value=datetime.now(ZoneInfo("America/Ne
 try:
     slate_games = games_on(slate_date, load_schedule())
 except NBADataError as exc:
-    st.warning(str(exc))
-    slate_games = []
+    st.warning(f"Official NBA season schedule unavailable: {exc}")
+    try:
+        slate_games = espn_games_on(slate_date)
+        st.info("Using ESPN schedule fallback. Matchups and tipoffs only: ESPN event IDs are "
+                "not NBA box-score IDs, and this does not restore player or historical feeds.")
+    except NBADataError as backup_exc:
+        st.error(str(backup_exc))
+        slate_games = []
 st.caption(f"{len(slate_games)} scheduled games for {slate_date}")
 slate_rows = []
 for scheduled in slate_games:
