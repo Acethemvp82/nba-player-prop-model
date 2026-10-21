@@ -1,9 +1,13 @@
 """Pure diagnostic summaries for ESPN historical coverage on a selected slate."""
 
+PROPS = ("points", "rebounds", "assists", "threes")
+
 
 def espn_history_coverage(observations, scheduled_teams):
-    """Count distinct validated player-games; do not imply full roster coverage."""
-    teams = sorted({team for team in scheduled_teams if isinstance(team, str) and team})
+    """Count distinct, nonconflicting verified player-games; not full roster coverage."""
+    teams = sorted({team for team in scheduled_teams
+                    if isinstance(team, str) and len(team) == 3
+                    and team.isascii() and team.isalpha() and team.isupper()})
     grouped = {team: {} for team in teams}
     for row in observations:
         if not isinstance(row, dict) or row.get("source") != "ESPN verified final boxscore":
@@ -15,11 +19,23 @@ def espn_history_coverage(observations, scheduled_teams):
         if not (isinstance(player_id, str) and player_id.startswith("espn:")
                 and player_id[5:].isascii() and player_id[5:].isdigit()
                 and isinstance(game_id, str) and game_id.startswith("espn:")
-                and game_id[5:].isascii() and game_id[5:].isdigit()):
+                and game_id[5:].isascii() and game_id[5:].isdigit()
+                and all(type(row.get(prop)) is int and row[prop] >= 0 for prop in PROPS)):
             continue
-        grouped[team].setdefault(player_id, set()).add(game_id)
+        key = (player_id, game_id)
+        records = grouped[team]
+        if key in records:
+            previous = records[key]
+            if previous is not None and any(previous[prop] != row[prop] for prop in PROPS):
+                records[key] = None
+        else:
+            records[key] = row
     result = []
-    for team, players in grouped.items():
+    for team, records in grouped.items():
+        players = {}
+        for (pid, gid), row in records.items():
+            if row is not None:
+                players.setdefault(pid, set()).add(gid)
         counts = [len(games) for games in players.values()]
         result.append({"Team": team, "Historical players": len(players),
                        "Player-game records": sum(counts),
