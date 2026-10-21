@@ -50,3 +50,10 @@ def test_trends_exclude_cross_team_athlete_game_conflict():
     first = row("2026-10-19", "100", 20)
     second = {**first, "team": "NYK"}
     assert espn_recent_trends([first, second], "2026-10-21") == {}
+
+
+def test_trends_cross_team_conflict_when_first_team_has_disputed_totals():
+    first = row("2026-10-19", "100", 20)
+    disputed = {**first, "points": 25}
+    opposing = {**first, "team": "NYK", "points": 30}
+    assert espn_recent_trends([first, disputed, opposing], "2026-10-21") == {}
