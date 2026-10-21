@@ -40,6 +40,7 @@ def espn_games_on(day):
             continue
         sides = {}
         scores = {}
+        team_ids = {}
         for item in competitors:
             if not isinstance(item, dict) or item.get("homeAway") not in ("home", "away"):
                 continue
@@ -53,6 +54,9 @@ def espn_games_on(day):
                     if len(code) == 3:
                         side = item["homeAway"]
                         sides[side] = code
+                        identifier = team.get("id")
+                        if isinstance(identifier, (str, int)) and not isinstance(identifier, bool) and str(identifier).isascii() and str(identifier).isdigit():
+                            team_ids[side] = str(identifier)
                         score = item.get("score")
                         if isinstance(score, (str, int)) and not isinstance(score, bool):
                             value = str(score)
@@ -70,6 +74,7 @@ def espn_games_on(day):
                            and str(event.get("id") or "").isdigit() else None,
             "homeTeam": {"teamTricode": sides["home"]},
             "awayTeam": {"teamTricode": sides["away"]},
+            "espnTeamIds": team_ids,
             "gameTimeUTC": event.get("date"),
             "homeScore": scores.get("home"),
             "awayScore": scores.get("away"),
