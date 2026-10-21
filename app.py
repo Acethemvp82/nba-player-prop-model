@@ -10,6 +10,7 @@ from espn_players import espn_game_players, espn_team_roster
 from espn_history import collect_espn_history
 from espn_averages import espn_player_averages
 from espn_trends import espn_recent_trends
+from espn_history_coverage import espn_history_coverage
 from history_collection import recent_player_summaries, fetch_boxscore_players
 from projection_baseline import baseline_projections
 from pregame_roster import candidate_players
@@ -179,6 +180,18 @@ if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), h
             with st.expander("ESPN historical data errors"):
                 st.dataframe(pd.DataFrame(espn_history["failures"]), use_container_width=True, hide_index=True)
         if espn_history["observations"]:
+            scheduled_espn_teams = {
+                str(game[side]["teamTricode"])
+                for game in slate_games for side in ("homeTeam", "awayTeam")
+                if isinstance(game.get(side), dict) and game[side].get("teamTricode")
+            }
+            if scheduled_espn_teams:
+                with st.expander("Historical sample coverage for today's teams"):
+                    st.caption("Counts are distinct ESPN player-game records in the selected "
+                               "lookback, not verified active players or complete season samples.")
+                    st.dataframe(pd.DataFrame(espn_history_coverage(
+                        espn_history["observations"], scheduled_espn_teams)),
+                        use_container_width=True, hide_index=True)
             averages = espn_player_averages(espn_history["observations"], slate_date.isoformat())
             if averages:
                 st.caption("ESPN historical averages: descriptive only, based on the limited "
