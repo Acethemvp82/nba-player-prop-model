@@ -78,6 +78,11 @@ def espn_games_on(day):
             "gameTimeUTC": event.get("date"),
             "homeScore": scores.get("home"),
             "awayScore": scores.get("away"),
+            "espnCompleted": (event["status"]["type"]["completed"]
+                              if isinstance(event.get("status"), dict)
+                              and isinstance(event["status"].get("type"), dict)
+                              and isinstance(event["status"]["type"].get("completed"), bool)
+                              else None),
             "gameStatusText": (event.get("status") or {}).get("type", {}).get("description")
             if isinstance(event.get("status"), dict) and isinstance(event["status"].get("type"), dict)
             else "Unknown",
