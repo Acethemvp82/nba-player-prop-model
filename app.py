@@ -206,7 +206,12 @@ if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), h
             st.caption("Final-game success covers only requested boxscores. Schedule coverage "
                        "measures checked dates, and a reached request limit means the "
                        "historical sample may exclude additional games.")
-            health_export = pd.DataFrame([espn_history_health(espn_history)])
+            health_export = pd.DataFrame([{
+                "Slate date": slate_date.isoformat(),
+                "History lookback days": history_days,
+                "Historical game request limit": espn_game_budget,
+                **espn_history_health(espn_history),
+            }])
             st.dataframe(health_export, use_container_width=True, hide_index=True)
             health_export = health_export.copy()
             for column in health_export.select_dtypes(include=["object", "string"]).columns:
