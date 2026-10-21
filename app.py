@@ -106,6 +106,8 @@ if historical:
                f"({historical['eligible_games']} eligible games in schedule). "
                "Season averages cover only the collected sample, not necessarily the full season.")
     if historical["summaries"]:
+        st.metric("Players with completed-game observations", len(historical["summaries"]))
+        st.metric("Players with 5+ sampled games", sum(item.get("games_played", 0) >= 5 for item in historical["summaries"]))
         fields = ["player", "team", "games_played", "minutes_last_5_avg",
                   "points_last_5_avg", "rebounds_last_5_avg",
                   "assists_last_5_avg", "threes_last_5_avg",
