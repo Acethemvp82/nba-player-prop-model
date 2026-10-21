@@ -190,6 +190,7 @@ if load_espn_history_clicked or refresh_espn_history:
     st.session_state.pop("espn_history_parameters", None)
     st.session_state.pop("espn_history_error", None)
     st.session_state.pop("espn_history_error_parameters", None)
+    st.session_state.pop("espn_history_loaded_at_utc", None)
     try:
         with st.spinner("Checking completed ESPN boxscores..."):
             if refresh_espn_history:
@@ -204,6 +205,7 @@ if load_espn_history_clicked or refresh_espn_history:
     else:
         st.session_state["espn_history_preview"] = espn_history
         st.session_state["espn_history_parameters"] = (slate_date.isoformat(), history_days, espn_game_budget)
+        st.session_state["espn_history_loaded_at_utc"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
 if (st.session_state.get("espn_history_error")
         and st.session_state.get("espn_history_error_parameters") == (
             slate_date.isoformat(), history_days, espn_game_budget)):
@@ -213,6 +215,13 @@ if (st.session_state.get("espn_history_error")
 if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), history_days, espn_game_budget):
     espn_history = st.session_state.get("espn_history_preview")
     if espn_history:
+        if st.session_state.get("espn_history_loaded_at_utc"):
+            st.caption(
+                "ESPN history last loaded: "
+                + st.session_state["espn_history_loaded_at_utc"]
+                + " UTC. Standard loads may reuse cached data; use Refresh ESPN history "
+                  "from source to invalidate the historical caches."
+            )
         st.caption(f"Verified ESPN final games: {espn_history['games_loaded']} of "
                    f"{espn_history['games_requested']} requested across "
                    f"{espn_history.get('dates_checked', '?')} schedule dates checked; "
