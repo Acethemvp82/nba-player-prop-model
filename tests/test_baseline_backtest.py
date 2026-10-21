@@ -85,3 +85,17 @@ def test_backtest_reports_excluded_rows():
     assert result["points"]["excluded_duplicate_rows"] == 1
     assert result["points"]["excluded_invalid_rows"] == 2
     assert result["points"]["evaluated"] == 1
+
+
+def test_rmse_emphasizes_large_misses():
+    rows = [game(i, 10) for i in range(1, 6)]
+    rows.extend([game(6, 10), game(7, 20)])
+    result = {r["prop"]: r for r in baseline_backtest(rows, "2026-10-08")}
+    assert result["points"]["rmse"] is not None
+    assert result["points"]["rmse"] >= result["points"]["mae"]
+    assert result["rebounds"]["rmse"] == 0
+
+
+def test_rmse_unavailable_when_no_predictions():
+    result = baseline_backtest([], "2026-10-08")
+    assert all(r["rmse"] is None for r in result)
