@@ -15,7 +15,9 @@ def espn_history_coverage(observations, scheduled_teams):
         if not isinstance(row, dict) or row.get("source") != "ESPN verified final boxscore":
             continue
         team = row.get("team")
-        if team not in grouped:
+        # Provider data may contain a malformed list/dict instead of a team
+        # code. Never let an unhashable value crash the Streamlit dashboard.
+        if not isinstance(team, str) or team not in grouped:
             continue
         player_id, game_id = row.get("player_id"), row.get("game_id")
         if not (isinstance(player_id, str) and player_id.startswith("espn:")
