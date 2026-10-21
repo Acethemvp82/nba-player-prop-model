@@ -35,3 +35,12 @@ def test_bounded_history():
                                     loader=lambda _: [])
     assert result["games_requested"] == 2
     assert result["eligible_games"] == 10
+
+
+def test_invalid_player_payload_is_reported():
+    schedule = [{"games": [{"gameId": "123", "gameStatus": "3", "gameDateEst": "2026-10-19"}]}]
+    result = collect_recent_history(schedule, "2026-10-20", loader=lambda _: None)
+    assert result["games_requested"] == 1
+    assert result["games_loaded"] == 0
+    assert len(result["failed_games"]) == 1
+    assert result["observations"] == []
