@@ -50,11 +50,13 @@ def load_espn_players(event_id):
 def load_players(game_id):
     return game_players(str(game_id))
 
-st.caption("Live scoreboard and player listings update from cached NBA feeds. Schedule and historical statistics use separate caches.")
+st.caption("Live game information uses available NBA or ESPN feeds. "
+           "Player statistics and projections have separate data requirements.")
 try:
     games = load_games()
 except NBADataError as exc:
-    st.error(f"Could not retrieve NBA games: {exc}")
+    st.info("Official NBA live scoreboard is currently unavailable. "
+            "The current-day section will use ESPN schedule and scores when available.")
     games = []
 
 game_rows = []
@@ -79,11 +81,12 @@ slate_date = st.date_input("Slate date", value=datetime.now(ZoneInfo("America/Ne
 try:
     slate_games = games_on(slate_date, load_schedule())
 except NBADataError as exc:
-    st.warning(f"Official NBA season schedule unavailable: {exc}")
+    st.caption("Official NBA season schedule is unavailable; checking ESPN schedule fallback.")
     try:
         slate_games = load_espn_slate(slate_date.isoformat())
-        st.info("Using ESPN schedule fallback. Matchups and tipoffs only: ESPN event IDs are "
-                "not NBA box-score IDs, and this does not restore player or historical feeds.")
+        st.info("Using ESPN schedule fallback for matchups, scores and tipoffs. "
+                "ESPN event IDs are not NBA box-score IDs; historical player data "
+                "must be loaded separately.")
     except NBADataError as backup_exc:
         st.error(str(backup_exc))
         slate_games = []
@@ -148,7 +151,8 @@ else:
                                       "Status": game["gameStatusText"],
                                       "Score": score,
                                       "Tipoff (UTC)": game["gameTimeUTC"]})
-            st.info("Showing ESPN schedule-only fallback for today. Player box scores are not connected.")
+            st.info("Showing ESPN game schedule and scores for today. "
+                    "Player statistics require the separate ESPN historical feed.")
             st.dataframe(pd.DataFrame(fallback_rows), use_container_width=True, hide_index=True)
         else:
             st.warning("No games returned by the NBA scoreboard or ESPN fallback today.")
