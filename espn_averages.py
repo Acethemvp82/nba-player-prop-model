@@ -34,6 +34,18 @@ def espn_player_averages(observations, as_of):
                not isinstance(row.get(prop), int) or row[prop] < 0 for prop in PROPS):
             continue
         grouped[(pid, team)].append((day, row))
+    # Exclude athlete-game IDs claimed by more than one team, even when
+    # summaries are called on data outside the normal verified collector.
+    ownership = {}
+    conflicted_games = set()
+    for (pid, team), games in grouped.items():
+        for _, row in games:
+            gid = row.get("game_id")
+            if isinstance(gid, str) and gid.startswith("espn:") and gid[5:].isascii() and gid[5:].isdigit():
+                key = (pid, gid)
+                previous = ownership.setdefault(key, team)
+                if previous != team:
+                    conflicted_games.add(key)
     result = []
     for (pid, team), games in grouped.items():
         games.sort(key=lambda entry: entry[0], reverse=True)
@@ -44,7 +56,7 @@ def espn_player_averages(observations, as_of):
             if not (isinstance(game_id, str) and game_id.startswith("espn:")
                     and game_id[5:].isascii() and game_id[5:].isdigit()):
                 continue
-            if game_id in conflicted:
+            if (pid, game_id) in conflicted_games or game_id in conflicted:
                 continue
             previous = unique.get(game_id)
             if previous is not None:
