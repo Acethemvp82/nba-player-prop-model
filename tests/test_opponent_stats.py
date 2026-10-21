@@ -27,3 +27,31 @@ def test_missing_prop_is_not_zero_filled():
     result = opponent_game_totals(rows, "2026-10-20")
     assert result[0]["assists_allowed_observed"] is None
     assert result[0]["points_allowed_observed"] == 40
+
+
+def test_screened_opponent_averages_include_sample_counts():
+    from opponent_stats import opponent_sample_summary
+    games = [
+        {"opponent": "BOS", "players_observed": 9,
+         "points_allowed_observed": 100, "rebounds_allowed_observed": 42,
+         "assists_allowed_observed": None, "threes_allowed_observed": 12},
+        {"opponent": "BOS", "players_observed": 10,
+         "points_allowed_observed": 110, "rebounds_allowed_observed": 44,
+         "assists_allowed_observed": 22, "threes_allowed_observed": 14},
+        {"opponent": "BOS", "players_observed": 3,
+         "points_allowed_observed": 10, "rebounds_allowed_observed": 5,
+         "assists_allowed_observed": 2, "threes_allowed_observed": 1},
+    ]
+    result = opponent_sample_summary(games)
+    assert len(result) == 1
+    assert result[0]["screened_games"] == 2
+    assert result[0]["points_observed_avg"] == 105
+    assert result[0]["assists_valid_games"] == 1
+    assert result[0]["assists_observed_avg"] == 22
+
+
+def test_opponent_averages_reject_invalid_screen():
+    import pytest
+    from opponent_stats import opponent_sample_summary
+    with pytest.raises(ValueError):
+        opponent_sample_summary([], min_players=0)
