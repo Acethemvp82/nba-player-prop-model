@@ -26,10 +26,11 @@ def parse_final_espn_boxscore(payload, expected_event_id):
     competitions = header.get("competitions") if isinstance(header, dict) else None
     if not isinstance(competitions, list) or not competitions:
         raise NBADataError("ESPN game finality cannot be verified")
-    competition = next((entry for entry in competitions if isinstance(entry, dict)
-                        and str(entry.get("id")) == event_id), None)
-    if competition is None:
-        raise NBADataError("ESPN game ID mismatch")
+    matching = [entry for entry in competitions if isinstance(entry, dict)
+                and str(entry.get("id")) == event_id]
+    if len(matching) != 1:
+        raise NBADataError("ESPN game ID mismatch or ambiguous competitions")
+    competition = matching[0]
     status = competition.get("status")
     status_type = status.get("type") if isinstance(status, dict) else None
     if not isinstance(status_type, dict) or status_type.get("completed") is not True:
