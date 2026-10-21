@@ -196,3 +196,17 @@ def test_same_espn_athlete_cannot_play_for_both_teams_in_one_game():
     assert result["observations"] == []
     assert len(result["failures"]) == 1
     assert "both teams" in result["failures"][0]["error"]
+
+
+def test_history_rejects_mixed_verified_and_unverified_player_rows():
+    invalid = {**player(), "player_id": "espn:10",
+               "source": "ESPN team roster (unconfirmed)"}
+    result = collect_espn_history(
+        "2026-10-21", days=1, max_games=1,
+        schedule_loader=lambda _: [game("100")],
+        boxscore_loader=lambda _: [player(), invalid],
+    )
+    assert result["games_loaded"] == 0
+    assert result["observations"] == []
+    assert len(result["failures"]) == 1
+    assert "unverified player rows" in result["failures"][0]["error"]
