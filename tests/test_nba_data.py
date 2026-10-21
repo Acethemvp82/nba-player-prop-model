@@ -48,3 +48,9 @@ def test_malformed_live_player_entries_are_skipped(monkeypatch):
     players = nba_data.game_players("123")
     assert len(players) == 1
     assert players[0]["player_id"] == 1
+
+
+def test_scoreboard_skips_malformed_games(monkeypatch):
+    monkeypatch.setattr(nba_data, "_get_json", lambda _: {
+        "scoreboard": {"games": [None, "bad", {"gameId": "123"}]}})
+    assert nba_data.scoreboard() == [{"gameId": "123"}]
