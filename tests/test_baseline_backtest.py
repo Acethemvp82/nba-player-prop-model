@@ -118,6 +118,7 @@ def test_espn_ids_receive_real_walk_forward_evaluation():
     assert points['evaluated'] == 1
     assert points['mae'] == points['last5_mae'] == 10
     assert points['mae_delta_vs_last5'] == 0
+    assert points['different_from_last5'] == 0
     assert all(d['last_training_date'] < d['game_date'] for d in result['details'])
     assert result['details'][0]['training_games'] == 5
 
@@ -129,6 +130,7 @@ def test_benchmark_uses_identical_evaluation_games_without_same_day_training():
     details = [d for d in result['details'] if d['prop'] == 'points']
     summary = next(r for r in result['summary'] if r['prop'] == 'points')
     assert summary['evaluated'] == len(details) == 3
+    assert summary['different_from_last5'] > 0
     assert summary['last5_mae'] == round(sum(abs(d['last5_baseline'] - d['actual']) for d in details) / 3, 3)
     changed = evaluate_baselines(rows + [game(9, 1000)], '2026-10-09')
     assert changed['details'] == result['details']

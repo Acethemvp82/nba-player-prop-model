@@ -281,10 +281,14 @@ def render_validation(history, day):
                "Four props from one appearance are four forecasts, not four independent games.")
     if history.get("history_truncated") or history.get("failures"):
         st.warning("Validation uses an incomplete retrieved sample. Missing games can change both forecasts and measured error.")
+    if int(summary["different_from_last5"].sum()) == 0:
+        st.info("The blend and last-five forecasts are identical in this evaluation sample. "
+                "This comparison cannot yet establish an advantage for either method.")
     summary["prop"] = summary["prop"].map(PROPS)
     labels = {"prop": "Prop", "evaluated": "Scored forecasts", "players_evaluated": "Players",
               "dates_evaluated": "Dates", "coverage_pct": "Evaluated coverage %",
               "mae": "Blend MAE", "last5_mae": "Last-5 MAE",
+              "different_from_last5": "Different forecasts",
               "mae_delta_vs_last5": "Blend minus Last-5", "mean_error": "Bias", "rmse": "RMSE",
               "first_evaluation_date": "First result", "last_evaluation_date": "Last result"}
     table = summary[list(labels)].rename(columns=labels)

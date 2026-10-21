@@ -60,6 +60,7 @@ def evaluate_baselines(observations, as_of, min_training_games=5):
     squared_errors = defaultdict(list)
     benchmark_errors = defaultdict(list)
     details = []
+    different_forecasts = defaultdict(int)
     for day in sorted(by_date):
         summaries = player_history_summaries(training, as_of=day)
         predictions = {(str(p["player_id"]), p["prop"]): p
@@ -79,6 +80,7 @@ def evaluate_baselines(observations, as_of, min_training_games=5):
                         and not isinstance(actual, bool) and isfinite(actual) and actual >= 0):
                     summary = summary_by_id[str(row["player_id"])]
                     benchmark = summary[prop + "_last_5_avg"]
+                    different_forecasts[prop] += abs(predicted - benchmark) > 0.005
                     benchmark_errors[prop].append(float(benchmark) - float(actual))
                     details.append({"game_date": day.isoformat(), "game_id": str(row["game_id"]),
                         "player_id": str(row["player_id"]), "player": row.get("player"),
@@ -109,6 +111,7 @@ def evaluate_baselines(observations, as_of, min_training_games=5):
          if errors[prop] else None,
          "mean_error": round(sum(errors[prop]) / len(errors[prop]), 3)
          if errors[prop] else None,
+         "different_from_last5": different_forecasts[prop],
          "last5_mae": round(sum(abs(e) for e in benchmark_errors[prop]) / len(benchmark_errors[prop]), 3)
          if benchmark_errors[prop] else None,
          "mae_delta_vs_last5": round((sum(abs(e) for e in errors[prop])
