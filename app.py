@@ -151,6 +151,7 @@ if historical and historical.get("observations"):
                "This is NOT sportsbook profitability or calibrated OVER probability.")
     if any(item["evaluated"] for item in backtest_rows):
         st.dataframe(pd.DataFrame(backtest_rows), use_container_width=True, hide_index=True)
+        st.caption("Players evaluated counts distinct player IDs per prop; evaluated counts predictions on individual game appearances. Small samples are not reliable evidence of predictive accuracy.")
     else:
         st.info("Not enough prior player appearances to calculate a walk-forward accuracy sample.")
 else:
