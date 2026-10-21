@@ -46,6 +46,7 @@ def test_conflicting_duplicate_games_are_excluded_from_averages():
     result = espn_player_averages(rows, "2026-10-21")
     assert len(result) == 1
     assert result[0]["Sample games"] == 1
+    assert result[0]["Latest verified game"] == "2026-10-18"
     assert result[0]["Points avg"] == 20
 
 
