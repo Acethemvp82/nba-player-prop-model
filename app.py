@@ -185,6 +185,8 @@ if not board.empty:
         board["Historical baseline"] = [baseline_lookup.get((str(item.get("Player ID")), prop_codes[item["Prop"]]))
                                         for item in rows]
         board = board.sort_values(["Historical baseline", "Player"], ascending=[False, True], na_position="last")
+    if "Historical baseline" in board.columns:
+        st.caption("Baselines are raw stat totals across different categories; sorting does not measure betting value.")
     st.dataframe(board, use_container_width=True, hide_index=True)
 else:
     st.warning("No player listings available yet. Some box scores may not publish rosters before tipoff.")
