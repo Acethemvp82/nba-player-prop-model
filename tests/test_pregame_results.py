@@ -1,4 +1,4 @@
-from pregame_results import score_pregame_baselines, summarize_projection_errors, projection_grading_coverage, summarize_projection_errors_by_slate, summarize_grading_by_slate, summarize_unmatched_forecasts_by_slate, list_unmatched_forecasts, summarize_unmatched_by_player, summarize_unmatched_by_prop, summarize_unmatched_by_team, summarize_unmatched_by_team_and_prop
+from pregame_results import score_pregame_baselines, summarize_projection_errors, projection_grading_coverage, summarize_projection_errors_by_slate, summarize_grading_by_slate, summarize_unmatched_forecasts_by_slate, list_unmatched_forecasts, summarize_unmatched_by_player, summarize_unmatched_by_prop, summarize_unmatched_by_team, summarize_unmatched_by_team_and_prop, summarize_forecast_upload_quality
 
 
 def forecast(**overrides):
@@ -300,3 +300,14 @@ def test_unmatched_team_prop_matrix_matches_team_totals():
         {"team": "UNKNOWN", "prop": "points", "unmatched_forecasts": 1},
     ]
     assert sum(row["unmatched_forecasts"] for row in rows) == 4
+
+
+def test_forecast_upload_quality_reconciles_valid_duplicate_and_invalid_rows():
+    rows = [forecast(), forecast(), forecast(prop="assists"),
+            forecast(player_id=True), forecast(slate_date="2026-02-30"),
+            forecast(baseline=-1), None]
+    assert summarize_forecast_upload_quality(rows) == {
+        "total_rows": 7, "eligible_unique_forecasts": 2,
+        "duplicate_forecasts": 1, "invalid_forecasts": 4,
+    }
+    assert summarize_forecast_upload_quality(None)["total_rows"] == 0
