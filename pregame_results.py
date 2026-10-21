@@ -126,8 +126,12 @@ def projection_grading_coverage(forecasts, scored_rows):
         keys.add((str(pid), day, prop))
     graded = set()
     for row in scored_rows or []:
-        if isinstance(row, dict) and row.get("result_status") == "verified_final":
-            graded.add((str(row.get("player_id")), row.get("slate_date"), row.get("prop")))
+        if (isinstance(row, dict) and row.get("result_status") == "verified_final"
+                and isinstance(row.get("player_id"), (str, int))
+                and not isinstance(row.get("player_id"), bool)
+                and _valid_iso_day(row.get("slate_date"))
+                and row.get("prop") in PROPS):
+            graded.add((str(row["player_id"]), row["slate_date"], row["prop"]))
     count = len(keys & graded)
     return {"eligible_forecasts": len(keys), "graded_forecasts": count,
             "unmatched_forecasts": len(keys) - count,
