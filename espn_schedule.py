@@ -65,6 +65,9 @@ def espn_games_on(day):
         if len(sides) != 2 or sides["home"] == sides["away"]:
             continue
         matchup = (sides["away"], sides["home"])
+        # Ignore an event whose competitors do not agree on the game sides.
+        if len(competitors) != 2 or len(sides) != 2:
+            continue
         event_id = str(event.get("id") or "")
         valid_event_id = event_id if event_id.isascii() and event_id.isdigit() else None
         # ESPN event IDs identify games; a repeated matchup may be a separate game.
