@@ -37,3 +37,10 @@ def test_rejects_unverified_metrics_and_invalid_baseline():
 
 def test_matches_id_without_mixing_players():
     assert score_pregame_baselines([forecast()], [final(player_id="espn:456")]) == []
+
+
+def test_impossible_final_threes_are_not_scored():
+    rows = score_pregame_baselines(
+        [forecast(prop="threes", baseline=2.0)],
+        [final(points=5, threes=3)])
+    assert rows == []
