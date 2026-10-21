@@ -19,3 +19,10 @@ def test_date_object_and_empty_slate():
 def test_bad_date_is_rejected():
     with pytest.raises(ValueError):
         games_on("not-a-date", SAMPLE)
+
+
+def test_parent_entry_date_used_when_game_has_no_date():
+    schedule = [{"gameDate": "10/21/2026 12:00:00 AM",
+                 "games": [{"gameId": "0022600003", "gameStatus": 1}]}]
+    assert [g["gameId"] for g in games_on("2026-10-21", schedule)] == ["0022600003"]
+    assert games_on("2026-10-20", schedule) == []
