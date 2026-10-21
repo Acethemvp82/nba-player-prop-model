@@ -284,10 +284,9 @@ for game in slate_rows:
                 pass
         matchup = game["Matchup"].split(" @ ")
         if len(matchup) == 2:
-            present = {p.get("team") for p in players}
             for side, team_code in (("away", matchup[0]), ("home", matchup[1])):
-                if team_code in present:
-                    continue
+                # Pregame game summaries may list only a subset of either team.
+                # Supplement with roster candidates, keeping them unconfirmed.
                 team_id = (game.get("ESPN Team IDs") or {}).get(side)
                 if team_id:
                     try:
