@@ -6,6 +6,7 @@ import streamlit as st
 from nba_data import NBADataError, scoreboard, game_players
 from season_schedule import season_schedule, games_on
 from espn_schedule import espn_games_on
+from espn_players import espn_game_players
 from history_collection import recent_player_summaries, fetch_boxscore_players
 from projection_baseline import baseline_projections
 from pregame_roster import candidate_players
@@ -27,6 +28,10 @@ def load_games():
 @st.cache_data(ttl=300, show_spinner=False)
 def load_espn_slate(day):
     return espn_games_on(day)
+
+@st.cache_data(ttl=900, show_spinner=False)
+def load_espn_players(event_id):
+    return espn_game_players(event_id)
 
 @st.cache_data(ttl=900, show_spinner=False)
 def load_players(game_id):
@@ -78,6 +83,7 @@ for scheduled in slate_games:
     away = away if isinstance(away, dict) else {}
     slate_rows.append({
         "Game ID": str(scheduled.get("gameId") or ""),
+        "ESPN Event ID": scheduled.get("espnEventId"),
         "Matchup": f'{away.get("teamTricode", "?")} @ {home.get("teamTricode", "?")}',
         "Status": scheduled.get("gameStatusText") or "Scheduled",
         "Score": (f'{away["teamTricode"]} {scheduled["awayScore"]} - '
@@ -87,7 +93,7 @@ for scheduled in slate_games:
         "Tipoff (UTC)": scheduled.get("gameTimeUTC") or "Not available",
     })
 if slate_rows:
-    st.dataframe(pd.DataFrame(slate_rows).drop(columns=["Game ID"]),
+    st.dataframe(pd.DataFrame(slate_rows).drop(columns=["Game ID", "ESPN Event ID"]),
                  use_container_width=True, hide_index=True)
 else:
     st.info("No games listed for the selected date.")
@@ -136,6 +142,7 @@ def load_baseline_backtest(observations, as_of):
 if st.button("Refresh NBA feeds and cached history"):
     load_games.clear()
     load_espn_slate.clear()
+    load_espn_players.clear()
     load_players.clear()
     load_schedule.clear()
     load_final_boxscore.clear()
@@ -235,17 +242,28 @@ rows = []
 roster_listings = []
 failures = []
 for game in slate_rows:
-    if not game["Game ID"]:
-        continue
+    source = "NBA game feed"
     try:
-        players = load_players(game["Game ID"])
+        if game["Game ID"]:
+            players = load_players(game["Game ID"])
+        elif game.get("ESPN Event ID"):
+            players = load_espn_players(game["ESPN Event ID"])
+            source = "ESPN game summary (unconfirmed)"
+        else:
+            continue
     except NBADataError as exc:
         failures.append(f'{game["Matchup"]}: {exc}')
         continue
     for player in players:
-        if not valid_game_player(player, game["Matchup"]):
-            continue
-        roster_listings.append({"player_id": player.get("player_id"), "team": player.get("team"), "source": "NBA game feed"})
+        if source == "NBA game feed":
+            if not valid_game_player(player, game["Matchup"]):
+                continue
+        else:
+            teams = game["Matchup"].split(" @ ")
+            if len(teams) != 2 or player.get("team") not in teams:
+                continue
+            player["opponent"] = teams[0] if player["team"] == teams[1] else teams[1]
+        roster_listings.append({"player_id": player.get("player_id"), "team": player.get("team"), "source": source})
         for prop in selected:
             rows.append({
                 "Game": game["Matchup"],
@@ -253,7 +271,7 @@ for game in slate_rows:
                 "Player ID": player.get("player_id"),
                 "Team": player.get("team"),
                 "Opponent": player.get("opponent"),
-                "Roster Source": "NBA game feed",
+                "Roster Source": source,
                 "Last Seen": None,
                 "Prop": prop,
                 "FanDuel Line": None,
@@ -261,7 +279,7 @@ for game in slate_rows:
                 "Projection": None,
                 "Over Probability": None,
                 "Edge": None,
-                "Confidence": "Not calculated",
+                "Confidence": "Unconfirmed ESPN listing" if source != "NBA game feed" else "Not calculated",
             })
 history_for_slate = st.session_state.get("nba_historical_preview")
 if (st.session_state.get("nba_historical_preview_date") != slate_date.isoformat() or
