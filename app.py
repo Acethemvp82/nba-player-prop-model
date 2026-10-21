@@ -228,6 +228,9 @@ if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), h
                            "from verified historical statistics.")
                 failure_rows = [
                     {
+                        "Slate date": slate_date.isoformat(),
+                        "History lookback days": history_days,
+                        "Historical game request limit": espn_game_budget,
                         "Date": failure.get("date", "Unknown"),
                         "Stage": "Boxscore" if "event_id" in failure else "Schedule",
                         "ESPN Event ID": failure.get("event_id", ""),
