@@ -38,3 +38,19 @@ def test_invalid_espn_event_ids_are_rejected():
     for value in (True, "１２３", "invalid", None):
         with pytest.raises(NBADataError):
             espn_game_players(value)
+
+
+def test_empty_espn_athlete_groups_are_reported_unavailable():
+    class Response:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {"boxscore": {"players": [
+                {"team": {"abbreviation": "BOS"},
+                 "statistics": [{"athletes": []}]}
+            ]}}
+
+    with patch("espn_players.requests.get", return_value=Response()):
+        with pytest.raises(NBADataError, match="no usable player listings"):
+            espn_game_players("401234567")
