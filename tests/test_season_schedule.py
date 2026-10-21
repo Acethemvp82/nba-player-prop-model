@@ -26,3 +26,15 @@ def test_parent_entry_date_used_when_game_has_no_date():
                  "games": [{"gameId": "0022600003", "gameStatus": 1}]}]
     assert [g["gameId"] for g in games_on("2026-10-21", schedule)] == ["0022600003"]
     assert games_on("2026-10-20", schedule) == []
+
+
+def test_duplicate_slate_games_are_returned_once():
+    duplicate = {"gameId": "0022600001", "gameDateEst": "2026-10-20", "gameStatus": 1}
+    schedule = [{"games": [duplicate, dict(duplicate)]}]
+    assert len(games_on("2026-10-20", schedule)) == 1
+
+
+def test_malformed_schedule_game_lists_are_ignored():
+    schedule = [{"games": None}, {"games": "invalid"},
+                {"games": [{"gameId": "0022600001", "gameDateEst": "2026-10-20"}]}]
+    assert len(games_on("2026-10-20", schedule)) == 1
