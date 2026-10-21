@@ -26,7 +26,8 @@ def espn_recent_trends(observations, as_of):
             played = date.fromisoformat(row["game_date"])
         except (KeyError, ValueError, TypeError):
             continue
-        if played >= cutoff or any(type(row.get(prop)) is not int or row[prop] < 0 for prop in PROPS):
+        if (played.isoformat() != row["game_date"] or played >= cutoff
+                or any(type(row.get(prop)) is not int or row[prop] < 0 for prop in PROPS)):
             continue
         key = (pid, team)
         existing = grouped[key].get(game_id)
