@@ -5,6 +5,7 @@ import streamlit as st
 from nba_data import NBADataError, scoreboard, game_players
 from season_schedule import season_schedule
 from history_collection import recent_player_summaries
+from projection_baseline import baseline_projections
 
 st.set_page_config(page_title="NBA Player Prop Model", page_icon="🏀", layout="wide")
 st.title("🏀 NBA Player Prop Model")
@@ -136,3 +137,21 @@ if historical:
     if historical["failed_games"]:
         with st.expander(f"Historical box scores unavailable ({len(historical['failed_games'])})"):
             st.dataframe(pd.DataFrame(historical["failed_games"]), hide_index=True)
+
+
+st.subheader("Preliminary statistical baselines — not betting recommendations")
+if historical:
+    baseline_rows = baseline_projections(historical["summaries"], min_games=5)
+    if baseline_rows:
+        baseline_frame = pd.DataFrame(baseline_rows)
+        st.caption("Blended completed-game averages only. No matchup adjustment, FanDuel lines, "
+                   "validated OVER probabilities, or confidence tiers. "
+                   "The sample may not cover the full season.")
+        st.dataframe(baseline_frame.rename(columns={
+            "player": "Player", "team": "Team", "prop": "Prop",
+            "baseline": "Unadjusted baseline", "sample_games": "Valid games",
+            "recent_minutes": "Last 5 avg minutes", "method": "Method"
+        }), use_container_width=True, hide_index=True)
+    else:
+        st.info("No players have sufficient completed-game observations for baselines yet. "
+                "Collect more historical games to build a reliable sample.")
