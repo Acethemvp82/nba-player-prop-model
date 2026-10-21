@@ -29,3 +29,16 @@ def test_duplicate_historical_candidate_does_not_override_feed():
     assert result["players"] == 1
     assert result["feed_players"] == 1
     assert result["historical_candidates"] == 0
+
+
+def test_malformed_roster_entries_are_ignored():
+    players = [
+        None, "invalid", {"player_id": 3, "team": "BOS", "source": "NBA game feed"},
+        {"player_id": None, "team": "NYK", "source": "NBA game feed"},
+        {"player_id": 4, "team": "NYK", "source": "Historical candidate"},
+    ]
+    result = roster_coverage(players, {"BOS", "NYK"})
+    assert result["players"] == 2
+    assert result["feed_players"] == 1
+    assert result["historical_candidates"] == 1
+    assert result["missing_teams"] == []
