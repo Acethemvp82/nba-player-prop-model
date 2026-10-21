@@ -179,6 +179,10 @@ if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), h
             st.warning(f"{len(espn_history['failures'])} schedule or boxscore requests failed validation.")
             with st.expander("ESPN historical data errors"):
                 st.dataframe(pd.DataFrame(espn_history["failures"]), use_container_width=True, hide_index=True)
+        if not espn_history["observations"]:
+            st.warning("No verified ESPN player-game statistics were retrieved. "
+                       "Historical averages and L5/L10 trends will remain unavailable; "
+                       "this does not mean players recorded zero stats.")
         if espn_history["observations"]:
             scheduled_espn_teams = {
                 str(game[side]["teamTricode"])
