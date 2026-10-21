@@ -89,3 +89,24 @@ def test_espn_team_roster_rejects_wrong_team():
     with patch("espn_players.requests.get", return_value=Response()):
         with pytest.raises(NBADataError, match="does not match"):
             espn_team_roster("18", "NYK")
+
+
+def test_espn_team_roster_accepts_flat_athlete_list():
+    class Response:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {"team": {"abbreviation": "BOS"}, "athletes": [
+                {"id": "501", "displayName": "First Player"},
+                {"id": "502", "displayName": "Second Player"},
+            ]}
+    with patch("espn_players.requests.get", return_value=Response()):
+        players = espn_team_roster("2", "BOS")
+    assert [p["player_id"] for p in players] == ["espn:501", "espn:502"]
+
+
+def test_espn_team_roster_rejects_invalid_identifiers():
+    for team_id in (True, None, "１２", "../2"):
+        with pytest.raises(NBADataError, match="Invalid ESPN team ID"):
+            espn_team_roster(team_id, "BOS")
