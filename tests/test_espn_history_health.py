@@ -193,3 +193,12 @@ def test_inconsistent_history_truncation_is_rejected(truncated, omitted):
             "eligible_games_omitted": omitted, "history_truncated": truncated,
             "failures": [], "observations": [],
         })
+
+
+def test_omitted_games_without_reaching_request_limit_are_rejected():
+    with pytest.raises(ValueError, match="reached request limit"):
+        espn_history_health({
+            "games_requested": 1, "games_loaded": 1, "dates_checked": 1,
+            "request_limit_reached": False, "eligible_games_omitted": 1,
+            "history_truncated": True, "failures": [], "observations": [],
+        })
