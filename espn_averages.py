@@ -27,6 +27,8 @@ def espn_player_averages(observations, as_of):
             continue
         if day >= cutoff:
             continue
+        if row.get("source") != "ESPN verified final boxscore":
+            continue
         if any(isinstance(row.get(prop), bool) or
                not isinstance(row.get(prop), int) or row[prop] < 0 for prop in PROPS):
             continue
