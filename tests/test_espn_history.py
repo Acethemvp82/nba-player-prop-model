@@ -169,3 +169,16 @@ def test_history_rejects_partially_missing_matchup_metadata():
         assert result["games_loaded"] == 0
         assert result["observations"] == []
         assert len(result["failures"]) == 1
+
+
+def test_conflicting_duplicate_athlete_stats_reject_entire_game():
+    original = player()
+    conflicting = {**original, "points": original["points"] + 1}
+    result = collect_espn_history(
+        "2026-10-21", days=1, max_games=1,
+        schedule_loader=lambda _: [game("100")],
+        boxscore_loader=lambda _: [original, conflicting])
+    assert result["games_loaded"] == 0
+    assert result["observations"] == []
+    assert len(result["failures"]) == 1
+    assert "Conflicting ESPN stats" in result["failures"][0]["error"]
