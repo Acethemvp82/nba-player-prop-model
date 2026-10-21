@@ -2,9 +2,20 @@
 
 No sportsbook lines, betting outcomes, or calibrated probabilities are inferred.
 """
+from datetime import date
 from math import isfinite
 
 PROPS = ("points", "rebounds", "assists", "threes")
+
+
+def _valid_iso_day(value):
+    if not isinstance(value, str) or len(value) != 10:
+        return False
+    try:
+        return date.fromisoformat(value).isoformat() == value
+    except ValueError:
+        return False
+
 
 
 def score_pregame_baselines(forecasts, final_observations):
@@ -21,7 +32,7 @@ def score_pregame_baselines(forecasts, final_observations):
             continue
         pid, day = row.get("player_id"), row.get("game_date")
         if (not isinstance(pid, (str, int)) or isinstance(pid, bool)
-                or not isinstance(day, str) or len(day) != 10):
+                or not _valid_iso_day(day)):
             continue
         key = (str(pid), day)
         finals.setdefault(key, []).append(row)
