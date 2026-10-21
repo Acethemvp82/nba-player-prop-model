@@ -42,7 +42,7 @@ def completed_game_observations(games, player_loader):
     """Collect results only for completed games, ignoring live and future games."""
     records = []
     for game in games:
-        if game.get("gameStatus") != 3:
+        if str(game.get("gameStatus")) != "3":
             continue
         game_id = str(game.get("gameId") or "")
         if not game_id.isdigit():
