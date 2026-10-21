@@ -425,3 +425,24 @@ def test_unfinished_games_do_not_count_as_omitted():
     assert result["games_requested"] == 1
     assert result["eligible_games_omitted"] == 0
     assert result["history_truncated"] is False
+
+
+def test_schedule_failure_after_cap_is_still_reported():
+    checked = []
+    def schedule(day):
+        checked.append(day)
+        if day == "2026-10-19":
+            raise OSError("scoreboard unavailable")
+        return [game("100")] if day == "2026-10-20" else []
+    result = collect_espn_history(
+        "2026-10-21", days=3, max_games=1,
+        schedule_loader=schedule,
+        boxscore_loader=lambda _: [player()],
+    )
+    assert checked == ["2026-10-20", "2026-10-19", "2026-10-18"]
+    assert result["dates_checked"] == 3
+    assert result["games_requested"] == 1
+    assert result["eligible_games_omitted"] == 0
+    assert result["history_truncated"] is False
+    assert len(result["failures"]) == 1
+    assert result["failures"][0]["date"] == "2026-10-19"
