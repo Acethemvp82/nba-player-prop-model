@@ -127,6 +127,9 @@ def collect_espn_history(as_of, days=7, max_games=30,
                     and player.get("is_final") is True
                     and type(player.get("minutes")) in (int, float)
                     and 0 < player["minutes"] <= 60
+                    and player["minutes"] == player["minutes"]
+                    and player["minutes"] != float("inf")
+                    and player["minutes"] != float("-inf")
                     and all(type(player.get(prop)) is int and player[prop] >= 0
                             for prop in ("points", "rebounds", "assists", "threes"))
                 ]
