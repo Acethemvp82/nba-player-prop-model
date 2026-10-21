@@ -9,7 +9,7 @@ def forecast(**overrides):
 
 def final(**overrides):
     row = {"player_id": "espn:123", "game_date": "2026-10-21",
-           "is_final": True, "points": 24}
+           "is_final": True, "points": 24, "minutes": 32.0}
     return {**row, **overrides}
 
 
@@ -86,3 +86,8 @@ def test_mismatched_player_names_are_not_scored():
     assert len(score_pregame_baselines(
         [forecast(player="Expected Athlete")],
         [final(player=" expected athlete ") ])) == 1
+
+
+def test_final_without_valid_minutes_is_not_graded():
+    for minutes in (None, 0, -1, 61, float("nan"), float("inf")):
+        assert score_pregame_baselines([forecast()], [final(minutes=minutes)]) == []
