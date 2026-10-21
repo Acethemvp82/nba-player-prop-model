@@ -136,7 +136,7 @@ def parse_final_espn_boxscore(payload, expected_event_id):
                        "source": "ESPN verified final boxscore"}
                 if key in seen:
                     if any(seen[key][stat] != row[stat]
-                           for stat in ("points", "rebounds", "assists", "threes")):
+                           for stat in ("points", "rebounds", "assists", "threes", "minutes")):
                         raise NBADataError("Conflicting ESPN final stats for one athlete")
                     continue
                 seen[key] = row
