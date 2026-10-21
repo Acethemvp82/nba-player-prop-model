@@ -30,6 +30,7 @@ def test_history_excludes_slate_day_and_caps_requests():
     assert result["dates_checked"] == 3
     assert result["request_limit_reached"] is True
     assert result["eligible_games_omitted"] == 1
+    assert result["history_truncated"] is True
     assert result["observations"][0]["game_date"] == "2026-10-20"
     assert result["observations"][0]["game_id"] == "espn:100"
 
