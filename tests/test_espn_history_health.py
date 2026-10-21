@@ -90,3 +90,27 @@ def test_schedule_outage_without_requested_games_is_not_clean_empty_history():
     })
     assert health["Status"] == "Schedule retrieval errors; no finals requested"
     assert health["Failed schedule dates"] == 1
+
+
+def test_schedule_coverage_counts_unique_failed_dates():
+    health = espn_history_health({
+        "games_requested": 2, "games_loaded": 1, "dates_checked": 4,
+        "failures": [
+            {"date": "2026-10-20", "error": "scoreboard unavailable"},
+            {"date": "2026-10-20", "error": "duplicate error report"},
+            {"date": "2026-10-19", "event_id": "100", "error": "invalid final"},
+        ],
+        "observations": [{}],
+    })
+    assert health["Schedule dates usable"] == 3
+    assert health["Schedule coverage %"] == 75.0
+    assert health["Final-game success %"] == 50.0
+
+
+def test_zero_scanned_days_have_no_schedule_coverage_percentage():
+    health = espn_history_health({
+        "games_requested": 0, "games_loaded": 0, "dates_checked": 0,
+        "failures": [], "observations": [],
+    })
+    assert health["Schedule dates usable"] == 0
+    assert health["Schedule coverage %"] is None
