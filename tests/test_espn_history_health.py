@@ -154,3 +154,22 @@ def test_history_health_rejects_invalid_request_limit_flags(invalid):
             "games_requested": 1, "games_loaded": 1, "dates_checked": 1,
             "request_limit_reached": invalid, "failures": [], "observations": [],
         })
+
+
+def test_history_health_reports_omitted_eligible_games():
+    health = espn_history_health({
+        "games_requested": 2, "games_loaded": 2, "dates_checked": 2,
+        "request_limit_reached": True, "eligible_games_omitted": 3,
+        "failures": [], "observations": [],
+    })
+    assert health["Eligible games omitted by limit"] == 3
+
+
+@pytest.mark.parametrize("invalid", [True, -1, "2", None, 2.5])
+def test_history_health_rejects_invalid_omitted_counts(invalid):
+    with pytest.raises(ValueError, match="omitted-game"):
+        espn_history_health({
+            "games_requested": 1, "games_loaded": 1, "dates_checked": 1,
+            "eligible_games_omitted": invalid,
+            "failures": [], "observations": [],
+        })
