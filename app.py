@@ -6,7 +6,7 @@ import streamlit as st
 from nba_data import NBADataError, scoreboard, game_players
 from season_schedule import season_schedule, games_on
 from espn_schedule import espn_games_on
-from espn_players import espn_game_players
+from espn_players import espn_game_players, espn_team_roster
 from history_collection import recent_player_summaries, fetch_boxscore_players
 from projection_baseline import baseline_projections
 from pregame_roster import candidate_players
@@ -28,6 +28,10 @@ def load_games():
 @st.cache_data(ttl=300, show_spinner=False)
 def load_espn_slate(day):
     return espn_games_on(day)
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def load_espn_team_roster(team_id, code):
+    return espn_team_roster(team_id, code)
 
 @st.cache_data(ttl=900, show_spinner=False)
 def load_espn_players(event_id):
@@ -84,6 +88,7 @@ for scheduled in slate_games:
     slate_rows.append({
         "Game ID": str(scheduled.get("gameId") or ""),
         "ESPN Event ID": scheduled.get("espnEventId"),
+        "ESPN Team IDs": scheduled.get("espnTeamIds") or {},
         "Matchup": f'{away.get("teamTricode", "?")} @ {home.get("teamTricode", "?")}',
         "Status": scheduled.get("gameStatusText") or "Scheduled",
         "Score": (f'{away["teamTricode"]} {scheduled["awayScore"]} - '
@@ -93,7 +98,7 @@ for scheduled in slate_games:
         "Tipoff (UTC)": scheduled.get("gameTimeUTC") or "Not available",
     })
 if slate_rows:
-    st.dataframe(pd.DataFrame(slate_rows).drop(columns=["Game ID", "ESPN Event ID"]),
+    st.dataframe(pd.DataFrame(slate_rows).drop(columns=["Game ID", "ESPN Event ID", "ESPN Team IDs"]),
                  use_container_width=True, hide_index=True)
 else:
     st.info("No games listed for the selected date.")
@@ -143,6 +148,7 @@ if st.button("Refresh NBA feeds and cached history"):
     load_games.clear()
     load_espn_slate.clear()
     load_espn_players.clear()
+    load_espn_team_roster.clear()
     load_players.clear()
     load_schedule.clear()
     load_final_boxscore.clear()
@@ -247,8 +253,24 @@ for game in slate_rows:
         if game["Game ID"]:
             players = load_players(game["Game ID"])
         elif game.get("ESPN Event ID"):
-            players = load_espn_players(game["ESPN Event ID"])
-            source = "ESPN game summary (unconfirmed)"
+            try:
+                players = load_espn_players(game["ESPN Event ID"])
+                source = "ESPN game summary (unconfirmed)"
+            except NBADataError:
+                players = []
+                team_ids = game.get("ESPN Team IDs") or {}
+                matchup = game["Matchup"].split(" @ ")
+                if len(matchup) == 2:
+                    for side, team_code in (("away", matchup[0]), ("home", matchup[1])):
+                        team_id = team_ids.get(side)
+                        if team_id:
+                            try:
+                                players.extend(load_espn_team_roster(team_id, team_code))
+                            except NBADataError as roster_exc:
+                                failures.append(f'{team_code}: {roster_exc}')
+                source = "ESPN team roster (unconfirmed)"
+                if not players:
+                    failures.append(f'{game["Matchup"]}: No usable ESPN player listings or team rosters')
         else:
             continue
     except NBADataError as exc:
