@@ -43,6 +43,11 @@ def score_pregame_baselines(forecasts, final_observations):
         candidates = finals.get((str(pid), day), [])
         if len(candidates) != 1:
             continue
+        # The scoring source must be a verified player-game with valid minutes.
+        minutes = candidates[0].get("minutes")
+        if (type(minutes) not in (int, float) or not isfinite(minutes)
+                or not 0 < minutes <= 60):
+            continue
         actual = candidates[0].get(prop)
         if type(actual) is not int or actual < 0:
             continue
