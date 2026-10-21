@@ -619,6 +619,19 @@ if not board.empty:
                 st.warning("No player-prop rows meet the selected historical sample minimum. "
                            "Reduce the filter to view more players.")
     st.dataframe(visible_board.drop(columns=["Player ID"]), use_container_width=True, hide_index=True)
+    # Export only the currently visible research rows, preserving missing
+    # betting fields as blanks rather than inventing lines or probabilities.
+    if not visible_board.empty:
+        export_board = visible_board.copy()
+        export_board.insert(0, "Research Status", "UNCONFIRMED — NOT A BETTING BOARD")
+        st.download_button(
+            "Download filtered NBA research board (CSV)",
+            data=export_board.to_csv(index=False).encode("utf-8-sig"),
+            file_name=f"nba_research_board_{slate_date.isoformat()}.csv",
+            mime="text/csv",
+            help="Exports current filters and available source data. Empty odds, "
+                 "projections and probabilities remain empty.",
+        )
 else:
     if selected:
         st.warning("No player listings available yet. Some box scores may not publish rosters before tipoff.")
