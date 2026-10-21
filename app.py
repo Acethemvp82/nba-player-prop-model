@@ -408,6 +408,16 @@ if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), h
                                     ], use_container_width=True, hide_index=True)
                                     st.dataframe(pd.DataFrame(summarize_projection_errors(graded)),
                                                  use_container_width=True, hide_index=True)
+                                    graded_export = pd.DataFrame(graded).copy()
+                                    for column in graded_export.select_dtypes(include=["object", "string"]).columns:
+                                        graded_export[column] = graded_export[column].map(safe_spreadsheet_cell)
+                                    st.download_button(
+                                        "Download verified projection results CSV",
+                                        data=graded_export.to_csv(index=False),
+                                        file_name=f"nba_verified_projection_results_{slate_date.isoformat()}.csv",
+                                        mime="text/csv",
+                                        help="Exports only matched verified finals and their projection errors.",
+                                    )
                                     st.caption(f"Graded {len(graded)} of {len(saved)} saved prop rows. "
                                                "MAE and bias describe this matched sample only.")
                                 else:
