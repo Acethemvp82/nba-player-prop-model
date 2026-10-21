@@ -19,6 +19,7 @@ def espn_player_averages(observations, as_of):
         if not (isinstance(pid, str) and pid.startswith("espn:") and
                 pid[5:].isascii() and pid[5:].isdigit() and
                 isinstance(team, str) and len(team) == 3 and
+                team.isascii() and team.isalpha() and team.isupper() and
                 isinstance(name, str) and name.strip() and isinstance(played, str)):
             continue
         try:
