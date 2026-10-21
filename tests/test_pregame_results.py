@@ -1,4 +1,4 @@
-from pregame_results import score_pregame_baselines
+from pregame_results import score_pregame_baselines, summarize_projection_errors
 
 
 def forecast(**overrides):
@@ -57,3 +57,23 @@ def test_mismatched_teams_are_not_scored():
         [forecast(team="BOS")], [final(team="NYK")]) == []
     assert len(score_pregame_baselines(
         [forecast(team="BOS")], [final(team="BOS")])) == 1
+
+
+def test_projection_accuracy_summary_by_prop():
+    scored = [
+        {"prop": "points", "projection_error": -2.0, "result_status": "verified_final"},
+        {"prop": "points", "projection_error": 4.0, "result_status": "verified_final"},
+        {"prop": "assists", "projection_error": -1.0, "result_status": "verified_final"},
+        {"prop": "threes", "projection_error": 50.0, "result_status": "pending"},
+    ]
+    summary = summarize_projection_errors(scored)
+    assert summary == [
+        {"prop": "points", "graded_projections": 2,
+         "mean_absolute_error": 3.0, "mean_projection_bias": 1.0},
+        {"prop": "assists", "graded_projections": 1,
+         "mean_absolute_error": 1.0, "mean_projection_bias": -1.0},
+    ]
+
+
+def test_empty_accuracy_summary_has_no_fake_zeroes():
+    assert summarize_projection_errors([]) == []
