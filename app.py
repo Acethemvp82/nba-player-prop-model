@@ -182,6 +182,10 @@ if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), h
         if espn_history["dates_checked"] < history_days:
             st.info("Only part of the selected date range was scanned because the "
                     "game-request limit was reached.")
+        if espn_history["games_loaded"] > 0 and espn_history["games_loaded"] < 10:
+            st.caption("Small verified sample: fewer than 10 completed games loaded "
+                       "across the entire requested lookback. Individual player "
+                       "averages may be based on even fewer games.")
         if espn_history["failures"]:
             st.warning(f"{len(espn_history['failures'])} schedule or boxscore requests failed validation.")
             with st.expander("ESPN historical data errors"):
