@@ -194,7 +194,7 @@ if not board.empty:
         board = board.sort_values(["Prop", "Historical baseline", "Player"], ascending=[True, False, True], na_position="last")
     if "Historical baseline" in board.columns:
         st.caption("Historical averages are ordered within each prop category, not across incomparable stats. This is not an OVER edge ranking.")
-    st.dataframe(board, use_container_width=True, hide_index=True)
+    st.dataframe(board.drop(columns=["Player ID"]), use_container_width=True, hide_index=True)
 else:
     st.warning("No player listings available yet. Some box scores may not publish rosters before tipoff.")
 if failures:
