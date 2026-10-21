@@ -31,3 +31,15 @@ def test_history_quality_counts_missing_values_and_coverage():
 def test_history_quality_rejects_bad_cutoff():
     with pytest.raises(ValueError):
         history_quality([], "not-a-date")
+
+
+def test_duplicate_appearances_are_reported_not_double_counted():
+    rows = [observation(1, points=20),
+            observation(1, points=40),
+            observation(2, points=10)]
+    result = history_quality(rows, "2026-10-20")
+    assert result["rows_received"] == 3
+    assert result["usable_appearances"] == 2
+    assert result["duplicate_appearances"] == 1
+    assert result["unique_players"] == 2
+    assert result["unique_games"] == 1
