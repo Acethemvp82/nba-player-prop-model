@@ -47,8 +47,22 @@ def check_recent_finals(today=None, days=7, schedule_loader=espn_games_on,
             completed += 1
             try:
                 players = boxscore_loader(event_id)
-                if not players:
+                if not isinstance(players, list) or not players:
                     raise ValueError("No validated player observations")
+                # A probe must never pass on a malformed or unverified row.
+                for player in players:
+                    if not isinstance(player, dict):
+                        raise ValueError("Malformed player observation")
+                    pid = player.get("player_id")
+                    team = player.get("team")
+                    if (player.get("source") != "ESPN verified final boxscore"
+                            or not isinstance(pid, str) or not pid.startswith("espn:")
+                            or not pid[5:].isascii() or not pid[5:].isdigit()
+                            or not isinstance(team, str) or len(team) != 3
+                            or not team.isascii() or not team.isalpha() or not team.isupper()
+                            or any(type(player.get(stat)) is not int or player[stat] < 0
+                                   for stat in ("points", "rebounds", "assists", "threes"))):
+                        raise ValueError("Unverified or invalid player observation")
             except Exception as exc:
                 errors.append(f"{day} event={event_id}: {type(exc).__name__}: {exc}")
                 continue
