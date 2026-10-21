@@ -383,6 +383,11 @@ if slate_teams:
                    "Zero listings may indicate a provider outage or an unpublished roster.")
         st.dataframe(pd.DataFrame(team_source_coverage(roster_listings, slate_teams)),
                      use_container_width=True, hide_index=True)
+if slate_teams:
+    with st.expander("Player coverage by team and data source"):
+        st.caption("Counts are unconfirmed player listings, not verified active rosters.")
+        st.dataframe(pd.DataFrame(team_source_coverage(roster_listings, slate_teams)),
+                     use_container_width=True, hide_index=True)
 board = pd.DataFrame(rows, columns=columns)
 if not board.empty:
     st.caption(f"{board['Player'].nunique()} players from available game feeds or historical candidates. Roster Source and Last Seen show where each listing came from; availability is not verified.")
