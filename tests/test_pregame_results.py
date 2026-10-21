@@ -1,4 +1,4 @@
-from pregame_results import score_pregame_baselines, summarize_projection_errors, projection_grading_coverage, summarize_projection_errors_by_slate, summarize_grading_by_slate, summarize_unmatched_forecasts_by_slate, list_unmatched_forecasts, summarize_unmatched_by_player, summarize_unmatched_by_prop
+from pregame_results import score_pregame_baselines, summarize_projection_errors, projection_grading_coverage, summarize_projection_errors_by_slate, summarize_grading_by_slate, summarize_unmatched_forecasts_by_slate, list_unmatched_forecasts, summarize_unmatched_by_player, summarize_unmatched_by_prop, summarize_unmatched_by_team
 
 
 def forecast(**overrides):
@@ -268,3 +268,18 @@ def test_unmatched_prop_summary_counts_unique_ungraded_forecasts():
         {"prop": "assists", "unmatched_forecasts": 2},
     ]
     assert summarize_unmatched_by_prop(None, None) == []
+
+
+def test_unmatched_team_summary_normalizes_labels_and_keeps_unknown():
+    forecasts = [
+        forecast(team="bos"), forecast(team="BOS", prop="assists"),
+        forecast(team="nyk", player_id="espn:999"),
+        forecast(team="", slate_date="2026-10-22"),
+        forecast(team="bos"),
+    ]
+    assert summarize_unmatched_by_team(forecasts, []) == [
+        {"team": "BOS", "unmatched_forecasts": 2},
+        {"team": "NYK", "unmatched_forecasts": 1},
+        {"team": "UNKNOWN", "unmatched_forecasts": 1},
+    ]
+    assert summarize_unmatched_by_team(None, None) == []
