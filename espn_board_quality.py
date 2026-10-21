@@ -1,9 +1,17 @@
 """Explain verified ESPN historical sample sufficiency without betting tiers."""
 
+from math import isfinite
+
 
 def history_sample_status(sample_games, last_five_games, last_ten_games):
     """Return a descriptive coverage label; never a prediction or bet grade."""
-    values = (sample_games, last_five_games, last_ten_games)
+    # Pandas represents missing numeric columns as NaN on the master board.
+    def missing(value):
+        return value is None or (isinstance(value, float) and not isfinite(value))
+
+    values = tuple(None if missing(value) else value
+                   for value in (sample_games, last_five_games, last_ten_games))
+    sample_games, last_five_games, last_ten_games = values
     if any(isinstance(v, bool) or (v is not None and
            (not isinstance(v, (int, float)) or v < 0 or int(v) != v))
            for v in values):
