@@ -149,3 +149,13 @@ def test_names_headers_take_priority_over_nonstat_labels():
     section["names"] = section.pop("labels")
     section["labels"] = ["Minutes", "Three Pointers", "Rebounds", "Assists", "Points"]
     assert parse_final_espn_boxscore(data, "4012")[0]["points"] == 24
+
+
+def test_duplicate_matching_competitions_are_rejected():
+    data = sample()
+    original = data["header"]["competitions"][0]
+    data["header"]["competitions"].append({
+        "id": original["id"], "status": {"type": {"completed": False}}
+    })
+    with pytest.raises(NBADataError, match="ambiguous competitions"):
+        parse_final_espn_boxscore(data, "4012")
