@@ -23,7 +23,11 @@ def parse_minutes(value):
 
 def normalize_player_boxscore(player, game_id, final=False, game_date=None):
     """Return one game observation, never a predictive input unless final=True."""
+    if not isinstance(player, dict):
+        return None
     stats = player.get("statistics") or {}
+    if not isinstance(stats, dict):
+        stats = {}
     record = {
         "game_id": str(game_id),
         "game_date": game_date,
@@ -43,7 +47,7 @@ def completed_game_observations(games, player_loader):
     """Collect results only for completed games, ignoring live and future games."""
     records = []
     for game in games:
-        if str(game.get("gameStatus")) != "3":
+        if not isinstance(game, dict) or str(game.get("gameStatus")) != "3":
             continue
         game_id = str(game.get("gameId") or "")
         if not game_id.isdigit():
@@ -58,6 +62,6 @@ def completed_game_observations(games, player_loader):
                 pass
         for player in player_loader(game_id):
             record = normalize_player_boxscore(player, game_id, final=True, game_date=game_date)
-            if record["player_id"] is not None and record["minutes"] is not None:
+            if record is not None and record["player_id"] is not None and record["minutes"] is not None:
                 records.append(record)
     return records
