@@ -74,6 +74,8 @@ def check_recent_finals(today=None, days=7, schedule_loader=espn_games_on,
                     pid = player.get("player_id")
                     team = player.get("team")
                     if (player.get("source") != "ESPN verified final boxscore"
+                            or not isinstance(player.get("player"), str)
+                            or not player["player"].strip()
                             or not isinstance(pid, str) or not pid.startswith("espn:")
                             or not pid[5:].isascii() or not pid[5:].isdigit()
                             or not isinstance(team, str) or len(team) != 3
