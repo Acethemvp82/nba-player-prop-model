@@ -35,3 +35,17 @@ def test_duplicate_games_and_undated_rows():
             game(2, None, 99)]
     result = player_history_summaries(rows)[0]
     assert result["games_played"] == 1
+
+
+def test_numeric_and_string_game_ids_are_same_game():
+    rows = [game(123, "2026-01-01", 10),
+            game("123", "2026-01-01", 10)]
+    result = player_history_summaries(rows)
+    assert result[0]["games_played"] == 1
+    assert result[0]["points_season_avg"] == 10
+
+
+def test_malformed_observation_is_ignored():
+    rows = [None, "bad", game(123, "2026-01-01", 15)]
+    result = player_history_summaries(rows)
+    assert result[0]["games_played"] == 1
