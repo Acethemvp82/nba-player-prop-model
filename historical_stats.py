@@ -40,7 +40,7 @@ def player_history_summaries(observations, as_of=None):
         raise ValueError("as_of must be a valid ISO date")
     groups = defaultdict(list)
     for row in observations:
-        if row.get("is_final") is not True:
+        if not isinstance(row, dict) or row.get("is_final") is not True:
             continue
         played = _day(row.get("game_date"))
         minutes = row.get("minutes")
@@ -58,9 +58,10 @@ def player_history_summaries(observations, as_of=None):
         seen = set()
         unique = []
         for _, game in games:
-            if game["game_id"] not in seen:
+            game_key = str(game["game_id"])
+            if game_key not in seen:
                 unique.append(game)
-                seen.add(game["game_id"])
+                seen.add(game_key)
         latest = unique[0]
         record = {"player_id": pid, "player": latest.get("player"),
                   "team": latest.get("team"), "games_played": len(unique),
