@@ -222,6 +222,16 @@ if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), h
                 ]
                 st.dataframe(pd.DataFrame(failure_rows), use_container_width=True,
                              hide_index=True)
+                failure_export = pd.DataFrame(failure_rows)
+                for column in failure_export.select_dtypes(include=["object", "string"]).columns:
+                    failure_export[column] = failure_export[column].map(safe_spreadsheet_cell)
+                st.download_button(
+                    "Download ESPN retrieval failures CSV",
+                    data=failure_export.to_csv(index=False).encode("utf-8"),
+                    file_name=f"espn_history_failures_{slate_date.isoformat()}.csv",
+                    mime="text/csv",
+                    key="download_espn_history_failures",
+                )
         if any("event_id" not in failure for failure in espn_history["failures"]):
             st.warning(
                 "One or more ESPN schedule dates failed to load. Even when every requested "
