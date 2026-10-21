@@ -112,3 +112,30 @@ def test_repeated_athlete_rows_count_as_one_player_game():
     assert result["games_loaded"] == 1
     assert len(result["observations"]) == 2
     assert {item["player_id"] for item in result["observations"]} == {"espn:9", "espn:10"}
+
+
+def test_history_filters_players_from_unrelated_teams():
+    matchup = {"espnEventId": "100",
+               "homeTeam": {"teamTricode": "BOS"},
+               "awayTeam": {"teamTricode": "NYK"}}
+    unrelated = {**player(), "team": "MIA"}
+    result = collect_espn_history(
+        "2026-10-21", days=1, max_games=1,
+        schedule_loader=lambda _: [matchup],
+        boxscore_loader=lambda _: [player(), unrelated])
+    assert result["games_loaded"] == 1
+    assert len(result["observations"]) == 1
+    assert result["observations"][0]["team"] == "BOS"
+
+
+def test_history_rejects_game_when_no_players_match_scheduled_teams():
+    matchup = {"espnEventId": "100",
+               "homeTeam": {"teamTricode": "BOS"},
+               "awayTeam": {"teamTricode": "NYK"}}
+    result = collect_espn_history(
+        "2026-10-21", days=1, max_games=1,
+        schedule_loader=lambda _: [matchup],
+        boxscore_loader=lambda _: [{**player(), "team": "MIA"}])
+    assert result["games_loaded"] == 0
+    assert result["observations"] == []
+    assert len(result["failures"]) == 1
