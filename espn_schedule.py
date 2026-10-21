@@ -41,9 +41,14 @@ def espn_games_on(day):
         sides = {}
         scores = {}
         team_ids = {}
+        invalid_competitors = False
         for item in competitors:
             if not isinstance(item, dict) or item.get("homeAway") not in ("home", "away"):
-                continue
+                invalid_competitors = True
+                break
+            if item["homeAway"] in sides:
+                invalid_competitors = True
+                break
             team = item.get("team")
             if isinstance(team, dict):
                 abbreviation = team.get("abbreviation")
@@ -62,7 +67,7 @@ def espn_games_on(day):
                             value = str(score)
                             if value.isascii() and value.isdigit():
                                 scores[side] = int(value)
-        if len(sides) != 2 or sides["home"] == sides["away"]:
+        if invalid_competitors or len(sides) != 2 or sides["home"] == sides["away"]:
             continue
         matchup = (sides["away"], sides["home"])
         # Ignore an event whose competitors do not agree on the game sides.
