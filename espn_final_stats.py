@@ -17,6 +17,8 @@ def parse_final_espn_boxscore(payload, expected_event_id):
     """Parse ESPN boxscore statistics only for a confirmed final event."""
     if not isinstance(payload, dict):
         raise NBADataError("Invalid ESPN game summary")
+    if isinstance(expected_event_id, bool) or not isinstance(expected_event_id, (str, int)):
+        raise NBADataError("Invalid ESPN event ID")
     event_id = str(expected_event_id)
     if not event_id.isascii() or not event_id.isdigit():
         raise NBADataError("Invalid ESPN event ID")
