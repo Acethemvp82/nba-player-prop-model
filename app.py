@@ -17,7 +17,7 @@ from espn_history_health import espn_history_health
 from csv_export import safe_spreadsheet_cell
 from history_collection import recent_player_summaries, fetch_boxscore_players
 from projection_baseline import baseline_projections
-from pregame_results import score_pregame_baselines, summarize_projection_errors
+from pregame_results import score_pregame_baselines, summarize_projection_errors, projection_grading_coverage
 from pregame_roster import candidate_players
 from matchup_validation import valid_game_player
 from opponent_stats import opponent_game_totals, opponent_sample_summary
@@ -391,6 +391,16 @@ if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), h
                             else:
                                 graded = score_pregame_baselines(
                                     saved.to_dict("records"), espn_history["observations"])
+                                coverage = projection_grading_coverage(
+                                    saved.to_dict("records"), graded)
+                                st.caption(
+                                    f"Grading coverage: {coverage['graded_forecasts']} of "
+                                    f"{coverage['eligible_forecasts']} eligible forecasts "
+                                    f"({coverage['grading_coverage_pct']}%). "
+                                    f"Unmatched: {coverage['unmatched_forecasts']}."
+                                    if coverage["grading_coverage_pct"] is not None
+                                    else "No eligible forecasts found in the uploaded CSV."
+                                )
                                 if graded:
                                     st.dataframe(pd.DataFrame(graded)[
                                         ["player", "team", "slate_date", "prop", "baseline",
