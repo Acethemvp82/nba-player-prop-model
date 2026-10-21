@@ -604,6 +604,10 @@ if not board.empty:
             latest_verified_game.get((str(row["Player ID"]), row["Team"]))
             for _, row in board.iterrows()
         ]
+        board["ESPN Days Since Sample"] = [
+            (slate_date - date.fromisoformat(played)).days if played else None
+            for played in board["ESPN Latest Verified Game"]
+        ]
         prop_avg = {"Points": "Points avg", "Rebounds": "Rebounds avg",
                     "Assists": "Assists avg", "3-Pointers": "Threes avg"}
         board["ESPN Sample Games"] = [
