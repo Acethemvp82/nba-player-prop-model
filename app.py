@@ -636,7 +636,8 @@ if not board.empty:
         st.caption("ESPN History Status describes verified sample size only; "
                    "it is not a betting tier or confidence prediction.")
         st.caption("ESPN historical and L5/L10 averages use available verified pre-slate games (sample counts shown), not a "
-                   "betting projection. Missing values indicate unavailable matched history.")
+                   "betting projection. ESPN Latest Verified Game is the most recent sampled game, "
+                   "not proof of full-season coverage. Missing values indicate unavailable matched history.")
         # Make missing ESPN history visible by prop; a roster listing alone
         # does not establish any verified completed-game observations.
         espn_coverage = board.groupby("Prop", sort=False).agg(
