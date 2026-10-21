@@ -17,6 +17,7 @@ def history_quality(observations, as_of):
     counts = Counter()
     games = set()
     players = set()
+    appearances = set()
     for row in observations:
         counts["rows_received"] += 1
         if not isinstance(row, dict) or row.get("is_final") is not True:
@@ -34,6 +35,11 @@ def history_quality(observations, as_of):
                 or not isfinite(minutes) or minutes <= 0):
             counts["rejected_identity_or_minutes"] += 1
             continue
+        appearance = (gid, str(pid))
+        if appearance in appearances:
+            counts["duplicate_appearances"] += 1
+            continue
+        appearances.add(appearance)
         counts["usable_appearances"] += 1
         games.add(gid)
         players.add(str(pid))
@@ -46,6 +52,7 @@ def history_quality(observations, as_of):
         "rows_received": counts["rows_received"],
         "usable_appearances": counts["usable_appearances"],
         "unique_games": len(games),
+        "duplicate_appearances": counts["duplicate_appearances"],
         "unique_players": len(players),
         "rejected_nonfinal_or_invalid": counts["rejected_nonfinal_or_invalid"],
         "rejected_date": counts["rejected_date"],
