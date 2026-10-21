@@ -450,7 +450,8 @@ if not board.empty:
     # Join ESPN descriptive stats by exact namespaced athlete ID and team.
     # Never treat them as model projections or merge ESPN IDs with NBA IDs.
     espn_history_board = st.session_state.get("espn_history_preview")
-    if (st.session_state.get("espn_history_parameters") or (None,))[0] != slate_date.isoformat():
+    if st.session_state.get("espn_history_parameters") != (
+            slate_date.isoformat(), history_days, espn_game_budget):
         espn_history_board = None
     if espn_history_board and espn_history_board.get("observations"):
         averages = espn_player_averages(espn_history_board["observations"], slate_date.isoformat())
