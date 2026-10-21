@@ -10,6 +10,7 @@ from projection_baseline import baseline_projections
 from pregame_roster import candidate_players
 from matchup_validation import valid_game_player
 from opponent_stats import opponent_game_totals, opponent_sample_summary
+from roster_coverage import roster_coverage
 
 st.set_page_config(page_title="NBA Player Prop Model", page_icon="🏀", layout="wide")
 st.title("🏀 NBA Player Prop Model")
@@ -158,6 +159,7 @@ categories = ["Points", "Rebounds", "Assists", "3-Pointers"]
 selected = st.multiselect("Prop categories", categories, default=categories)
 columns = ["Game", "Player", "Player ID", "Team", "Opponent", "Roster Source", "Last Seen", "Prop", "FanDuel Line", "Over Odds", "Projection", "Over Probability", "Edge", "Confidence"]
 rows = []
+roster_listings = []
 failures = []
 for game in slate_rows:
     if not game["Game ID"]:
@@ -170,6 +172,7 @@ for game in slate_rows:
     for player in players:
         if not valid_game_player(player, game["Matchup"]):
             continue
+        roster_listings.append({"player_id": player.get("player_id"), "team": player.get("team"), "source": "NBA game feed"})
         for prop in selected:
             rows.append({
                 "Game": game["Matchup"],
@@ -202,6 +205,7 @@ if history_for_slate and history_for_slate.get("summaries"):
             if candidate["team"] not in teams:
                 continue
             opponent = teams[0] if candidate["team"] == teams[1] else teams[1]
+            roster_listings.append({"player_id": candidate["player_id"], "team": candidate["team"], "source": "Historical candidate"})
             for prop in selected:
                 rows.append({"Game": game["Matchup"], "Player": candidate["player"],
                              "Player ID": candidate["player_id"], "Team": candidate["team"],
@@ -214,24 +218,22 @@ if history_for_slate and history_for_slate.get("summaries"):
             break
 # Data-quality diagnostics: expose incomplete roster coverage instead of
 # presenting a partial slate as if every team were represented.
-listed_teams = {str(item["Team"]) for item in rows if item.get("Team")}
 slate_teams = {str((game.get(side) or {}).get("teamTricode"))
                for game in slate_games for side in ("homeTeam", "awayTeam")
                if (game.get(side) or {}).get("teamTricode")}
-missing_teams = sorted(slate_teams - listed_teams)
-if missing_teams:
-    st.warning("No players available for scheduled teams: " + ", ".join(missing_teams) +
+coverage = roster_coverage(roster_listings, slate_teams)
+if not selected:
+    st.info("Select at least one prop category to populate the master board.")
+if coverage["missing_teams"]:
+    st.warning("No players available for scheduled teams: " + ", ".join(coverage["missing_teams"]) +
                ". The master board is incomplete; do not interpret missing players as inactive.")
 elif slate_teams:
     st.caption("Every scheduled team has at least one listed player. This does NOT verify full rosters.")
-if rows:
-    unique_players = {(str(item["Player ID"]), str(item["Team"])) for item in rows}
-    feed_players = {(str(item["Player ID"]), str(item["Team"])) for item in rows
-                    if item["Roster Source"] == "NBA game feed"}
-    st.caption(f"Roster coverage: {len(listed_teams)}/{len(slate_teams)} scheduled teams; "
-               f"{len(unique_players)} unique player/team listings "
-               f"({len(feed_players)} from game feeds, "
-               f"{len(unique_players - feed_players)} historical candidates).")
+if roster_listings:
+    st.caption(f"Roster coverage: {coverage['represented_teams']}/{coverage['scheduled_teams']} scheduled teams; "
+               f"{coverage['players']} unique player/team listings "
+               f"({coverage['feed_players']} from game feeds, "
+               f"{coverage['historical_candidates']} historical candidates).")
 board = pd.DataFrame(rows, columns=columns)
 if not board.empty:
     st.caption(f"{board['Player'].nunique()} players from available game feeds or historical candidates. Roster Source and Last Seen show where each listing came from; availability is not verified.")
