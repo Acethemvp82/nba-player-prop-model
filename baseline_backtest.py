@@ -28,6 +28,7 @@ def baseline_backtest(observations, as_of, min_training_games=5):
     by_date = defaultdict(list)
     seen = set()
     invalid_rows = 0
+    future_or_cutoff_rows = 0
     duplicate_rows = 0
     for row in observations:
         if not isinstance(row, dict) or row.get("is_final") is not True:
@@ -37,7 +38,10 @@ def baseline_backtest(observations, as_of, min_training_games=5):
         gid = str(row.get("game_id") or "")
         pid = row.get("player_id")
         minutes = row.get("minutes")
-        if (day is None or day >= cutoff or not gid.isdigit() or pid is None
+        if day is not None and day >= cutoff:
+            future_or_cutoff_rows += 1
+            continue
+        if (day is None or not gid.isdigit() or pid is None
                 or not isinstance(minutes, (int, float)) or isinstance(minutes, bool)
                 or not isfinite(minutes) or minutes <= 0):
             invalid_rows += 1
@@ -75,6 +79,7 @@ def baseline_backtest(observations, as_of, min_training_games=5):
     return [
         {"prop": prop,
          "excluded_invalid_rows": invalid_rows,
+         "excluded_on_or_after_cutoff": future_or_cutoff_rows,
          "excluded_duplicate_rows": duplicate_rows, "evaluated": len(errors[prop]),
          "players_evaluated": len(player_games[prop]),
          "eligible_appearances": eligible_appearances[prop],
