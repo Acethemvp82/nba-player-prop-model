@@ -206,6 +206,11 @@ if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), h
             st.caption("Success rate covers requested final boxscores, not every scheduled NBA game.")
             st.dataframe(pd.DataFrame([espn_history_health(espn_history)]),
                          use_container_width=True, hide_index=True)
+        if any("event_id" not in failure for failure in espn_history["failures"]):
+            st.warning(
+                "One or more ESPN schedule dates failed to load. Even when every requested "
+                "boxscore succeeded, historical averages may omit entire game dates."
+            )
         if espn_history["games_loaded"] < espn_history["games_requested"]:
             st.warning("ESPN historical sample is incomplete. Do not interpret these averages "
                        "as full-season or last-N-game statistics.")
