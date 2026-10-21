@@ -4,7 +4,7 @@ from espn_averages import espn_player_averages
 def test_espn_averages_deduplicate_games_and_exclude_slate_day():
     def row(day, gid, points):
         return {"player_id": "espn:12", "player": "Player One", "team": "BOS",
-                "game_date": day, "game_id": gid, "points": points,
+                "game_date": day, "game_id": gid, "source": "ESPN verified final boxscore", "points": points,
                 "rebounds": 6, "assists": 4, "threes": 2}
     rows = [row("2026-10-18", "espn:100", 20),
             row("2026-10-18", "espn:100", 20),
