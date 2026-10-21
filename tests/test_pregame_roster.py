@@ -20,3 +20,18 @@ def test_other_team_excluded():
     assert candidate_players([{"homeTeam": {"teamTricode": "BOS"}}],
         [{"player_id": 1, "player": "Test", "team": "NYK",
           "last_game_date": "2026-10-19"}], "2026-10-21") == []
+
+
+def test_duplicate_player_uses_latest_team():
+    games = [{"homeTeam": {"teamTricode": "NYK"},
+              "awayTeam": {"teamTricode": "BOS"}}]
+    summaries = [
+        {"player_id": 12, "player": "Sample", "team": "BOS",
+         "last_game_date": "2026-10-17"},
+        {"player_id": 12, "player": "Sample", "team": "NYK",
+         "last_game_date": "2026-10-19"},
+    ]
+    result = candidate_players(games, summaries, "2026-10-21")
+    assert len(result) == 1
+    assert result[0]["team"] == "NYK"
+    assert result[0]["last_seen"] == "2026-10-19"
