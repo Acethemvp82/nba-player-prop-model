@@ -4,7 +4,6 @@ Evaluates predicted per-game values against completed-game results only.
 This is not an OVER probability, sportsbook backtest, or betting recommendation.
 """
 from collections import defaultdict
-from datetime import timedelta
 from math import isfinite
 
 from historical_stats import _day, player_history_summaries
