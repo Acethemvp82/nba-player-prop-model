@@ -189,3 +189,14 @@ def test_stale_in_progress_schedule_status_can_load_verified_final():
     assert called == ["222"]
     assert result["games_loaded"] == 1
     assert result["observations"][0]["points"] == 17
+
+
+def test_final_boxscore_rejects_malformed_team_objects(monkeypatch):
+    import pytest
+    from nba_data import NBADataError
+    from history_collection import fetch_boxscore_players
+    monkeypatch.setattr("history_collection._get_json", lambda _: {
+        "game": {"gameId": "123", "gameStatus": 3,
+                 "homeTeam": ["unexpected"], "awayTeam": {"teamTricode": "NYK", "players": []}}})
+    with pytest.raises(NBADataError, match="malformed team objects"):
+        fetch_boxscore_players("123")
