@@ -102,3 +102,37 @@ def test_duplicate_espn_matchups_are_not_listed_twice():
         games = espn_games_on("2026-10-21")
     assert len(games) == 1
     assert games[0]["homeTeam"]["teamTricode"] == "NYK"
+
+
+def test_espn_fallback_reads_scores_without_fabricating_missing_scores():
+    class Response:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {"events": [{"competitions": [{"competitors": [
+                {"homeAway": "home", "team": {"abbreviation": "BOS"}, "score": "108"},
+                {"homeAway": "away", "team": {"abbreviation": "NY"}, "score": "102"},
+            ]}]}]}
+
+    with patch("espn_schedule.requests.get", return_value=Response()):
+        game = espn_games_on("2026-10-21")[0]
+    assert game["homeScore"] == 108
+    assert game["awayScore"] == 102
+
+
+def test_espn_fallback_does_not_turn_missing_scores_into_zero():
+    class Response:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {"events": [{"competitions": [{"competitors": [
+                {"homeAway": "home", "team": {"abbreviation": "BOS"}},
+                {"homeAway": "away", "team": {"abbreviation": "NY"}, "score": "N/A"},
+            ]}]}]}
+
+    with patch("espn_schedule.requests.get", return_value=Response()):
+        game = espn_games_on("2026-10-21")[0]
+    assert game["homeScore"] is None
+    assert game["awayScore"] is None
