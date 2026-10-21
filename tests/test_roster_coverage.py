@@ -42,3 +42,15 @@ def test_malformed_roster_entries_are_ignored():
     assert result["feed_players"] == 1
     assert result["historical_candidates"] == 1
     assert result["missing_teams"] == []
+
+
+def test_invalid_player_identifiers_do_not_inflate_roster_coverage():
+    players = [
+        {"player_id": True, "team": "BOS", "source": "NBA game feed"},
+        {"player_id": "１２３", "team": "BOS", "source": "NBA game feed"},
+        {"player_id": "unknown", "team": "BOS", "source": "NBA game feed"},
+        {"player_id": 123, "team": "NYK", "source": "NBA game feed"},
+    ]
+    result = roster_coverage(players, {"BOS", "NYK"})
+    assert result["players"] == 1
+    assert result["missing_teams"] == ["BOS"]
