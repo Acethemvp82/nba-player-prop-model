@@ -29,11 +29,19 @@ def espn_recent_trends(observations, as_of):
             continue
         key = (pid, team)
         existing = grouped[key].get(game_id)
-        if existing is None or played > existing[0]:
-            grouped[key][game_id] = (played, row)
+        if existing is not None:
+            # Conflicting observations cannot safely become a recent-game trend.
+            if existing[0] != played or any(
+                    existing[1][prop] != row[prop] for prop in PROPS):
+                grouped[key][game_id] = None
+            continue
+        grouped[key][game_id] = (played, row)
     result = {}
     for key, games in grouped.items():
-        ordered = [row for _, row in sorted(games.values(), key=lambda item: (item[0], item[1]["game_id"]), reverse=True)]
+        verified = [item for item in games.values() if item is not None]
+        if not verified:
+            continue
+        ordered = [row for _, row in sorted(verified, key=lambda item: (item[0], item[1]["game_id"]), reverse=True)]
         data = {"Sample games": len(ordered)}
         for n in (5, 10):
             sample = ordered[:n]
