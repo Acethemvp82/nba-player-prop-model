@@ -193,3 +193,26 @@ def test_probe_requires_trends_to_include_all_verified_players(monkeypatch):
     )
     assert result["players"] == 0
     assert "averages or recent trends" in result["errors"][0]
+
+
+def test_probe_requires_valid_averages_and_trends(monkeypatch):
+    import scripts.espn_live_probe as probe
+
+    monkeypatch.setattr(probe, "espn_player_averages", lambda *args: [])
+    result = check_recent_finals(
+        date(2026, 10, 21), days=1,
+        schedule_loader=lambda _: [game("101")],
+        boxscore_loader=lambda _: [verified_player()],
+    )
+    assert result["players"] == 0
+    assert "averages or recent trends" in result["errors"][0]
+
+
+def test_probe_accepts_final_through_full_statistics_pipeline():
+    result = check_recent_finals(
+        date(2026, 10, 21), days=1,
+        schedule_loader=lambda _: [game("101")],
+        boxscore_loader=lambda _: [verified_player()],
+    )
+    assert result["players"] == 1
+    assert result["errors"] == []
