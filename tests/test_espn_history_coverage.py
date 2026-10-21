@@ -3,7 +3,7 @@ from espn_history_coverage import espn_history_coverage
 
 def record(team, pid, gid):
     return {"team": team, "player_id": f"espn:{pid}", "game_id": f"espn:{gid}",
-            "source": "ESPN verified final boxscore",
+            "source": "ESPN verified final boxscore", "game_date": "2026-10-19",
             "points": 12, "rebounds": 4, "assists": 3, "threes": 2}
 
 
@@ -38,3 +38,14 @@ def test_coverage_rejects_invalid_scheduled_team_codes():
          "Players with 5+ games": 0, "Players with 10+ games": 0,
          "Status": "No verified history"}
     ]
+
+
+def test_coverage_excludes_invalid_dates_and_conflicting_dates():
+    valid = record("BOS", 1, 100)
+    wrong_date = {**valid, "game_date": "2026-10-18"}
+    malformed = {**record("BOS", 2, 101), "game_date": "not-a-date"}
+    result = espn_history_coverage(
+        [valid, wrong_date, malformed, record("BOS", 3, 102)], {"BOS"}
+    )
+    assert result[0]["Historical players"] == 1
+    assert result[0]["Player-game records"] == 1
