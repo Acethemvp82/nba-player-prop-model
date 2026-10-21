@@ -46,6 +46,9 @@ def score_pregame_baselines(forecasts, final_observations):
         actual = candidates[0].get(prop)
         if type(actual) is not int or actual < 0:
             continue
+        if (row.get("team") is not None and candidates[0].get("team") is not None
+                and row["team"] != candidates[0]["team"]):
+            continue
         if (prop == "threes" and type(candidates[0].get("points")) is int
                 and actual * 3 > candidates[0]["points"]):
             continue
