@@ -310,7 +310,7 @@ for game in slate_rows:
                 "Projection": None,
                 "Over Probability": None,
                 "Edge": None,
-                "Confidence": "Unconfirmed ESPN listing" if source != "NBA game feed" else "Not calculated",
+                "Confidence": "Unconfirmed ESPN listing" if player_source != "NBA game feed" else "Not calculated",
             })
 history_for_slate = st.session_state.get("nba_historical_preview")
 if (st.session_state.get("nba_historical_preview_date") != slate_date.isoformat() or
