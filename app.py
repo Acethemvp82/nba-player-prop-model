@@ -147,8 +147,12 @@ for game in slate_rows:
     except NBADataError as exc:
         failures.append(f'{game["Matchup"]}: {exc}')
         continue
+    scheduled_teams = set(game["Matchup"].split(" @ "))
     for player in players:
-        if not player.get("player"):
+        if not player.get("player") or player.get("team") not in scheduled_teams:
+            continue
+        expected_opponent = next(team for team in scheduled_teams if team != player["team"]) if len(scheduled_teams) == 2 else None
+        if expected_opponent is None or player.get("opponent") != expected_opponent:
             continue
         for prop in selected:
             rows.append({
