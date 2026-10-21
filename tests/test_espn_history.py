@@ -182,3 +182,17 @@ def test_conflicting_duplicate_athlete_stats_reject_entire_game():
     assert result["observations"] == []
     assert len(result["failures"]) == 1
     assert "Conflicting ESPN stats" in result["failures"][0]["error"]
+
+
+def test_same_espn_athlete_cannot_play_for_both_teams_in_one_game():
+    matchup = {"espnEventId": "100",
+               "homeTeam": {"teamTricode": "BOS"},
+               "awayTeam": {"teamTricode": "NYK"}}
+    result = collect_espn_history(
+        "2026-10-21", days=1, max_games=1,
+        schedule_loader=lambda _: [matchup],
+        boxscore_loader=lambda _: [player(), {**player(), "team": "NYK"}])
+    assert result["games_loaded"] == 0
+    assert result["observations"] == []
+    assert len(result["failures"]) == 1
+    assert "both teams" in result["failures"][0]["error"]
