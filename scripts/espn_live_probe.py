@@ -39,6 +39,7 @@ def check_recent_finals(today=None, days=7, schedule_loader=espn_games_on,
         if not isinstance(games, list):
             errors.append(f"{day} schedule: invalid game collection")
             continue
+        seen_events_on_day = set()
         for game in games:
             if completed >= max_attempts:
                 break
@@ -47,7 +48,12 @@ def check_recent_finals(today=None, days=7, schedule_loader=espn_games_on,
             event_id = game.get("espnEventId")
             if not (isinstance(event_id, str) and event_id.isascii()
                     and event_id.isdigit()):
+                errors.append(f"{day} schedule: completed game has invalid ESPN event ID")
                 continue
+            if event_id in seen_events_on_day:
+                errors.append(f"{day} schedule: duplicate completed event={event_id}")
+                continue
+            seen_events_on_day.add(event_id)
             completed += 1
             try:
                 players = boxscore_loader(event_id)
