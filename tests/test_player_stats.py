@@ -66,3 +66,14 @@ def test_nonfinite_stats_are_missing_not_zero():
     assert result["rebounds"] is None
     assert result["assists"] is None
     assert result["threes"] == 2
+
+
+def test_malformed_player_and_stats_payloads_do_not_crash_collection():
+    games = [None, {"gameId": "123", "gameStatus": 3, "gameDateEst": "2026-10-19"}]
+    players = [None, {"player_id": 2, "player": "Example",
+                      "statistics": "bad"}]
+    result = completed_game_observations(games, lambda _: players)
+    assert result == []
+    normalized = normalize_player_boxscore(players[1], "123", final=True)
+    assert normalized["points"] is None
+    assert normalized["minutes"] is None
