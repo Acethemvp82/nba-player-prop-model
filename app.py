@@ -9,7 +9,7 @@ from history_collection import recent_player_summaries, fetch_boxscore_players
 from projection_baseline import baseline_projections
 from pregame_roster import candidate_players
 from matchup_validation import valid_game_player
-from opponent_stats import opponent_game_totals
+from opponent_stats import opponent_game_totals, opponent_sample_summary
 
 st.set_page_config(page_title="NBA Player Prop Model", page_icon="🏀", layout="wide")
 st.title("🏀 NBA Player Prop Model")
@@ -140,7 +140,14 @@ if historical and historical.get("observations"):
     opponent_rows = opponent_game_totals(historical["observations"], slate_date)
     if opponent_rows:
         st.caption("Observed player totals from collected final box scores, not verified complete-team defensive totals. No matchup adjustment is applied.")
-        st.dataframe(pd.DataFrame(opponent_rows), use_container_width=True, hide_index=True)
+        opponent_averages = opponent_sample_summary(opponent_rows)
+        if opponent_averages:
+            st.caption("Screened historical opponent averages (at least 8 observed players per game). Sample sizes are shown; these are not calibrated defensive ratings.")
+            st.dataframe(pd.DataFrame(opponent_averages), use_container_width=True, hide_index=True)
+        else:
+            st.warning("No opponent games passed the minimum player-coverage screen.")
+        with st.expander("Individual opponent game observations"):
+            st.dataframe(pd.DataFrame(opponent_rows), use_container_width=True, hide_index=True)
     else:
         st.info("No valid opponent observations in the selected historical sample.")
 else:
