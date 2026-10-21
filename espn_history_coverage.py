@@ -42,6 +42,20 @@ def espn_history_coverage(observations, scheduled_teams):
                 records[key] = None
         else:
             records[key] = row
+    # A player cannot appear for two teams in the same game. Exclude both
+    # sides of a cross-team conflict rather than inflating slate coverage.
+    ownership = {}
+    conflicts = set()
+    for team, records in grouped.items():
+        for key, row in records.items():
+            if row is None:
+                continue
+            previous_team = ownership.setdefault(key, team)
+            if previous_team != team:
+                conflicts.add(key)
+    for records in grouped.values():
+        for key in conflicts:
+            records.pop(key, None)
     result = []
     for team, records in grouped.items():
         players = {}
