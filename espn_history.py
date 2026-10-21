@@ -108,7 +108,16 @@ def collect_espn_history(as_of, days=7, max_games=30,
                 # stat sections. Count one verified player-game per ESPN ID/team.
                 unique_players = {}
                 for player in valid_players:
-                    unique_players.setdefault((player["player_id"], player["team"]), player)
+                    key = (player["player_id"], player["team"])
+                    previous = unique_players.get(key)
+                    if previous is not None:
+                        # Identical repeated rows are harmless, but conflicting
+                        # boxscore totals make the entire game untrustworthy.
+                        if any(previous[prop] != player[prop]
+                               for prop in ("points", "rebounds", "assists", "threes")):
+                            raise NBADataError("Conflicting ESPN stats for the same athlete")
+                        continue
+                    unique_players[key] = player
                 games_loaded += 1
                 for player in unique_players.values():
                     observations.append({**player, "game_id": f"espn:{eid}",
