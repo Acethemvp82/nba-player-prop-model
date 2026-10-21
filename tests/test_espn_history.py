@@ -55,6 +55,17 @@ def test_history_deduplicates_events_across_dates():
     assert len(result["observations"]) == 1
 
 
+def test_impossible_three_point_total_rejects_game():
+    bad = {**player(), "points": 5, "threes": 3}
+    result = collect_espn_history(
+        "2026-10-21", days=1, max_games=1,
+        schedule_loader=lambda _: [game("100")],
+        boxscore_loader=lambda _: [bad])
+    assert result["games_loaded"] == 0
+    assert result["observations"] == []
+    assert len(result["failures"]) == 1
+
+
 def test_duplicate_athlete_id_with_different_name_rejects_game():
     first = player()
     conflicting = {**first, "player": "Different Athlete"}
