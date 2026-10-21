@@ -39,6 +39,9 @@ def check_recent_finals(today=None, days=7, schedule_loader=espn_games_on,
         if not isinstance(games, list):
             errors.append(f"{day} schedule: invalid game collection")
             continue
+        if any(not isinstance(game, dict) for game in games):
+            errors.append(f"{day} schedule: malformed game entry")
+            continue
         seen_events_on_day = set()
         for game in games:
             if completed >= max_attempts:
