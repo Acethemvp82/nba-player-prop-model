@@ -63,4 +63,6 @@ def espn_game_players(event_id):
                 seen.add(key)
                 result.append({"player_id": f"espn:{athlete_id}", "player": name.strip(),
                                "team": code, "source": "ESPN game summary (unconfirmed)"})
+    if not result:
+        raise NBADataError("ESPN game summary has no usable player listings; pregame rosters may not be published")
     return result
