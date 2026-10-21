@@ -17,7 +17,7 @@ from espn_history_health import espn_history_health
 from csv_export import safe_spreadsheet_cell
 from history_collection import recent_player_summaries, fetch_boxscore_players
 from projection_baseline import baseline_projections
-from pregame_results import score_pregame_baselines, summarize_projection_errors, projection_grading_coverage, summarize_projection_errors_by_slate
+from pregame_results import score_pregame_baselines, summarize_projection_errors, projection_grading_coverage, summarize_projection_errors_by_slate, summarize_grading_by_slate
 from pregame_roster import candidate_players
 from matchup_validation import valid_game_player
 from opponent_stats import opponent_game_totals, opponent_sample_summary
@@ -442,6 +442,19 @@ if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), h
                                         file_name=f"nba_per_slate_projection_accuracy_{slate_date.isoformat()}.csv",
                                         mime="text/csv",
                                         help="Verified matched forecasts only; includes sample counts, MAE, and bias.",
+                                    )
+                                with st.expander("Grading coverage by slate date"):
+                                    st.caption("Unmatched forecasts indicate missing verified finals, "
+                                               "not automatically incorrect predictions.")
+                                    slate_coverage = pd.DataFrame(
+                                        summarize_grading_by_slate(saved.to_dict("records"), graded))
+                                    st.dataframe(slate_coverage,
+                                                 use_container_width=True, hide_index=True)
+                                    st.download_button(
+                                        "Download per-slate grading coverage CSV",
+                                        data=slate_coverage.to_csv(index=False),
+                                        file_name=f"nba_slate_grading_coverage_{slate_date.isoformat()}.csv",
+                                        mime="text/csv",
                                     )
                                 graded_export = pd.DataFrame(graded).copy()
                                 for column in graded_export.select_dtypes(include=["object", "string"]).columns:
