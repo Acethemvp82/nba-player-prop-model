@@ -44,7 +44,7 @@ def render_dashboard():
         st.header("Slate controls")
         day = st.date_input("Slate date", datetime.now(ET).date())
         lookback = st.select_slider("History window (days)", options=[7, 14, 21, 30], value=21)
-        cap = st.select_slider("Completed games to retrieve", options=[10, 20, 30, 50, 75, 100], value=50)
+        cap = st.select_slider("Completed games to retrieve", options=[10, 20, 30, 50, 75, 100], value=100)
         refresh = st.button("Build / refresh projections", type="primary", use_container_width=True)
         st.caption("Historical results are cached for one hour. No live sportsbook connection.")
     key = (day.isoformat(), lookback, cap)
