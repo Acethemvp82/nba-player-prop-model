@@ -28,6 +28,11 @@ def collect_espn_history(as_of, days=7, max_games=30,
     cutoff = _day(as_of)
     if cutoff is None:
         raise ValueError("Invalid as-of date")
+    # Reject future slate dates: no historical game should be inferred from
+    # calendar days that have not yet occurred.
+    from datetime import datetime, timezone
+    if cutoff > datetime.now(timezone.utc).date():
+        raise ValueError("as-of date cannot be in the future")
     if isinstance(days, bool) or not isinstance(days, int) or not 1 <= days <= 30:
         raise ValueError("days must be between 1 and 30")
     if isinstance(max_games, bool) or not isinstance(max_games, int) or not 1 <= max_games <= 100:
