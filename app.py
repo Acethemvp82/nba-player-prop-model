@@ -24,6 +24,10 @@ st.info("NBA schedule and available game-roster data are displayed below. Pregam
 def load_games():
     return scoreboard()
 
+@st.cache_data(ttl=300, show_spinner=False)
+def load_espn_slate(day):
+    return espn_games_on(day)
+
 @st.cache_data(ttl=900, show_spinner=False)
 def load_players(game_id):
     return game_players(str(game_id))
@@ -59,7 +63,7 @@ try:
 except NBADataError as exc:
     st.warning(f"Official NBA season schedule unavailable: {exc}")
     try:
-        slate_games = espn_games_on(slate_date)
+        slate_games = load_espn_slate(slate_date.isoformat())
         st.info("Using ESPN schedule fallback. Matchups and tipoffs only: ESPN event IDs are "
                 "not NBA box-score IDs, and this does not restore player or historical feeds.")
     except NBADataError as backup_exc:
@@ -88,7 +92,23 @@ st.subheader("Current-day NBA games")
 if game_rows:
     st.dataframe(pd.DataFrame(game_rows).drop(columns=["Game ID"]), use_container_width=True, hide_index=True)
 else:
-    st.warning("No games returned by today's NBA scoreboard.")
+    try:
+        today_local = datetime.now(ZoneInfo("America/New_York")).date()
+        fallback_today = load_espn_slate(today_local.isoformat())
+        if fallback_today:
+            fallback_rows = []
+            for game in fallback_today:
+                home = game["homeTeam"]["teamTricode"]
+                away = game["awayTeam"]["teamTricode"]
+                fallback_rows.append({"Matchup": f"{away} @ {home}",
+                                      "Status": game["gameStatusText"],
+                                      "Tipoff (UTC)": game["gameTimeUTC"]})
+            st.info("Showing ESPN schedule-only fallback for today. Player box scores are not connected.")
+            st.dataframe(pd.DataFrame(fallback_rows), use_container_width=True, hide_index=True)
+        else:
+            st.warning("No games returned by the NBA scoreboard or ESPN fallback today.")
+    except NBADataError as exc:
+        st.warning(f"Current-day NBA schedule unavailable from both feeds: {exc}")
 
 st.subheader("Historical player statistics — research preview")
 st.caption("Official completed-game box scores only. These are descriptive averages, not predictions or betting edges.")
@@ -107,6 +127,7 @@ def load_baseline_backtest(observations, as_of):
 
 if st.button("Refresh NBA feeds and cached history"):
     load_games.clear()
+    load_espn_slate.clear()
     load_players.clear()
     load_schedule.clear()
     load_final_boxscore.clear()
