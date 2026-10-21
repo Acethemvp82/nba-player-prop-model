@@ -1,4 +1,4 @@
-from pregame_results import score_pregame_baselines, summarize_projection_errors, projection_grading_coverage, summarize_projection_errors_by_slate, summarize_grading_by_slate
+from pregame_results import score_pregame_baselines, summarize_projection_errors, projection_grading_coverage, summarize_projection_errors_by_slate, summarize_grading_by_slate, summarize_unmatched_forecasts_by_slate
 
 
 def forecast(**overrides):
@@ -191,4 +191,14 @@ def test_grading_coverage_by_slate_separates_matched_and_unmatched():
         {"slate_date": "2026-10-22", "eligible_forecasts": 1,
          "graded_forecasts": 0, "unmatched_forecasts": 1,
          "grading_coverage_pct": 0.0},
+    ]
+
+
+def test_unmatched_forecasts_group_by_slate_and_prop():
+    forecasts = [forecast(), forecast(), forecast(prop="assists"),
+                 forecast(slate_date="2026-10-22")]
+    graded = score_pregame_baselines(forecasts, [final()])
+    assert summarize_unmatched_forecasts_by_slate(forecasts, graded) == [
+        {"slate_date": "2026-10-21", "prop": "assists", "unmatched_forecasts": 1},
+        {"slate_date": "2026-10-22", "prop": "points", "unmatched_forecasts": 1},
     ]
