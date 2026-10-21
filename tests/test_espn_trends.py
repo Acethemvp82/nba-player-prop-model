@@ -38,3 +38,9 @@ def test_all_conflicted_games_produce_no_trend():
     rows = [row("2026-10-18", "102", 20),
             row("2026-10-18", "102", 99)]
     assert espn_recent_trends(rows, "2026-10-21") == {}
+
+
+def test_trends_reject_noncanonical_team_codes():
+    invalid = [{**row("2026-10-19", "103", 20), "team": team}
+               for team in ("bos", "B0S")]
+    assert espn_recent_trends(invalid, "2026-10-21") == {}
