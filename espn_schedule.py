@@ -39,6 +39,7 @@ def espn_games_on(day):
         if not isinstance(competitors, list):
             continue
         sides = {}
+        scores = {}
         for item in competitors:
             if not isinstance(item, dict) or item.get("homeAway") not in ("home", "away"):
                 continue
@@ -50,7 +51,13 @@ def espn_games_on(day):
                     code = abbreviation.upper()
                     code = ESPN_TO_NBA.get(code, code)
                     if len(code) == 3:
-                        sides[item["homeAway"]] = code
+                        side = item["homeAway"]
+                        sides[side] = code
+                        score = item.get("score")
+                        if isinstance(score, (str, int)) and not isinstance(score, bool):
+                            value = str(score)
+                            if value.isascii() and value.isdigit():
+                                scores[side] = int(value)
         if len(sides) != 2 or sides["home"] == sides["away"]:
             continue
         matchup = (sides["away"], sides["home"])
@@ -62,6 +69,8 @@ def espn_games_on(day):
             "homeTeam": {"teamTricode": sides["home"]},
             "awayTeam": {"teamTricode": sides["away"]},
             "gameTimeUTC": event.get("date"),
+            "homeScore": scores.get("home"),
+            "awayScore": scores.get("away"),
             "gameStatusText": (event.get("status") or {}).get("type", {}).get("description")
             if isinstance(event.get("status"), dict) and isinstance(event["status"].get("type"), dict)
             else "Unknown",
