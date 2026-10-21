@@ -206,8 +206,18 @@ if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), h
             st.caption("Final-game success covers only requested boxscores. Schedule coverage "
                        "measures checked dates, and a reached request limit means the "
                        "historical sample may exclude additional games.")
-            st.dataframe(pd.DataFrame([espn_history_health(espn_history)]),
-                         use_container_width=True, hide_index=True)
+            health_export = pd.DataFrame([espn_history_health(espn_history)])
+            st.dataframe(health_export, use_container_width=True, hide_index=True)
+            health_export = health_export.copy()
+            for column in health_export.select_dtypes(include=["object", "string"]).columns:
+                health_export[column] = health_export[column].map(safe_spreadsheet_cell)
+            st.download_button(
+                "Download ESPN retrieval health CSV",
+                data=health_export.to_csv(index=False).encode("utf-8"),
+                file_name=f"espn_history_health_{slate_date.isoformat()}.csv",
+                mime="text/csv",
+                key="download_espn_history_health",
+            )
             if espn_history["failures"]:
                 st.caption("Failed schedule dates and boxscore validations are excluded "
                            "from verified historical statistics.")
