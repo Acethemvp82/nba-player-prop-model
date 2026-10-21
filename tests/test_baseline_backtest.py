@@ -60,3 +60,18 @@ def test_backtest_empty_sample_has_no_date_range():
     result = baseline_backtest([], "2026-10-08")
     assert all(r["dates_evaluated"] == 0 and r["first_evaluation_date"] is None
                and r["last_evaluation_date"] is None for r in result)
+
+
+def test_backtest_coverage_counts_unpredicted_eligible_appearances():
+    rows = [game(i, 10) for i in range(1, 6)]
+    rows.append(game(6, 20))
+    result = {r["prop"]: r for r in baseline_backtest(rows, "2026-10-07")}
+    assert result["points"]["eligible_appearances"] == 6
+    assert result["points"]["evaluated"] == 1
+    assert result["points"]["coverage_pct"] == 16.7
+
+
+def test_empty_backtest_has_no_coverage_percentage():
+    result = baseline_backtest([], "2026-10-07")
+    assert all(r["eligible_appearances"] == 0 and r["coverage_pct"] is None
+               for r in result)
