@@ -10,6 +10,7 @@ from pregame_baseline_board import build_pregame_baseline_board
 from matchup_scoring import matchup_context, attach_matchups
 from csv_export import safe_spreadsheet_cell
 from slate_coverage import slate_coverage
+from baseline_backtest import evaluate_baselines
 
 ET = ZoneInfo("America/New_York")
 PROPS = {"points": "Points", "rebounds": "Rebounds",
@@ -39,7 +40,7 @@ def tipoff_et(value):
 def render_dashboard():
     st.set_page_config(page_title="NBA Prop Board", page_icon="🏀", layout="wide")
     st.title("NBA Player Prop Board")
-    st.caption("Rebuild milestone 2 · Slate coverage + matchup context")
+    st.caption("Rebuild milestone 3 · Prediction validation")
     st.caption("Player baselines • Opponent matchup context • Points, rebounds, assists and threes")
     with st.sidebar:
         st.header("Slate controls")
@@ -223,6 +224,8 @@ def render_dashboard():
         else:
             st.warning("No eligible projections for this slate with the loaded history. "
                        "Increase the history window or game cap; do not treat missing players as zero projections.")
+    if ready:
+        render_validation(st.session_state["nba_v2_history"], day.isoformat())
     render_schedule(day.isoformat())
     with st.expander("Methodology and data limitations"):
         st.write("Projections use verified completed-game statistics before the selected slate date. "
@@ -255,3 +258,50 @@ def render_schedule(day):
         else:
             st.caption("No schedule data for selected date.")
         st.caption("Schedule checks every minute while open; source cache lasts five minutes. Times shown in Eastern Time.")
+
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def validation_for(observations, day):
+    return evaluate_baselines(observations, day, min_training_games=5)
+
+
+def render_validation(history, day):
+    st.subheader("Prediction validation — earlier games only")
+    st.caption("Retrospective walk-forward check: each forecast uses at least five appearances "
+               "from strictly earlier dates. Same-day results never enter training. "
+               "These are reconstructed forecasts, not saved pregame predictions.")
+    result = validation_for(history.get("observations", []), day)
+    summary = pd.DataFrame(result["summary"])
+    evaluated = int(summary["evaluated"].sum())
+    if not evaluated:
+        st.info("Not enough earlier games to evaluate a five-game forecast yet. "
+                "Zero scored forecasts means accuracy is unknown, not zero error.")
+        return
+    st.caption(f"{evaluated} scored player-prop forecasts across the loaded history. "
+               "Four props from one appearance are four forecasts, not four independent games.")
+    if history.get("history_truncated") or history.get("failures"):
+        st.warning("Validation uses an incomplete retrieved sample. Missing games can change both forecasts and measured error.")
+    summary["prop"] = summary["prop"].map(PROPS)
+    labels = {"prop": "Prop", "evaluated": "Scored forecasts", "players_evaluated": "Players",
+              "dates_evaluated": "Dates", "coverage_pct": "Evaluated coverage %",
+              "mae": "Blend MAE", "last5_mae": "Last-5 MAE",
+              "mae_delta_vs_last5": "Blend minus Last-5", "mean_error": "Bias", "rmse": "RMSE",
+              "first_evaluation_date": "First result", "last_evaluation_date": "Last result"}
+    table = summary[list(labels)].rename(columns=labels)
+    st.dataframe(table, hide_index=True, use_container_width=True,
+        column_config={k: st.column_config.NumberColumn(k, format="%.3f")
+            for k in ("Blend MAE", "Last-5 MAE", "Blend minus Last-5", "Bias", "RMSE")})
+    st.caption("MAE is the average size of a miss in that prop's units; lower is better. "
+               "A negative Blend minus Last-5 favors the blend. Positive bias means overprediction. "
+               "Coverage includes appearances that had too little earlier history to forecast. "
+               "Small, potentially preseason samples do not establish betting accuracy; no formula is auto-tuned here.")
+    with st.expander("Audit scored forecasts and training dates"):
+        details = pd.DataFrame(result["details"])
+        choice = st.selectbox("Validation prop", list(PROPS.values()))
+        details["prop"] = details["prop"].map(PROPS)
+        details = details[details["prop"] == choice].sort_values(
+            ["game_date", "player_id"], ascending=[False, True])
+        st.dataframe(details, hide_index=True, use_container_width=True)
+        st.download_button("Download scored forecast audit CSV",
+            details.map(safe_spreadsheet_cell).to_csv(index=False),
+            file_name=f"nba_validation_{day}.csv", mime="text/csv")

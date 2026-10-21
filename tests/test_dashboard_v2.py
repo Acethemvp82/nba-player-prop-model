@@ -70,3 +70,20 @@ def test_sparse_history_is_visible_without_creating_forecasts(monkeypatch):
     coverage = next(d.value for d in at.dataframe if 'Coverage' in d.value.columns)
     assert set(coverage['Team']) == {'NYK', 'BOS'}
     assert any('No five-game baselines for:' in item.value for item in at.warning)
+
+
+def test_validation_reports_auditable_espn_forecasts(monkeypatch):
+    fixtures(monkeypatch, [])
+    rows = [dict(player='Example', player_id='espn:7', team='NYK',
+        game_date=f'2026-10-{g:02}', game_id=f'espn:{g}', is_final=True,
+        minutes=22, points=10 if g < 6 else 20,
+        rebounds=4, assists=3, threes=1) for g in range(1,7)]
+    history = lambda *a: {'observations': rows}
+    history.clear = lambda: None
+    monkeypatch.setattr(dashboard, 'history_for', history)
+    at = AppTest.from_file(str(Path(__file__).resolve().parents[1] / 'app.py'), default_timeout=20).run()
+    assert not at.exception
+    scores = next(d.value for d in at.dataframe if 'Blend MAE' in d.value.columns)
+    assert scores.iloc[0]['Blend MAE'] == 10
+    audit = next(d.value for d in at.dataframe if 'last_training_date' in d.value.columns)
+    assert audit.iloc[0]['last_training_date'] < audit.iloc[0]['game_date']

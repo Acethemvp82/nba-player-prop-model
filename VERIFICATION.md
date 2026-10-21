@@ -67,3 +67,21 @@ Historical team membership still does not establish today's player availability.
 Validation includes duplicate and future-game exclusion, latest-team assignment,
 missing teams, distinct player counts across props, and Streamlit checks that
 short-history averages remain separate from forecasts.
+
+## Rebuild milestone 3 — prediction validation
+
+The active board now runs a walk-forward evaluation against loaded verified finals.
+The evaluator accepts numeric NBA IDs and namespaced ESPN IDs. Every scored
+forecast trains strictly before the result date, uses five or more appearances,
+and skips results whose team differs from the historical forecast's team.
+The existing blend and simple last-five average are scored on identical results.
+
+The validation table reports MAE, RMSE, signed bias, player/date counts, eligible
+appearance coverage and the paired MAE difference. The audit lists each forecast,
+actual result, training sample and last training date, with CSV download. These
+are reconstructed historical forecasts, not independently recorded pregame snapshots.
+Feed gaps, preseason inclusion and small samples still limit conclusions. This
+release does not change projection weights or claim calibrated betting probabilities.
+
+Validation tests cover ESPN IDs, identical benchmark samples, training cutoff,
+team changes, malformed IDs, and the rendered Streamlit accuracy/audit tables.

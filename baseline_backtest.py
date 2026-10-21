@@ -6,13 +6,13 @@ This is not an OVER probability, sportsbook backtest, or betting recommendation.
 from collections import defaultdict
 from math import isfinite
 
-from historical_stats import _day, player_history_summaries
+from historical_stats import _day, _valid_game_id, player_history_summaries
 from projection_baseline import baseline_projections
 
 PROPS = ("points", "rebounds", "assists", "threes")
 
 
-def baseline_backtest(observations, as_of, min_training_games=5):
+def evaluate_baselines(observations, as_of, min_training_games=5):
     """Walk forward by game date, training exclusively on earlier dates.
 
     Same-day games are evaluated together to avoid using their outcomes as
@@ -41,7 +41,7 @@ def baseline_backtest(observations, as_of, min_training_games=5):
         if day is not None and day >= cutoff:
             future_or_cutoff_rows += 1
             continue
-        if (day is None or not gid.isdigit() or pid is None
+        if (day is None or not _valid_game_id(row.get("game_id")) or pid is None
                 or not isinstance(minutes, (int, float)) or isinstance(minutes, bool)
                 or not isfinite(minutes) or minutes <= 0):
             invalid_rows += 1
@@ -58,25 +58,42 @@ def baseline_backtest(observations, as_of, min_training_games=5):
     player_games = defaultdict(set)
     evaluated_dates = defaultdict(set)
     squared_errors = defaultdict(list)
+    benchmark_errors = defaultdict(list)
+    details = []
     for day in sorted(by_date):
         summaries = player_history_summaries(training, as_of=day)
-        predictions = {(str(p["player_id"]), p["prop"]): p["baseline"]
+        predictions = {(str(p["player_id"]), p["prop"]): p
                        for p in baseline_projections(summaries, min_games=min_training_games)}
+        summary_by_id = {str(s["player_id"]): s for s in summaries}
         for row in by_date[day]:
             for prop in PROPS:
                 actual = row.get(prop)
                 if (isinstance(actual, (int, float)) and not isinstance(actual, bool)
                         and isfinite(actual) and actual >= 0):
                     eligible_appearances[prop] += 1
-                predicted = predictions.get((str(row["player_id"]), prop))
+                forecast = predictions.get((str(row["player_id"]), prop))
+                # A historical forecast for a former team would not have
+                # represented this matchup on the pregame board.
+                predicted = forecast["baseline"] if forecast and forecast["team"] == row.get("team") else None
                 if (predicted is not None and isinstance(actual, (int, float))
                         and not isinstance(actual, bool) and isfinite(actual) and actual >= 0):
+                    summary = summary_by_id[str(row["player_id"])]
+                    benchmark = summary[prop + "_last_5_avg"]
+                    benchmark_errors[prop].append(float(benchmark) - float(actual))
+                    details.append({"game_date": day.isoformat(), "game_id": str(row["game_id"]),
+                        "player_id": str(row["player_id"]), "player": row.get("player"),
+                        "team": row.get("team"), "prop": prop,
+                        "baseline": predicted, "last5_baseline": benchmark, "actual": actual,
+                        "error": round(predicted - actual, 3),
+                        "absolute_error": round(abs(predicted - actual), 3),
+                        "training_games": forecast["sample_games"],
+                        "last_training_date": summary["last_game_date"]})
                     errors[prop].append(float(predicted) - float(actual))
                     squared_errors[prop].append((float(predicted) - float(actual)) ** 2)
                     player_games[prop].add(str(row["player_id"]))
                     evaluated_dates[prop].add(day)
         training.extend(by_date[day])
-    return [
+    results = [
         {"prop": prop,
          "excluded_invalid_rows": invalid_rows,
          "excluded_on_or_after_cutoff": future_or_cutoff_rows,
@@ -92,7 +109,19 @@ def baseline_backtest(observations, as_of, min_training_games=5):
          if errors[prop] else None,
          "mean_error": round(sum(errors[prop]) / len(errors[prop]), 3)
          if errors[prop] else None,
+         "last5_mae": round(sum(abs(e) for e in benchmark_errors[prop]) / len(benchmark_errors[prop]), 3)
+         if benchmark_errors[prop] else None,
+         "mae_delta_vs_last5": round((sum(abs(e) for e in errors[prop])
+                                      - sum(abs(e) for e in benchmark_errors[prop])) / len(errors[prop]), 3)
+         if errors[prop] else None,
          "rmse": round((sum(squared_errors[prop]) / len(squared_errors[prop])) ** 0.5, 3)
          if squared_errors[prop] else None}
         for prop in PROPS
     ]
+
+    return {"summary": results, "details": details}
+
+
+def baseline_backtest(observations, as_of, min_training_games=5):
+    """Compatibility wrapper returning per-prop walk-forward summaries."""
+    return evaluate_baselines(observations, as_of, min_training_games)["summary"]

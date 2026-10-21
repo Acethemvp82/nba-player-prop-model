@@ -108,3 +108,43 @@ def test_cutoff_exclusions_are_not_reported_as_invalid():
     assert result["points"]["excluded_on_or_after_cutoff"] == 1
     assert result["points"]["excluded_invalid_rows"] == 0
     assert result["points"]["evaluated"] == 1
+
+
+def test_espn_ids_receive_real_walk_forward_evaluation():
+    from baseline_backtest import evaluate_baselines
+    rows = [{**game(i, 10 if i < 6 else 20), 'game_id': f'espn:{i}'} for i in range(1, 7)]
+    result = evaluate_baselines(rows, '2026-10-07')
+    points = next(r for r in result['summary'] if r['prop'] == 'points')
+    assert points['evaluated'] == 1
+    assert points['mae'] == points['last5_mae'] == 10
+    assert points['mae_delta_vs_last5'] == 0
+    assert all(d['last_training_date'] < d['game_date'] for d in result['details'])
+    assert result['details'][0]['training_games'] == 5
+
+
+def test_benchmark_uses_identical_evaluation_games_without_same_day_training():
+    from baseline_backtest import evaluate_baselines
+    rows = [game(i, 10 if i <= 5 else 20) for i in range(1, 9)]
+    result = evaluate_baselines(rows, '2026-10-09')
+    details = [d for d in result['details'] if d['prop'] == 'points']
+    summary = next(r for r in result['summary'] if r['prop'] == 'points')
+    assert summary['evaluated'] == len(details) == 3
+    assert summary['last5_mae'] == round(sum(abs(d['last5_baseline'] - d['actual']) for d in details) / 3, 3)
+    changed = evaluate_baselines(rows + [game(9, 1000)], '2026-10-09')
+    assert changed['details'] == result['details']
+    assert summary['mae_delta_vs_last5'] == round(summary['mae'] - summary['last5_mae'], 3)
+
+
+def test_changed_teams_are_not_scored_as_existing_team_forecasts():
+    from baseline_backtest import evaluate_baselines
+    rows = [game(i, 10) for i in range(1, 6)]
+    rows.append({**game(6, 20), 'team':'NYK'})
+    result = evaluate_baselines(rows, '2026-10-07')
+    assert result['details'] == []
+    assert all(r['evaluated'] == 0 and r['last5_mae'] is None for r in result['summary'])
+
+
+def test_malformed_namespaced_game_ids_are_excluded():
+    rows = [{**game(i, 10), 'game_id':'espn:bad'} for i in range(1, 7)]
+    result = baseline_backtest(rows, '2026-10-07')
+    assert all(r['evaluated'] == 0 and r['excluded_invalid_rows'] == 6 for r in result)
