@@ -1,5 +1,6 @@
 """Normalize NBA box-score statistics; never mistake results for projections."""
 from datetime import datetime, timezone
+from math import isfinite
 import re
 
 STAT_FIELDS = {
@@ -35,7 +36,7 @@ def normalize_player_boxscore(player, game_id, final=False, game_date=None):
     }
     for label, field in STAT_FIELDS.items():
         value = stats.get(field)
-        record[label] = value if isinstance(value, (int, float)) and not isinstance(value, bool) and value >= 0 else None
+        record[label] = value if isinstance(value, (int, float)) and not isinstance(value, bool) and isfinite(value) and value >= 0 else None
     return record
 
 def completed_game_observations(games, player_loader):
