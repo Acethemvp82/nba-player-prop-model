@@ -1,4 +1,4 @@
-from pregame_results import score_pregame_baselines, summarize_projection_errors, projection_grading_coverage, summarize_projection_errors_by_slate, summarize_grading_by_slate, summarize_unmatched_forecasts_by_slate
+from pregame_results import score_pregame_baselines, summarize_projection_errors, projection_grading_coverage, summarize_projection_errors_by_slate, summarize_grading_by_slate, summarize_unmatched_forecasts_by_slate, list_unmatched_forecasts
 
 
 def forecast(**overrides):
@@ -202,3 +202,14 @@ def test_unmatched_forecasts_group_by_slate_and_prop():
         {"slate_date": "2026-10-21", "prop": "assists", "unmatched_forecasts": 1},
         {"slate_date": "2026-10-22", "prop": "points", "unmatched_forecasts": 1},
     ]
+
+
+def test_list_unmatched_forecasts_excludes_graded_and_duplicates():
+    forecasts = [forecast(), forecast(), forecast(prop="assists"),
+                 forecast(player_id="espn:999", player="Other", prop="points")]
+    graded = score_pregame_baselines(forecasts, [final()])
+    rows = list_unmatched_forecasts(forecasts, graded)
+    assert [(row["player_id"], row["prop"]) for row in rows] == [
+        ("espn:123", "assists"), ("espn:999", "points")
+    ]
+    assert all(row["result_status"] == "unmatched" for row in rows)
