@@ -45,3 +45,18 @@ def test_player_coverage_is_distinct_from_evaluated_appearances():
     result = {r["prop"]: r for r in baseline_backtest(rows, "2026-10-08")}
     assert result["points"]["evaluated"] == 2
     assert result["points"]["players_evaluated"] == 1
+
+
+def test_backtest_reports_evaluation_date_span():
+    rows = [game(i, 10) for i in range(1, 6)]
+    rows.extend([game(6, 12), game(7, 14)])
+    result = {r["prop"]: r for r in baseline_backtest(rows, "2026-10-08")}
+    assert result["points"]["dates_evaluated"] == 2
+    assert result["points"]["first_evaluation_date"] == "2026-10-06"
+    assert result["points"]["last_evaluation_date"] == "2026-10-07"
+
+
+def test_backtest_empty_sample_has_no_date_range():
+    result = baseline_backtest([], "2026-10-08")
+    assert all(r["dates_evaluated"] == 0 and r["first_evaluation_date"] is None
+               and r["last_evaluation_date"] is None for r in result)
