@@ -365,6 +365,16 @@ if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), h
             else:
                 st.info("No ESPN players meet the five-game minimum for automatic "
                         "pregame baseline projections in this historical sample.")
+                st.caption("To improve coverage, increase the ESPN history lookback and "
+                           "historical game request limit above, then reload completed-game "
+                           "stats. A new season or sparse completed-game history may still "
+                           "leave players ineligible.")
+                if espn_history.get("history_truncated"):
+                    st.warning("The historical request cap omitted eligible games; "
+                               "increase the limit to collect a broader player sample.")
+                if espn_history.get("failures"):
+                    st.warning("Some historical requests failed. Review ESPN retrieval "
+                               "health for missing dates or boxscores.")
             trends = espn_recent_trends(espn_history["observations"], slate_date.isoformat())
             if trends:
                 st.caption("ESPN L5/L10: averages use up to 5 or 10 verified games available "
