@@ -154,6 +154,38 @@ def summarize_projection_errors_by_slate(scored_rows):
 
 
 
+
+def summarize_unmatched_forecasts_by_slate(forecasts, scored_rows):
+    """Count ungraded valid forecast keys per date and prop, without calling them misses."""
+    valid = set()
+    for row in forecasts or []:
+        if not isinstance(row, dict):
+            continue
+        pid, day, prop = row.get("player_id"), row.get("slate_date"), row.get("prop")
+        baseline = row.get("baseline")
+        if (not isinstance(pid, (str, int)) or isinstance(pid, bool)
+                or not _valid_iso_day(day) or prop not in PROPS
+                or type(baseline) not in (int, float)
+                or not isfinite(baseline) or baseline < 0):
+            continue
+        valid.add((str(pid), day, prop))
+    graded = {
+        (str(row["player_id"]), row["slate_date"], row["prop"])
+        for row in (scored_rows or [])
+        if (isinstance(row, dict) and row.get("result_status") == "verified_final"
+            and isinstance(row.get("player_id"), (str, int))
+            and not isinstance(row.get("player_id"), bool)
+            and _valid_iso_day(row.get("slate_date")) and row.get("prop") in PROPS)
+    }
+    counts = {}
+    for _, day, prop in valid - graded:
+        counts[(day, prop)] = counts.get((day, prop), 0) + 1
+    return [
+        {"slate_date": day, "prop": prop, "unmatched_forecasts": count}
+        for (day, prop), count in sorted(counts.items())
+    ]
+
+
 def summarize_grading_by_slate(forecasts, scored_rows):
     """Coverage by slate date; unmatched rows are not counted as losses."""
     dates = sorted({
