@@ -47,9 +47,8 @@ def espn_history_coverage(observations, scheduled_teams):
     ownership = {}
     conflicts = set()
     for team, records in grouped.items():
-        for key, row in records.items():
-            if row is None:
-                continue
+        for key in records:
+            # A locally conflicted row still claims this athlete-game.
             previous_team = ownership.setdefault(key, team)
             if previous_team != team:
                 conflicts.add(key)
