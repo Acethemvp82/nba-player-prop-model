@@ -64,10 +64,8 @@ def collect_recent_history(schedule, as_of, max_games=80, loader=fetch_boxscore_
         for game in games:
             if not isinstance(game, dict):
                 continue
-            # Static schedules can have stale statuses; finality is verified
-            # against each box score by the default loader.
-            if str(game.get("gameStatus")) == "2":
-                continue
+            # Static statuses may be stale, including "in progress".
+            # Only the final boxscore loader establishes finality.
             played = _day(game.get("gameDateEst") or game.get("gameDate")) or entry_day
             gid = str(game.get("gameId") or "")
             if played is not None and played < cutoff and gid.isdigit():
