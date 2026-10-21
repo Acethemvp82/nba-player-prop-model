@@ -19,8 +19,22 @@ class PregameBaselineBoardTests(unittest.TestCase):
         self.assertIsNone(points["over_probability"])
         self.assertIsNone(points["sportsbook_line"])
         self.assertEqual(points["history_coverage"], "limited")
+        self.assertEqual(points["research_readiness"], "limited_sample")
         self.assertEqual(points["last_game_date"], "2026-10-10")
         self.assertEqual(points["days_since_last_game"], 11)
+
+    def test_stale_history_is_flagged_before_sample_size(self):
+        rows = [game("2026-09-20", i, 10) for i in range(1, 12)]
+        result = build_pregame_baseline_board(rows, "2026-10-21")
+        points = next(row for row in result if row["prop"] == "points")
+        self.assertEqual(points["history_coverage"], "established")
+        self.assertEqual(points["research_readiness"], "stale_history")
+
+    def test_established_recent_history_is_ready(self):
+        rows = [game("2026-10-20", i, 10) for i in range(1, 12)]
+        result = build_pregame_baseline_board(rows, "2026-10-21")
+        points = next(row for row in result if row["prop"] == "points")
+        self.assertEqual(points["research_readiness"], "history_ready")
 
     def test_no_history_no_forecast(self):
         self.assertEqual(build_pregame_baseline_board([], "2026-10-21"), [])
