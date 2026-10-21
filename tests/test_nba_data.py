@@ -38,3 +38,13 @@ def test_missing_team_object_is_safe(monkeypatch):
     result = nba_data.game_players("123")
     assert len(result) == 1
     assert result[0]["opponent"] is None
+
+
+def test_malformed_live_player_entries_are_skipped(monkeypatch):
+    monkeypatch.setattr(nba_data, "_get_json", lambda _: {
+        "game": {"gameId": "123",
+                 "homeTeam": {"teamTricode": "BOS", "players": [None, "bad", {"personId": 1, "name": "Valid"}]},
+                 "awayTeam": {"teamTricode": "NYK", "players": "invalid"}}})
+    players = nba_data.game_players("123")
+    assert len(players) == 1
+    assert players[0]["player_id"] == 1
