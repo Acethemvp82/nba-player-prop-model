@@ -57,3 +57,25 @@ def score_pregame_baselines(forecasts, final_observations):
                        "absolute_error": round(abs(error), 2),
                        "result_status": "verified_final"})
     return scored
+
+
+def summarize_projection_errors(scored_rows):
+    """Per-prop descriptive accuracy from already verified matched results.
+
+    MAE is mean absolute error; bias is mean(projection - actual).
+    An empty prop is omitted rather than reported as zero error.
+    """
+    groups = {prop: [] for prop in PROPS}
+    for row in scored_rows:
+        if not isinstance(row, dict) or row.get("result_status") != "verified_final":
+            continue
+        prop = row.get("prop")
+        error = row.get("projection_error")
+        if prop in groups and type(error) in (int, float) and isfinite(error):
+            groups[prop].append(float(error))
+    return [
+        {"prop": prop, "graded_projections": len(errors),
+         "mean_absolute_error": round(sum(abs(e) for e in errors) / len(errors), 2),
+         "mean_projection_bias": round(sum(errors) / len(errors), 2)}
+        for prop, errors in groups.items() if errors
+    ]
