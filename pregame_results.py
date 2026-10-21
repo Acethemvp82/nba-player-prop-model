@@ -93,3 +93,30 @@ def summarize_projection_errors(scored_rows):
          "mean_projection_bias": round(sum(errors) / len(errors), 2)}
         for prop, errors in groups.items() if errors
     ]
+
+
+def projection_grading_coverage(forecasts, scored_rows):
+    """Describe grading coverage without treating unmatched forecasts as misses.
+
+    Counts unique player/date/prop keys from valid frozen forecasts. A grade
+    counts only when a verified final result has been matched.
+    """
+    keys = set()
+    for row in forecasts or []:
+        if not isinstance(row, dict):
+            continue
+        pid, day, prop = row.get("player_id"), row.get("slate_date"), row.get("prop")
+        baseline = row.get("baseline")
+        if (not isinstance(pid, (str, int)) or not isinstance(day, str)
+                or prop not in PROPS or type(baseline) not in (int, float)
+                or not isfinite(baseline) or baseline < 0):
+            continue
+        keys.add((str(pid), day, prop))
+    graded = set()
+    for row in scored_rows or []:
+        if isinstance(row, dict) and row.get("result_status") == "verified_final":
+            graded.add((str(row.get("player_id")), row.get("slate_date"), row.get("prop")))
+    count = len(keys & graded)
+    return {"eligible_forecasts": len(keys), "graded_forecasts": count,
+            "unmatched_forecasts": len(keys) - count,
+            "grading_coverage_pct": round(100 * count / len(keys), 1) if keys else None}
