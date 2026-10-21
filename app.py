@@ -100,6 +100,7 @@ if st.button("Refresh NBA feeds and cached history"):
     load_schedule.clear()
     load_final_boxscore.clear()
     load_historical_summary.clear()
+    load_baseline_backtest.clear()
     st.session_state.pop("nba_historical_preview", None)
     st.session_state.pop("nba_historical_preview_date", None)
     st.session_state.pop("nba_historical_preview_limit", None)
@@ -150,12 +151,16 @@ if historical:
             st.dataframe(pd.DataFrame(historical["failed_games"]), hide_index=True)
 
 
+@st.cache_data(ttl=3600, show_spinner=False)
+def load_baseline_backtest(observations, as_of):
+    return baseline_backtest(observations, as_of)
+
 st.subheader("Walk-forward baseline accuracy — historical research")
 if historical and historical.get("observations"):
-    backtest_rows = baseline_backtest(historical["observations"], slate_date)
+    backtest_rows = load_baseline_backtest(historical["observations"], slate_date.isoformat())
     st.caption("Evaluates unadjusted baseline predictions using only prior-day observations. "
-               "MAE is average absolute error in the prop's units; signed error is prediction minus actual. "
-               "Invalid, duplicate, and on-or-after-cutoff observations are counted separately. "
+               "MAE is average absolute error; RMSE emphasizes larger misses; signed error is prediction minus actual. "
+               "Coverage uses all eligible appearances, including early games before sufficient training history exists. Invalid, duplicate, and on-or-after-cutoff observations are counted separately. "
                "This is NOT sportsbook profitability or calibrated OVER probability.")
     if any(item["evaluated"] for item in backtest_rows):
         st.dataframe(pd.DataFrame(backtest_rows), use_container_width=True, hide_index=True)
