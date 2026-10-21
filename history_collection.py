@@ -68,9 +68,11 @@ def collect_recent_history(schedule, as_of, max_games=80, loader=fetch_boxscore_
     selected = []
     seen = set()
     for _, gid, game in eligible:
-        if gid not in seen and len(selected) < max_games:
+        if gid in seen:
+            continue
+        seen.add(gid)
+        if len(selected) < max_games:
             selected.append({**game, "gameStatus": 3})
-            seen.add(gid)
     errors = []
     loaded = []
     def safe_loader(gid):
@@ -88,7 +90,7 @@ def collect_recent_history(schedule, as_of, max_games=80, loader=fetch_boxscore_
             "games_requested": len(selected),
             "games_loaded": len(loaded),
             "failed_games": errors,
-            "eligible_games": len(seen) if len(eligible) <= max_games else len({g for _, g, _ in eligible})}
+            "eligible_games": len(seen)}
 
 def recent_player_summaries(schedule, as_of, max_games=80, loader=fetch_boxscore_players):
     collected = collect_recent_history(schedule, as_of, max_games, loader)
