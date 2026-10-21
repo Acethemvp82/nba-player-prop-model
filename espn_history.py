@@ -62,6 +62,13 @@ def collect_espn_history(as_of, days=7, max_games=30,
                or not game["espnEventId"].isdigit() for game in games):
             failures.append({"date": day.isoformat(), "error": "Invalid schedule event ID"})
             continue
+        # Duplicate event IDs inside one scoreboard date may indicate a
+        # malformed provider response. Refuse the date instead of quietly
+        # discarding potentially inconsistent fixtures.
+        ids = [game["espnEventId"] for game in games]
+        if len(ids) != len(set(ids)):
+            failures.append({"date": day.isoformat(), "error": "Duplicate schedule event ID"})
+            continue
         for game in games:
             if games_requested >= max_games:
                 break
