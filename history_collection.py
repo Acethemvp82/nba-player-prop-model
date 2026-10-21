@@ -16,8 +16,10 @@ def fetch_boxscore_players(game_id):
         raise NBADataError("Box score game ID mismatch")
     if str(game.get("gameStatus")) != "3":
         raise NBADataError("Box score is not final")
-    home = game.get("homeTeam") or {}
-    away = game.get("awayTeam") or {}
+    home = game.get("homeTeam")
+    away = game.get("awayTeam")
+    if not isinstance(home, dict) or not isinstance(away, dict):
+        raise NBADataError("Final NBA box score has malformed team objects")
     home_code = home.get("teamTricode")
     away_code = away.get("teamTricode")
     if not home_code or not away_code or home_code == away_code:
@@ -26,8 +28,8 @@ def fetch_boxscore_players(game_id):
         raise NBADataError("Final NBA box score is missing team player lists")
     players = []
     for side, opposite in (("homeTeam", "awayTeam"), ("awayTeam", "homeTeam")):
-        team = game.get(side) or {}
-        other = game.get(opposite) or {}
+        team = game[side]
+        other = game[opposite]
         for p in team.get("players") or []:
             if not isinstance(p, dict):
                 continue
