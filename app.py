@@ -13,6 +13,7 @@ from espn_averages import espn_player_averages
 from espn_trends import espn_recent_trends
 from espn_history_coverage import espn_history_coverage
 from espn_board_quality import history_sample_status
+from espn_history_health import espn_history_health
 from csv_export import safe_spreadsheet_cell
 from history_collection import recent_player_summaries, fetch_boxscore_players
 from projection_baseline import baseline_projections
@@ -201,6 +202,10 @@ if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), h
                    f"{espn_history['games_requested']} requested across "
                    f"{espn_history.get('dates_checked', '?')} schedule dates checked; "
                    f"{len(espn_history['observations'])} player-game observations.")
+        with st.expander("ESPN retrieval health"):
+            st.caption("Success rate covers requested final boxscores, not every scheduled NBA game.")
+            st.dataframe(pd.DataFrame([espn_history_health(espn_history)]),
+                         use_container_width=True, hide_index=True)
         if espn_history["games_loaded"] < espn_history["games_requested"]:
             st.warning("ESPN historical sample is incomplete. Do not interpret these averages "
                        "as full-season or last-N-game statistics.")
