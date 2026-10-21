@@ -20,6 +20,15 @@ def espn_history_health(history):
         raise ValueError("Invalid ESPN failure details")
     schedule_failures = sum("event_id" not in item for item in failures)
     boxscore_failures = sum("event_id" in item for item in failures)
+    # Distinguish scanned dates from dates whose scoreboard failed.
+    # Boxscore failures are already represented in requested/loaded counts.
+    failed_schedule_dates = {
+        item.get("date") for item in failures
+        if "event_id" not in item and isinstance(item.get("date"), str)
+    }
+    usable_schedule_dates = scanned - len(failed_schedule_dates)
+    if usable_schedule_dates < 0:
+        raise ValueError("More failed schedule dates than dates checked")
     verified_dates = []
     for observation in observations:
         if not isinstance(observation, dict):
@@ -37,6 +46,8 @@ def espn_history_health(history):
         "Oldest verified game": min(verified_dates) if verified_dates else None,
         "Newest verified game": max(verified_dates) if verified_dates else None,
         "Schedule dates checked": scanned,
+        "Schedule dates usable": usable_schedule_dates,
+        "Schedule coverage %": round(100 * usable_schedule_dates / scanned, 1) if scanned else None,
         "Final games requested": requested,
         "Verified final games": loaded,
         "Failed final-game requests": requested - loaded,
