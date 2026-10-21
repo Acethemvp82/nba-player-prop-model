@@ -143,3 +143,21 @@ def test_invalid_schedule_is_rejected():
     from nba_data import NBADataError
     with pytest.raises(NBADataError, match="schedule"):
         collect_recent_history(None, "2026-10-20")
+
+
+def test_missing_games_list_is_skipped():
+    schedule = [
+        {"gameDate": "2026-10-18", "games": None},
+        {"gameDate": "2026-10-18", "games": "invalid"},
+        {"gameDate": "2026-10-18", "games": [{"gameId": "200", "gameStatus": 3}]},
+    ]
+    result = collect_recent_history(schedule, "2026-10-20", loader=lambda _: [])
+    assert result["games_requested"] == 1
+    assert result["games_loaded"] == 1
+
+
+def test_invalid_schedule_is_rejected():
+    import pytest
+    from nba_data import NBADataError
+    with pytest.raises(NBADataError, match="schedule"):
+        collect_recent_history(None, "2026-10-20")
