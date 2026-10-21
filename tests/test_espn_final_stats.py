@@ -47,3 +47,18 @@ def test_alternate_keys_and_multiple_competitions():
     section["keys"] = section.pop("labels")
     rows = parse_final_espn_boxscore(data, "4012")
     assert rows[0]["points"] == 24
+
+
+@pytest.mark.parametrize("bad_value", ["4-3", "3-7-2", "-7", "3-x", "N/A", "3"])
+def test_invalid_three_point_made_attempted_values_rejected(bad_value):
+    data = sample()
+    data["boxscore"]["players"][0]["statistics"][0]["athletes"][0]["stats"][1] = bad_value
+    with pytest.raises(NBADataError, match="no validated"):
+        parse_final_espn_boxscore(data, "4012")
+
+
+def test_did_not_play_entries_are_excluded():
+    data = sample()
+    data["boxscore"]["players"][0]["statistics"][0]["athletes"][0]["didNotPlay"] = True
+    with pytest.raises(NBADataError, match="no validated"):
+        parse_final_espn_boxscore(data, "4012")
