@@ -33,10 +33,12 @@ def collect_espn_history(as_of, days=7, max_games=30,
     if isinstance(max_games, bool) or not isinstance(max_games, int) or not 1 <= max_games <= 100:
         raise ValueError("max_games must be between 1 and 100")
     observations, failures = [], []
+    dates_checked = 0
     games_requested = games_loaded = 0
     seen = set()
     for offset in range(1, days + 1):
         day = cutoff - timedelta(days=offset)
+        dates_checked += 1
         try:
             games = schedule_loader(day.isoformat())
         except (NBADataError, ValueError, TypeError) as exc:
@@ -67,6 +69,7 @@ def collect_espn_history(as_of, days=7, max_games=30,
                 failures.append({"event_id": eid, "date": day.isoformat(), "error": str(exc)})
         if games_requested >= max_games:
             break
-    return {"observations": observations, "games_requested": games_requested,
+    return {"observations": observations, "dates_checked": dates_checked,
+            "games_requested": games_requested,
             "games_loaded": games_loaded, "failures": failures,
             "source": "ESPN verified final boxscores"}
