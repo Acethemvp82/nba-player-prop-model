@@ -24,8 +24,9 @@ def parse_final_espn_boxscore(payload, expected_event_id):
     competitions = header.get("competitions") if isinstance(header, dict) else None
     if not isinstance(competitions, list) or not competitions:
         raise NBADataError("ESPN game finality cannot be verified")
-    competition = competitions[0]
-    if not isinstance(competition, dict) or str(competition.get("id")) != event_id:
+    competition = next((entry for entry in competitions if isinstance(entry, dict)
+                        and str(entry.get("id")) == event_id), None)
+    if competition is None:
         raise NBADataError("ESPN game ID mismatch")
     status = competition.get("status")
     status_type = status.get("type") if isinstance(status, dict) else None
@@ -50,7 +51,7 @@ def parse_final_espn_boxscore(payload, expected_event_id):
         for section in group.get("statistics", []):
             if not isinstance(section, dict):
                 continue
-            labels = section.get("labels")
+            labels = section.get("labels") or section.get("keys")
             athletes = section.get("athletes")
             if not isinstance(labels, list) or not isinstance(athletes, list):
                 continue
@@ -58,7 +59,7 @@ def parse_final_espn_boxscore(payload, expected_event_id):
             if not all(key in indexes for key in ("PTS", "REB", "AST", "3PT")):
                 continue
             for item in athletes:
-                if not isinstance(item, dict) or item.get("didNotPlay") is True:
+                if not isinstance(item, dict) or item.get("didNotPlay") is True or item.get("didNotPlay") == "true":
                     continue
                 athlete = item.get("athlete")
                 values = item.get("stats")
