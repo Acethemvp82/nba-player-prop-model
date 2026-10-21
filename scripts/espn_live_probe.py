@@ -66,6 +66,7 @@ def check_recent_finals(today=None, days=7, schedule_loader=espn_games_on,
                                    or not team.isupper() for team in expected_teams)):
                         raise ValueError("Invalid scheduled matchup")
                 seen_players = set()
+                seen_athletes = {}
                 # A probe must never pass on a malformed or unverified row.
                 for player in players:
                     if not isinstance(player, dict):
@@ -85,6 +86,9 @@ def check_recent_finals(today=None, days=7, schedule_loader=espn_games_on,
                     key = (pid, team)
                     if key in seen_players:
                         raise ValueError("Duplicate player observation")
+                    if pid in seen_athletes and seen_athletes[pid] != team:
+                        raise ValueError("Athlete appears on opposing teams")
+                    seen_athletes[pid] = team
                     seen_players.add(key)
                 # Exercise the same collector used by the Streamlit historical
                 # panel, without issuing a second request to ESPN.
