@@ -45,6 +45,7 @@ def baseline_backtest(observations, as_of, min_training_games=5):
         by_date[day].append(row)
     training = []
     errors = defaultdict(list)
+    player_games = defaultdict(set)
     for day in sorted(by_date):
         summaries = player_history_summaries(training, as_of=day)
         predictions = {(str(p["player_id"]), p["prop"]): p["baseline"]
@@ -56,9 +57,11 @@ def baseline_backtest(observations, as_of, min_training_games=5):
                 if (predicted is not None and isinstance(actual, (int, float))
                         and not isinstance(actual, bool) and isfinite(actual) and actual >= 0):
                     errors[prop].append(float(predicted) - float(actual))
+                    player_games[prop].add(str(row["player_id"]))
         training.extend(by_date[day])
     return [
         {"prop": prop, "evaluated": len(errors[prop]),
+         "players_evaluated": len(player_games[prop]),
          "mae": round(sum(abs(e) for e in errors[prop]) / len(errors[prop]), 3)
          if errors[prop] else None,
          "mean_error": round(sum(errors[prop]) / len(errors[prop]), 3)
