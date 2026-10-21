@@ -52,6 +52,10 @@ def collect_espn_history(as_of, days=7, max_games=30,
                 break
             if not isinstance(game, dict):
                 continue
+            # Explicitly unfinished games cannot contribute final boxscore history.
+            # Unknown finality is still checked by the strict summary parser.
+            if game.get("espnCompleted") is False:
+                continue
             eid = game.get("espnEventId")
             if not isinstance(eid, str) or not eid.isascii() or not eid.isdigit() or eid in seen:
                 continue
