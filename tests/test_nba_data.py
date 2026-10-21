@@ -12,7 +12,7 @@ def test_scoreboard_rejects_bad_payload(monkeypatch):
         nba_data.scoreboard()
 
 def test_game_players_maps_opponents(monkeypatch):
-    sample = {"game": {"homeTeam": {"teamTricode": "BOS", "players": [{"personId": 1, "name": "Player A"}]},
+    sample = {"game": {"gameId": "123", "homeTeam": {"teamTricode": "BOS", "players": [{"personId": 1, "name": "Player A"}]},
                        "awayTeam": {"teamTricode": "NYK", "players": [{"personId": 2, "name": "Player B"}]}}}
     monkeypatch.setattr(nba_data, "_get_json", lambda _: sample)
     players = nba_data.game_players("123")
@@ -21,3 +21,20 @@ def test_game_players_maps_opponents(monkeypatch):
 def test_rejects_invalid_game_id():
     with pytest.raises(nba_data.NBADataError):
         nba_data.game_players("../bad")
+
+
+def test_wrong_game_boxscore_is_rejected(monkeypatch):
+    monkeypatch.setattr(nba_data, "_get_json", lambda _: {"game": {"gameId": "999"}})
+    with pytest.raises(nba_data.NBADataError, match="mismatch"):
+        nba_data.game_players("123")
+
+
+def test_missing_team_object_is_safe(monkeypatch):
+    monkeypatch.setattr(nba_data, "_get_json", lambda _: {
+        "game": {"gameId": "123", "homeTeam": None,
+                 "awayTeam": {"teamTricode": "BOS", "players": [
+                     {"personId": 1, "name": "Test", "statistics": {}}
+                 ]}}})
+    result = nba_data.game_players("123")
+    assert len(result) == 1
+    assert result[0]["opponent"] is None
