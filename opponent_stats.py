@@ -32,7 +32,7 @@ def opponent_game_totals(observations, as_of):
                 or not opponent or not team or opponent == team or player_id is None):
             continue
         key = (str(opponent), game_id, str(team))
-        groups[key][str(player_id)] = row
+        groups[key].setdefault(str(player_id), row)
     output = []
     for (opponent, game_id, team), players in groups.items():
         record = {"opponent": opponent, "game_id": game_id,
@@ -59,7 +59,11 @@ def opponent_sample_summary(game_totals, min_players=8):
         raise ValueError("min_players must be a positive integer")
     by_team = defaultdict(list)
     for row in game_totals:
-        if row.get("players_observed", 0) >= min_players:
+        if not isinstance(row, dict):
+            continue
+        count = row.get("players_observed")
+        if (isinstance(count, int) and not isinstance(count, bool)
+                and count >= min_players and row.get("opponent")):
             by_team[row["opponent"]].append(row)
     results = []
     for opponent, games in sorted(by_team.items()):
