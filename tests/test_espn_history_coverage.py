@@ -49,3 +49,17 @@ def test_coverage_excludes_invalid_dates_and_conflicting_dates():
     )
     assert result[0]["Historical players"] == 1
     assert result[0]["Player-game records"] == 1
+
+
+def test_coverage_excludes_athlete_assigned_to_two_teams_in_one_game():
+    rows = [
+        {"player_id": "espn:9", "player": "Example", "team": team,
+         "game_id": "espn:101", "game_date": "2026-10-19",
+         "points": 20, "rebounds": 5, "assists": 3, "threes": 2,
+         "source": "ESPN verified final boxscore"}
+        for team in ("BOS", "NYK")
+    ]
+    coverage = espn_history_coverage(rows, {"BOS", "NYK"})
+    assert len(coverage) == 2
+    assert all(row["Player-game records"] == 0 for row in coverage)
+    assert all(row["Historical players"] == 0 for row in coverage)
