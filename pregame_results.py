@@ -139,7 +139,7 @@ def summarize_projection_errors_by_slate(scored_rows):
     dates = {}
     for row in scored_rows or []:
         if (not isinstance(row, dict) or row.get("result_status") != "verified_final"
-                or not isinstance(row.get("slate_date"), str)):
+                or not _valid_iso_day(row.get("slate_date"))):
             continue
         dates.setdefault(row["slate_date"], []).append(row)
     output = []
