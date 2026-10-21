@@ -15,6 +15,8 @@ def build_pregame_baseline_board(observations, slate_date, min_games=5, player_i
     if type(min_games) is not int or min_games < 1:
         raise ValueError("min_games must be a positive integer")
     if player_ids is not None:
+        if isinstance(player_ids, (str, bytes)):
+            raise ValueError("player_ids must be a collection of player identifiers")
         player_ids = {str(pid) for pid in player_ids}
     summaries = player_history_summaries(observations, as_of=cutoff)
     forecasts = baseline_projections(summaries, min_games=min_games)
