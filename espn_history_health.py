@@ -18,6 +18,9 @@ def espn_history_health(history):
         raise ValueError("Invalid ESPN history counters")
     if any(not isinstance(item, dict) for item in failures):
         raise ValueError("Invalid ESPN failure details")
+    limit_reached = history.get("request_limit_reached", False)
+    if type(limit_reached) is not bool:
+        raise ValueError("Invalid ESPN request-limit flag")
     schedule_failures = sum("event_id" not in item for item in failures)
     boxscore_failures = sum("event_id" in item for item in failures)
     # Distinguish scanned dates from dates whose scoreboard failed.
@@ -57,7 +60,7 @@ def espn_history_health(history):
         "Schedule dates checked": scanned,
         "Schedule dates usable": usable_schedule_dates,
         "Schedule coverage %": round(100 * usable_schedule_dates / scanned, 1) if scanned and usable_schedule_dates is not None else None,
-        "Request limit reached": history.get("request_limit_reached", False),
+        "Request limit reached": limit_reached,
         "Final games requested": requested,
         "Verified final games": loaded,
         "Failed final-game requests": requested - loaded,
@@ -70,5 +73,6 @@ def espn_history_health(history):
                    if not requested and schedule_failures
                    else "No final games requested" if not requested
                    else "Partial historical retrieval" if loaded < requested or failures
+                   else "Request budget reached; all requested finals loaded" if limit_reached
                    else "All requested finals loaded"),
     }
