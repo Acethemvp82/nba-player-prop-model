@@ -717,6 +717,28 @@ if not board.empty:
             if visible_board.empty:
                 st.warning("No player-prop rows meet the selected historical sample minimum. "
                            "Reduce the filter to view more players.")
+    if "ESPN Days Since Sample" in board.columns:
+        max_sample_age = st.select_slider(
+            "Maximum ESPN sample age (research view)",
+            options=["Any age", "7 days", "14 days", "30 days"],
+            value="Any age",
+            help="Optional research-only filter based on the latest verified sampled game. "
+                 "Players without a matching sample are hidden when an age limit is selected.",
+        )
+        if max_sample_age != "Any age":
+            max_days = int(max_sample_age.split()[0])
+            sample_age = pd.to_numeric(
+                visible_board["ESPN Days Since Sample"], errors="coerce"
+            )
+            visible_board = visible_board.loc[sample_age.between(0, max_days)]
+            st.caption(
+                f"Showing {len(visible_board)} of {len(board)} player-prop rows "
+                f"with a verified ESPN sample no older than {max_days} days. "
+                "Any minimum-game filter also applies. This does not alter projections."
+            )
+            if visible_board.empty:
+                st.warning("No player-prop rows meet the selected sample-age and "
+                           "sample-size filters. Widen either filter to see more players.")
     st.dataframe(visible_board.drop(columns=["Player ID"]), use_container_width=True, hide_index=True)
     # Export only the currently visible research rows, preserving missing
     # betting fields as blanks rather than inventing lines or probabilities.
