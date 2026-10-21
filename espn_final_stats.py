@@ -57,7 +57,10 @@ def parse_final_espn_boxscore(payload, expected_event_id):
         for section in sections:
             if not isinstance(section, dict):
                 continue
-            labels = section.get("labels") or section.get("keys")
+            # ESPN NBA summary boxscores commonly name their parallel
+            # stat headings "names"; other payloads use labels or keys.
+            labels = next((section[field] for field in ("names", "labels", "keys")
+                           if isinstance(section.get(field), list)), None)
             athletes = section.get("athletes")
             if not isinstance(labels, list) or not isinstance(athletes, list):
                 continue
