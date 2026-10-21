@@ -419,8 +419,16 @@ if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), h
                                     ["player", "team", "slate_date", "prop", "baseline",
                                      "actual", "projection_error", "absolute_error"]
                                 ], use_container_width=True, hide_index=True)
-                                st.dataframe(pd.DataFrame(summarize_projection_errors(graded)),
+                                prop_accuracy = pd.DataFrame(summarize_projection_errors(graded))
+                                st.dataframe(prop_accuracy,
                                              use_container_width=True, hide_index=True)
+                                st.download_button(
+                                    "Download overall prop accuracy CSV",
+                                    data=prop_accuracy.to_csv(index=False),
+                                    file_name=f"nba_prop_accuracy_{slate_date.isoformat()}.csv",
+                                    mime="text/csv",
+                                    help="Per-prop MAE and bias from matched verified final results only.",
+                                )
                                 with st.expander("Accuracy by slate date"):
                                     st.caption("Per-slate errors use only verified matched finals. "
                                                "Low sample counts may be unstable.")
