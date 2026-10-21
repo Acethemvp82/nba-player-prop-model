@@ -155,6 +155,44 @@ def summarize_projection_errors_by_slate(scored_rows):
 
 
 
+
+def list_unmatched_forecasts(forecasts, scored_rows):
+    """Return valid, distinct frozen projections without a verified matched final."""
+    graded_keys = {
+        (str(row["player_id"]), row["slate_date"], row["prop"])
+        for row in (scored_rows or [])
+        if (isinstance(row, dict) and row.get("result_status") == "verified_final"
+            and isinstance(row.get("player_id"), (str, int))
+            and not isinstance(row.get("player_id"), bool)
+            and _valid_iso_day(row.get("slate_date")) and row.get("prop") in PROPS)
+    }
+    seen = set()
+    unmatched = []
+    for row in forecasts or []:
+        if not isinstance(row, dict):
+            continue
+        pid, day, prop, baseline = (
+            row.get("player_id"), row.get("slate_date"),
+            row.get("prop"), row.get("baseline"))
+        if (not isinstance(pid, (str, int)) or isinstance(pid, bool)
+                or not _valid_iso_day(day) or prop not in PROPS
+                or type(baseline) not in (int, float)
+                or not isfinite(baseline) or baseline < 0):
+            continue
+        key = (str(pid), day, prop)
+        if key in seen or key in graded_keys:
+            continue
+        seen.add(key)
+        unmatched.append({
+            "slate_date": day, "player_id": str(pid),
+            "player": row.get("player") if isinstance(row.get("player"), str) else "",
+            "team": row.get("team") if isinstance(row.get("team"), str) else "",
+            "prop": prop, "baseline": baseline,
+            "result_status": "unmatched",
+        })
+    return sorted(unmatched, key=lambda row: (row["slate_date"], row["player_id"], row["prop"]))
+
+
 def summarize_unmatched_forecasts_by_slate(forecasts, scored_rows):
     """Count ungraded valid forecast keys per date and prop, without calling them misses."""
     valid = set()
