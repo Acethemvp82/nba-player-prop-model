@@ -92,6 +92,8 @@ def check_recent_finals(today=None, days=7, schedule_loader=espn_games_on,
                             or any(type(player.get(stat)) is not int or player[stat] < 0
                                    for stat in ("points", "rebounds", "assists", "threes"))):
                         raise ValueError("Unverified or invalid player observation")
+                    if player["threes"] * 3 > player["points"]:
+                        raise ValueError("Made three-pointers exceed recorded points")
                     if expected_teams is not None and team not in expected_teams:
                         raise ValueError("Player team does not match scheduled game")
                     key = (pid, team)
