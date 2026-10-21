@@ -59,10 +59,13 @@ def parse_final_espn_boxscore(payload, expected_event_id):
             athletes = section.get("athletes")
             if not isinstance(labels, list) or not isinstance(athletes, list):
                 continue
-            indexes = {label.strip().upper(): i for i, label in enumerate(labels)
-                       if isinstance(label, str)}
-            if not all(key in indexes for key in ("PTS", "REB", "AST", "3PT")):
+            normalized = [label.strip().upper() if isinstance(label, str) else None
+                          for label in labels]
+            # Repeated stat headings make their corresponding values ambiguous.
+            required = ("PTS", "REB", "AST", "3PT")
+            if any(normalized.count(key) != 1 for key in required):
                 continue
+            indexes = {key: normalized.index(key) for key in required}
             for item in athletes:
                 if not isinstance(item, dict) or item.get("didNotPlay") is True or item.get("didNotPlay") == "true":
                     continue
