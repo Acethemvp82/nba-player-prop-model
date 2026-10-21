@@ -8,6 +8,7 @@ from season_schedule import season_schedule, games_on
 from history_collection import recent_player_summaries, fetch_boxscore_players
 from projection_baseline import baseline_projections
 from pregame_roster import candidate_players
+from matchup_validation import valid_game_player
 
 st.set_page_config(page_title="NBA Player Prop Model", page_icon="🏀", layout="wide")
 st.title("🏀 NBA Player Prop Model")
@@ -147,12 +148,8 @@ for game in slate_rows:
     except NBADataError as exc:
         failures.append(f'{game["Matchup"]}: {exc}')
         continue
-    scheduled_teams = set(game["Matchup"].split(" @ "))
     for player in players:
-        if not player.get("player") or player.get("team") not in scheduled_teams:
-            continue
-        expected_opponent = next(team for team in scheduled_teams if team != player["team"]) if len(scheduled_teams) == 2 else None
-        if expected_opponent is None or player.get("opponent") != expected_opponent:
+        if not valid_game_player(player, game["Matchup"]):
             continue
         for prop in selected:
             rows.append({
