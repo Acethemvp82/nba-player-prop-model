@@ -144,7 +144,7 @@ def test_history_health_reports_request_limit():
     })
     assert health["Request limit reached"] is True
     assert health["Final-game success %"] == 100.0
-    assert health["Status"] == "Request budget reached; all requested finals loaded"
+    assert health["Status"] == "Request limit reached; no eligible games omitted"
 
 
 @pytest.mark.parametrize("invalid", ["true", 1, None, [], {}])
@@ -182,6 +182,7 @@ def test_history_truncation_matches_omitted_games():
         "history_truncated": True, "failures": [], "observations": [],
     })
     assert result["History truncated by limit"] is True
+    assert result["Status"] == "Historical sample truncated by request limit"
 
 
 @pytest.mark.parametrize("truncated,omitted", [(True, 0), (False, 2), ("yes", 2)])
