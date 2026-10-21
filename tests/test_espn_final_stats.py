@@ -36,3 +36,14 @@ def test_malformed_statistics_never_become_zero():
     data["boxscore"]["players"][0]["statistics"][0]["athletes"][0]["stats"][1] = "N/A"
     with pytest.raises(NBADataError, match="no validated"):
         parse_final_espn_boxscore(data, "4012")
+
+
+def test_alternate_keys_and_multiple_competitions():
+    data = sample()
+    correct = data["header"]["competitions"][0]
+    data["header"]["competitions"] = [
+        {"id": "9999", "status": {"type": {"completed": False}}}, correct]
+    section = data["boxscore"]["players"][0]["statistics"][0]
+    section["keys"] = section.pop("labels")
+    rows = parse_final_espn_boxscore(data, "4012")
+    assert rows[0]["points"] == 24
