@@ -114,7 +114,7 @@ def test_repeated_athlete_rows_count_as_one_player_game():
     assert {item["player_id"] for item in result["observations"]} == {"espn:9", "espn:10"}
 
 
-def test_history_filters_players_from_unrelated_teams():
+def test_history_rejects_game_with_players_from_unrelated_teams():
     matchup = {"espnEventId": "100",
                "homeTeam": {"teamTricode": "BOS"},
                "awayTeam": {"teamTricode": "NYK"}}
@@ -123,9 +123,10 @@ def test_history_filters_players_from_unrelated_teams():
         "2026-10-21", days=1, max_games=1,
         schedule_loader=lambda _: [matchup],
         boxscore_loader=lambda _: [player(), unrelated])
-    assert result["games_loaded"] == 1
-    assert len(result["observations"]) == 1
-    assert result["observations"][0]["team"] == "BOS"
+    assert result["games_loaded"] == 0
+    assert result["observations"] == []
+    assert len(result["failures"]) == 1
+    assert "outside scheduled matchup" in result["failures"][0]["error"]
 
 
 def test_history_rejects_game_when_no_players_match_scheduled_teams():
