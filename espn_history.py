@@ -73,6 +73,13 @@ def collect_espn_history(as_of, days=7, max_games=30,
                     and player["player_id"].startswith("espn:")
                     and player["player_id"][5:].isascii()
                     and player["player_id"][5:].isdigit()
+                    and isinstance(player.get("player"), str)
+                    and bool(player["player"].strip())
+                    and isinstance(player.get("team"), str)
+                    and len(player["team"]) == 3
+                    and player["team"].isascii()
+                    and player["team"].isalpha()
+                    and player["team"].isupper()
                     and all(type(player.get(prop)) is int and player[prop] >= 0
                             for prop in ("points", "rebounds", "assists", "threes"))
                 ]
