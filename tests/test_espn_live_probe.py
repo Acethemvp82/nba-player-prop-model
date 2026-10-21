@@ -49,3 +49,24 @@ def test_probe_reports_missing_final_games():
                                  boxscore_loader=lambda _: [])
     assert result["players"] == 0
     assert result["completed"] == 0
+
+
+def test_probe_skips_invalid_event_ids():
+    requested = []
+    result = check_recent_finals(
+        date(2026, 10, 21), days=1,
+        schedule_loader=lambda _: [game(None), game("not-an-id"), game("103")],
+        boxscore_loader=lambda eid: requested.append(eid) or [{"player_id": "espn:1"}],
+    )
+    assert requested == ["103"]
+    assert result["event_id"] == "103"
+
+
+def test_probe_handles_malformed_schedule_collection():
+    result = check_recent_finals(
+        date(2026, 10, 21), days=1,
+        schedule_loader=lambda _: {"games": []},
+        boxscore_loader=lambda _: [],
+    )
+    assert result["players"] == 0
+    assert "invalid game collection" in result["errors"][0]
