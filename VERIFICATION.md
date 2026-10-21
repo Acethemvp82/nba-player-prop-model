@@ -22,3 +22,24 @@ This dashboard is a **research preview**, not a validated betting board. Missing
 ## Release criteria for betting signals
 
 Before enabling betting recommendations, independently confirm live historical-data collection, repeatable automated test success, a working Streamlit deployment, valid authorized sportsbook lines, out-of-sample projection calibration and backtests. Changes to projection formulas, rankings, or betting tiers require separate approval.
+
+## Rebuild milestone 1 — baseline board and opponent context
+
+The active `dashboard_v2.py` now loads history on first open/settings changes,
+clears feed caches on manual refresh, preserves the last successful build timestamp,
+and displays retrieval diagnostics. The matchup column is descriptive context,
+not a projection multiplier or calibrated betting probability. It uses screened
+opponent totals from strictly earlier games, a game-weighted loaded-sample reference,
+five-game shrinkage and a five-game minimum. At least two qualifying opponents are
+needed. Historical samples can include preseason; active rosters are not confirmed.
+
+`python -m pytest -q` includes Streamlit AppTest checks for populated/empty/error
+states, player search, sort, refresh and Eastern tipoffs, plus matchup tests for
+cutoffs, duplicate rows, coverage, shrinkage and ESPN game-ID/opponent integration.
+The schedule fragment checks every minute while open with a five-minute source cache.
+Player baselines reload on settings changes or manual refresh; they are not in-game projections.
+
+Deployment target remains branch `main`, entrypoint `app.py`. The dashboard identifies
+itself as “Rebuild milestone 1 · Baseline + matchup context”. A successful local
+Streamlit health check or GitHub push does not verify the hosted app; confirm this
+marker at the deployed URL before claiming the release is live.

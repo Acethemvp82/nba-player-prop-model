@@ -482,3 +482,15 @@ def test_schedule_failure_after_cap_is_still_reported():
     assert result["history_truncated"] is False
     assert len(result["failures"]) == 1
     assert result["failures"][0]["date"] == "2026-10-19"
+
+
+def test_history_attaches_verified_opponent_for_matchup_scoring():
+    from opponent_stats import opponent_game_totals
+    fixture = {**game('100'), 'homeTeam': {'teamTricode': 'BOS'},
+               'awayTeam': {'teamTricode': 'NYK'}}
+    result = collect_espn_history('2026-10-21', days=1, max_games=1,
+        schedule_loader=lambda _: [fixture], boxscore_loader=lambda _: [player()])
+    assert result['observations'][0]['opponent'] == 'NYK'
+    totals = opponent_game_totals(result['observations'], '2026-10-21')
+    assert totals[0]['points_allowed_observed'] == 22
+    assert totals[0]['opponent'] == 'NYK'

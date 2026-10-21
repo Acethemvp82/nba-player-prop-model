@@ -182,9 +182,14 @@ def collect_espn_history(as_of, days=7, max_games=30,
                             raise NBADataError("Conflicting ESPN stats for the same athlete")
                         continue
                     unique_players[key] = player
+                # Bind opponent identity to the verified scheduled matchup.
+                # Boxscore player rows alone do not carry an opponent field.
+                matchup_teams = expected_teams or {p["team"] for p in unique_players.values()}
                 games_loaded += 1
                 for player in unique_players.values():
-                    observations.append({**player, "game_id": f"espn:{eid}",
+                    observations.append({**player,
+                                         "opponent": next(iter(matchup_teams - {player["team"]})) if len(matchup_teams) == 2 else None,
+                                         "game_id": f"espn:{eid}",
                                          "game_date": day.isoformat()})
             except (NBADataError, ValueError, TypeError, KeyError, requests.RequestException, OSError) as exc:
                 failures.append({"event_id": eid, "date": day.isoformat(), "error": str(exc)})

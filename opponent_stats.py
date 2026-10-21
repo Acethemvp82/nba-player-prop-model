@@ -28,7 +28,9 @@ def opponent_game_totals(observations, as_of):
         played = _day(row.get("game_date"))
         opponent, team = row.get("opponent"), row.get("team")
         game_id, player_id = str(row.get("game_id") or ""), row.get("player_id")
-        if (played is None or played >= cutoff or not game_id.isdigit()
+        raw_id = game_id.removeprefix("espn:")
+        valid_id = raw_id.isascii() and raw_id.isdigit()
+        if (played is None or played >= cutoff or not valid_id
                 or not opponent or not team or opponent == team or player_id is None):
             continue
         key = (str(opponent), game_id, str(team))
