@@ -3,7 +3,7 @@ from datetime import datetime, timezone, date
 import pandas as pd
 import streamlit as st
 from nba_data import NBADataError, scoreboard, game_players
-from season_schedule import season_schedule, games_on, games_on
+from season_schedule import season_schedule, games_on
 from history_collection import recent_player_summaries
 from projection_baseline import baseline_projections
 
@@ -43,28 +43,6 @@ for game in games:
         "Tipoff (UTC)": game.get("gameTimeUTC") or "Not available",
     })
 
-st.subheader("Scheduled NBA slate")
-@st.cache_data(ttl=3600, show_spinner=False)
-def load_schedule():
-    return season_schedule()
-
-slate_day = st.date_input("Slate date", value=date.today())
-try:
-    slate_games = games_on(slate_day, schedule=load_schedule())
-    slate_rows = []
-    for game in slate_games:
-        home, away = game.get("homeTeam") or {}, game.get("awayTeam") or {}
-        slate_rows.append({
-            "Matchup": f'{away.get("teamTricode", "?")} @ {home.get("teamTricode", "?")}',
-            "Status": game.get("gameStatusText") or "Scheduled",
-        })
-    if slate_rows:
-        st.dataframe(pd.DataFrame(slate_rows), use_container_width=True, hide_index=True)
-    else:
-        st.warning("No scheduled games found for this date in the NBA season feed.")
-except (NBADataError, ValueError, TypeError, KeyError) as exc:
-    st.error(f"Could not load the selected NBA slate: {exc}")
-
 st.subheader("Upcoming NBA slate")
 slate_date = st.date_input("Slate date", value=date.today())
 try:
@@ -89,7 +67,7 @@ if slate_rows:
 else:
     st.info("No games listed for the selected date.")
 
-st.subheader("Today's NBA games")
+st.subheader("Current-day NBA games")
 if game_rows:
     st.dataframe(pd.DataFrame(game_rows).drop(columns=["Game ID"]), use_container_width=True, hide_index=True)
 else:
@@ -101,7 +79,7 @@ selected = st.multiselect("Prop categories", categories, default=categories)
 columns = ["Game", "Player", "Team", "Opponent", "Prop", "FanDuel Line", "Over Odds", "Projection", "Over Probability", "Edge", "Confidence"]
 rows = []
 failures = []
-for game in game_rows:
+for game in slate_rows:
     if not game["Game ID"]:
         continue
     try:
@@ -116,6 +94,7 @@ for game in game_rows:
             rows.append({
                 "Game": game["Matchup"],
                 "Player": player["player"],
+                "Player ID": player.get("player_id"),
                 "Team": player.get("team"),
                 "Opponent": player.get("opponent"),
                 "Prop": prop,
@@ -129,6 +108,14 @@ for game in game_rows:
 board = pd.DataFrame(rows, columns=columns)
 if not board.empty:
     st.caption(f"{board['Player'].nunique()} unique players listed in available game feeds; not necessarily the complete active NBA roster.")
+    historical_board = st.session_state.get("nba_historical_preview")
+    if historical_board and historical_board.get("summaries"):
+        baseline_lookup = {(str(item["player_id"]), item["prop"]): item["baseline"]
+                           for item in baseline_projections(historical_board["summaries"])}
+        prop_codes = {"Points": "points", "Rebounds": "rebounds",
+                      "Assists": "assists", "3-Pointers": "threes"}
+        board["Historical baseline"] = [baseline_lookup.get((str(item.get("Player ID")), prop_codes[item["Prop"]]))
+                                        for item in rows]
     st.dataframe(board, use_container_width=True, hide_index=True)
 else:
     st.warning("No player listings available yet. Some box scores may not publish rosters before tipoff.")
@@ -136,7 +123,7 @@ if failures:
     with st.expander(f"NBA game feeds unavailable ({len(failures)})"):
         for failure in failures:
             st.write(failure)
-st.caption("Blank FanDuel lines and model projections are intentional. No placeholder numbers or unverified betting probabilities are displayed.")
+st.caption("FanDuel lines, probabilities and edges remain blank until sourced and validated. Statistical baselines are descriptive, not betting projections.")
 with st.expander("Model methodology and safeguards"):
     st.markdown("""
 - Next: season and recent-game player statistics, minutes and roster coverage.
