@@ -82,3 +82,8 @@ def test_averages_exclude_cross_team_athlete_game_conflict():
                 "game_id": "espn:100", "source": "ESPN verified final boxscore",
                 "points": 20, "rebounds": 6, "assists": 4, "threes": 2}
     assert espn_player_averages([observation("BOS"), observation("NYK")], "2026-10-21") == []
+
+
+def test_noncanonical_espn_date_is_excluded():
+    invalid = {"source": "ESPN verified final boxscore", "player_id": "espn:12", "player": "Player One", "team": "BOS", "game_id": "espn:100", "game_date": "20261019", "points": 20, "rebounds": 5, "assists": 3, "threes": 2}
+    assert espn_player_averages([invalid], "2026-10-21") == []
