@@ -198,6 +198,14 @@ if missing_teams:
                ". The master board is incomplete; do not interpret missing players as inactive.")
 elif slate_teams:
     st.caption("Every scheduled team has at least one listed player. This does NOT verify full rosters.")
+if rows:
+    unique_players = {(str(item["Player ID"]), str(item["Team"])) for item in rows}
+    feed_players = {(str(item["Player ID"]), str(item["Team"])) for item in rows
+                    if item["Roster Source"] == "NBA game feed"}
+    st.caption(f"Roster coverage: {len(listed_teams)}/{len(slate_teams)} scheduled teams; "
+               f"{len(unique_players)} unique player/team listings "
+               f"({len(feed_players)} from game feeds, "
+               f"{len(unique_players - feed_players)} historical candidates).")
 board = pd.DataFrame(rows, columns=columns)
 if not board.empty:
     st.caption(f"{board['Player'].nunique()} players from available game feeds or historical candidates. Roster Source and Last Seen show where each listing came from; availability is not verified.")
