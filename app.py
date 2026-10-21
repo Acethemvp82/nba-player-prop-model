@@ -195,7 +195,7 @@ if st.session_state.get("nba_historical_preview_date") != slate_date.isoformat()
     history_for_slate = None
 if history_for_slate and history_for_slate.get("summaries"):
     candidates = candidate_players(slate_games, history_for_slate["summaries"], slate_date)
-    known = {(str(item["Player ID"]), item["Team"]) for item in rows}
+    known = {(str(item["player_id"]), item["team"]) for item in roster_listings}
     for candidate in candidates:
         key = (str(candidate["player_id"]), candidate["team"])
         if key in known:
