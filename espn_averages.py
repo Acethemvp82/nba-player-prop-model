@@ -71,6 +71,7 @@ def espn_player_averages(observations, as_of):
         rows = list(unique.values())
         result.append({"Player": rows[0]["player"].strip(), "Player ID": pid, "Team": team,
                        "Sample games": len(rows),
+                       "Latest verified game": max(r["game_date"] for r in rows),
                        **{f"{prop.title()} avg": round(sum(r[prop] for r in rows) / len(rows), 2)
                           for prop in PROPS}})
     return sorted(result, key=lambda row: (row["Team"], row["Player"]))
