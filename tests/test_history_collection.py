@@ -10,7 +10,7 @@ def test_history_excludes_today_and_future_and_reports_failures():
         {"gameId": "101", "gameStatus": 3, "gameDate": "10/18/2026 12:00:00 AM"},
         {"gameId": "102", "gameStatus": 3, "gameDate": "10/19/2026 12:00:00 AM"},
         {"gameId": "103", "gameStatus": 3, "gameDate": "10/20/2026 12:00:00 AM"},
-        {"gameId": "104", "gameStatus": 2, "gameDate": "10/17/2026 12:00:00 AM"},
+        {"gameId": "104", "gameStatus": 2, "gameDate": "10/20/2026 12:00:00 AM"},
     ]}]
     called = []
     def loader(gid):
@@ -175,3 +175,17 @@ def test_final_boxscore_skips_malformed_players_and_stats(monkeypatch):
     assert len(players) == 1
     assert players[0]["player_id"] == 7
     assert players[0]["statistics"] == {}
+
+
+def test_stale_in_progress_schedule_status_can_load_verified_final():
+    schedule = [{"games": [{"gameId": "222", "gameStatus": 2,
+                             "gameDateEst": "2026-10-18"}]}]
+    called = []
+    def verified_loader(gid):
+        called.append(gid)
+        return [{"player_id": 9, "player": "Example", "team": "NYK",
+                 "statistics": {"minutes": "PT20M", "points": 17}}]
+    result = collect_recent_history(schedule, "2026-10-20", loader=verified_loader)
+    assert called == ["222"]
+    assert result["games_loaded"] == 1
+    assert result["observations"][0]["points"] == 17
