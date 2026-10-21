@@ -66,3 +66,27 @@ def test_history_health_no_verified_dates_is_explicitly_missing():
     })
     assert health["Oldest verified game"] is None
     assert health["Newest verified game"] is None
+
+
+def test_health_separates_schedule_and_boxscore_failures():
+    health = espn_history_health({
+        "games_requested": 3, "games_loaded": 2, "dates_checked": 4,
+        "failures": [
+            {"date": "2026-10-19", "error": "schedule unavailable"},
+            {"event_id": "123", "date": "2026-10-20", "error": "invalid final"},
+        ],
+        "observations": [{}],
+    })
+    assert health["Failed schedule dates"] == 1
+    assert health["Failed boxscore validations"] == 1
+    assert health["Status"] == "Partial historical retrieval"
+
+
+def test_schedule_outage_without_requested_games_is_not_clean_empty_history():
+    health = espn_history_health({
+        "games_requested": 0, "games_loaded": 0, "dates_checked": 2,
+        "failures": [{"date": "2026-10-19", "error": "network outage"}],
+        "observations": [],
+    })
+    assert health["Status"] == "Schedule retrieval errors; no finals requested"
+    assert health["Failed schedule dates"] == 1
