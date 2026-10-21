@@ -69,3 +69,18 @@ def test_parent_schedule_date_is_preserved():
                              "statistics": {"minutes": "PT20M", "points": 11}}])
     assert result["games_loaded"] == 1
     assert result["observations"][0]["game_date"] == "2026-10-19"
+
+
+def test_large_history_budget_remains_bounded():
+    schedule = [{"games": [
+        {"gameId": str(1000 + i), "gameStatus": 3, "gameDateEst": "2026-10-19"}
+        for i in range(350)
+    ]}]
+    calls = []
+    def loader(gid):
+        calls.append(gid)
+        return []
+    result = collect_recent_history(schedule, "2026-10-20", max_games=320, loader=loader)
+    assert result["games_requested"] == 320
+    assert result["eligible_games"] == 350
+    assert len(calls) == 320
