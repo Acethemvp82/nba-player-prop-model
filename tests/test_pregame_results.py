@@ -140,3 +140,11 @@ def test_invalid_slate_date_shape_cannot_be_graded():
         [final(game_date="20261021")]) == []
     assert projection_grading_coverage(
         [forecast(slate_date="20261021")], [])["eligible_forecasts"] == 0
+
+
+def test_impossible_calendar_date_is_not_graded_or_eligible():
+    assert score_pregame_baselines(
+        [forecast(slate_date="2026-02-30")],
+        [final(game_date="2026-02-30")]) == []
+    assert projection_grading_coverage(
+        [forecast(slate_date="2026-02-30")], [])["eligible_forecasts"] == 0
