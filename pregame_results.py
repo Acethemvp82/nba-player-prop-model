@@ -151,3 +151,26 @@ def summarize_projection_errors_by_slate(scored_rows):
         for summary in summarize_projection_errors(dates[day]):
             output.append({"slate_date": day, **summary})
     return output
+
+
+
+def summarize_grading_by_slate(forecasts, scored_rows):
+    """Coverage by slate date; unmatched rows are not counted as losses."""
+    dates = sorted({
+        row["slate_date"] for row in (forecasts or [])
+        if isinstance(row, dict) and _valid_iso_day(row.get("slate_date"))
+    })
+    output = []
+    for day in dates:
+        day_forecasts = [
+            row for row in (forecasts or [])
+            if isinstance(row, dict) and row.get("slate_date") == day
+        ]
+        day_scored = [
+            row for row in (scored_rows or [])
+            if isinstance(row, dict) and row.get("slate_date") == day
+        ]
+        summary = projection_grading_coverage(day_forecasts, day_scored)
+        if summary["eligible_forecasts"]:
+            output.append({"slate_date": day, **summary})
+    return output
