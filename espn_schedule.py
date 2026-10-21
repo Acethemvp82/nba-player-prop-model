@@ -3,7 +3,6 @@
 ESPN event IDs are NOT NBA game IDs and must never be sent to NBA box-score
 endpoints. This adapter supplies date-specific matchup visibility only.
 """
-from datetime import date
 import requests
 from nba_data import NBADataError
 from historical_stats import _day
@@ -43,10 +42,15 @@ def espn_games_on(day):
             team = item.get("team")
             if isinstance(team, dict):
                 abbreviation = team.get("abbreviation")
-                if isinstance(abbreviation, str) and abbreviation.isascii() and len(abbreviation) == 3:
+                if (isinstance(abbreviation, str) and len(abbreviation) == 3
+                        and abbreviation.isascii() and abbreviation.isalpha()):
                     sides[item["homeAway"]] = abbreviation.upper()
         if len(sides) != 2 or sides["home"] == sides["away"]:
             continue
+        # ESPN commonly uses NY for New York and GS for Golden State.
+        # Never invent an NBA tricode from an unrecognized abbreviation.
+        normalized = {"NYK": "NYK", "GSW": "GSW"}
+        sides = {side: normalized.get(code, code) for side, code in sides.items()}
         games.append({
             "gameId": None,  # ESPN IDs are not compatible with NBA boxscore URLs.
             "homeTeam": {"teamTricode": sides["home"]},
