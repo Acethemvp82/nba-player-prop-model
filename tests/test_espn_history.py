@@ -153,3 +153,19 @@ def test_history_rejects_identical_or_malformed_matchup_teams():
         assert result["games_loaded"] == 0
         assert result["observations"] == []
         assert len(result["failures"]) == 1
+
+
+def test_history_rejects_partially_missing_matchup_metadata():
+    for matchup in (
+        {"homeTeam": {"teamTricode": "BOS"}},
+        {"awayTeam": {"teamTricode": "NYK"}},
+        {"homeTeam": {"teamTricode": "BOS"}, "awayTeam": {}},
+        {"homeTeam": None, "awayTeam": {"teamTricode": "NYK"}},
+    ):
+        result = collect_espn_history(
+            "2026-10-21", days=1, max_games=1,
+            schedule_loader=lambda _: [{"espnEventId": "100", **matchup}],
+            boxscore_loader=lambda _: [player()])
+        assert result["games_loaded"] == 0
+        assert result["observations"] == []
+        assert len(result["failures"]) == 1
