@@ -214,7 +214,7 @@ if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), h
         if espn_history["games_loaded"] < espn_history["games_requested"]:
             st.warning("ESPN historical sample is incomplete. Do not interpret these averages "
                        "as full-season or last-N-game statistics.")
-        if espn_history["games_requested"] >= espn_game_budget:
+        if espn_history.get("request_limit_reached", False):
             st.info("ESPN history reached the selected game-request limit. Results cover "
                     "only the sampled games, not necessarily every completed game "
                     "in the lookback window.")
