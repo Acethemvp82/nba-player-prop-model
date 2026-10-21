@@ -10,6 +10,8 @@ on:
         default: false
   schedule:
     - cron: '17 12 * * *'
+    # Weekly live ESPN check during NBA season months; offline checks still run daily.
+    - cron: '17 13 * 10-12,1-6 1'
 permissions:
   contents: read
 jobs:
@@ -39,14 +41,14 @@ jobs:
           retention-days: 14
       - name: Validate module imports
         run: python -c "import baseline_backtest, csv_export, espn_board_quality, espn_history_health, espn_averages, espn_final_stats, espn_history, espn_history_coverage, espn_players, espn_schedule, espn_trends, historical_stats, history_collection, history_quality, nba_data, opponent_stats, player_stats, pregame_roster, projection_baseline, roster_coverage, season_schedule; from scripts.espn_live_probe import check_recent_finals"
-      - name: Live ESPN completed-game probe (manual opt-in)
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.live_espn_probe }}
+      - name: Live ESPN completed-game probe (manual or in-season weekly)
+        if: ${{ (github.event_name == 'workflow_dispatch' && inputs.live_espn_probe) || (github.event_name == 'schedule' && github.event.schedule == '17 13 * 10-12,1-6 1') }}
         run: |
           set -o pipefail
           python scripts/espn_live_probe.py 2>&1 | tee espn-live-probe.log
         shell: bash
       - name: Upload live ESPN probe diagnostics
-        if: ${{ always() && github.event_name == 'workflow_dispatch' && inputs.live_espn_probe }}
+        if: ${{ always() && ((github.event_name == 'workflow_dispatch' && inputs.live_espn_probe) || (github.event_name == 'schedule' && github.event.schedule == '17 13 * 10-12,1-6 1')) }}
         uses: actions/upload-artifact@v4
         with:
           name: nba-espn-live-probe
