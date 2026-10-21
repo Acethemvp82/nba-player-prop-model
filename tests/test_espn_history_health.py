@@ -202,3 +202,12 @@ def test_omitted_games_without_reaching_request_limit_are_rejected():
             "request_limit_reached": False, "eligible_games_omitted": 1,
             "history_truncated": True, "failures": [], "observations": [],
         })
+
+
+def test_request_limit_cannot_be_reached_without_requests():
+    with pytest.raises(ValueError, match="without requests"):
+        espn_history_health({
+            "games_requested": 0, "games_loaded": 0, "dates_checked": 1,
+            "request_limit_reached": True, "eligible_games_omitted": 0,
+            "failures": [], "observations": [],
+        })
