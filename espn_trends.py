@@ -29,7 +29,9 @@ def espn_recent_trends(observations, as_of):
             continue
         key = (pid, team)
         existing = grouped[key].get(game_id)
-        if existing is not None:
+        if game_id in grouped[key]:
+            if existing is None:
+                continue
             # Conflicting observations cannot safely become a recent-game trend.
             if existing[0] != played or any(
                     existing[1][prop] != row[prop] for prop in PROPS):
