@@ -65,3 +65,11 @@ def test_conflicting_dates_for_same_game_are_excluded():
     rows = [{**base, "game_date": "2026-10-18"},
             {**base, "game_date": "2026-10-19"}]
     assert espn_player_averages(rows, "2026-10-21") == []
+
+
+def test_averages_reject_noncanonical_team_codes():
+    valid = {"source": "ESPN verified final boxscore", "player_id": "espn:12",
+             "player": "Sample", "game_id": "espn:101", "game_date": "2026-10-19",
+             "points": 12, "rebounds": 5, "assists": 3, "threes": 2}
+    assert espn_player_averages([{**valid, "team": "bos"},
+                                 {**valid, "team": "B0S"}], "2026-10-21") == []
