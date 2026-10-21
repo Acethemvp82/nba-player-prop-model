@@ -187,3 +187,19 @@ def test_distinct_espn_events_with_same_matchup_are_preserved():
     with patch("espn_schedule.requests.get", return_value=Response()):
         games = espn_games_on("2026-10-21")
     assert [game["espnEventId"] for game in games] == ["40101", "40102"]
+
+
+def test_espn_schedule_rejects_ambiguous_three_competitor_event():
+    class Response:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {"events": [{"id": "40101", "competitions": [{"competitors": [
+                {"homeAway": "home", "team": {"abbreviation": "BOS"}},
+                {"homeAway": "away", "team": {"abbreviation": "NYK"}},
+                {"homeAway": "away", "team": {"abbreviation": "MIA"}},
+            ]}]}]}
+
+    with patch("espn_schedule.requests.get", return_value=Response()):
+        assert espn_games_on("2026-10-21") == []
