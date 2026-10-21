@@ -55,6 +55,18 @@ def test_history_deduplicates_events_across_dates():
     assert len(result["observations"]) == 1
 
 
+def test_nonfinite_minutes_never_enter_verified_history():
+    for minutes in (float("nan"), float("inf"), float("-inf")):
+        bad = {**player(), "minutes": minutes}
+        result = collect_espn_history(
+            "2026-10-21", days=1, max_games=1,
+            schedule_loader=lambda _: [game("100")],
+            boxscore_loader=lambda _: [bad])
+        assert result["games_loaded"] == 0
+        assert result["observations"] == []
+        assert len(result["failures"]) == 1
+
+
 def test_unverified_player_rows_do_not_count_as_loaded_games():
     bad = player()
     bad["source"] = "ESPN team roster (unconfirmed)"
