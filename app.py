@@ -373,65 +373,6 @@ if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), h
                     mime="text/csv",
                     help="Date-frozen, unadjusted research projections only; no sportsbook lines or calibrated probabilities.",
                 )
-                with st.expander("Grade saved research baselines against loaded verified finals"):
-                    st.caption("Upload a previously saved ESPN research baselines CSV. "
-                               "Only matching verified final player-games already present "
-                               "in the loaded ESPN history sample can be graded; "
-                               "unmatched forecasts remain ungraded.")
-                    uploaded_baselines = st.file_uploader(
-                        "Saved ESPN research baselines CSV",
-                        type=["csv"], key="espn_baseline_results_upload")
-                    if uploaded_baselines is not None:
-                        try:
-                            saved = pd.read_csv(uploaded_baselines, dtype={"player_id": str, "slate_date": str})
-                            required = {"player_id", "slate_date", "prop", "baseline"}
-                            if not required.issubset(saved.columns):
-                                st.error("CSV missing required fields: " +
-                                         ", ".join(sorted(required - set(saved.columns))))
-                            else:
-                                graded = score_pregame_baselines(
-                                    saved.to_dict("records"), espn_history["observations"])
-                                coverage = projection_grading_coverage(
-                                    saved.to_dict("records"), graded)
-                                st.caption(
-                                    f"Grading coverage: {coverage['graded_forecasts']} of "
-                                    f"{coverage['eligible_forecasts']} eligible forecasts "
-                                    f"({coverage['grading_coverage_pct']}%). "
-                                    f"Unmatched: {coverage['unmatched_forecasts']}."
-                                    if coverage["grading_coverage_pct"] is not None
-                                    else "No eligible forecasts found in the uploaded CSV."
-                                )
-                                if graded:
-                                    st.dataframe(pd.DataFrame(graded)[
-                                        ["player", "team", "slate_date", "prop", "baseline",
-                                         "actual", "projection_error", "absolute_error"]
-                                    ], use_container_width=True, hide_index=True)
-                                    st.dataframe(pd.DataFrame(summarize_projection_errors(graded)),
-                                                 use_container_width=True, hide_index=True)
-                                    with st.expander("Accuracy by slate date"):
-                                        st.caption("Per-slate errors use only verified matched finals. "
-                                                   "Low sample counts may be unstable.")
-                                        st.dataframe(
-                                            pd.DataFrame(summarize_projection_errors_by_slate(graded)),
-                                            use_container_width=True, hide_index=True)
-                                    graded_export = pd.DataFrame(graded).copy()
-                                    for column in graded_export.select_dtypes(include=["object", "string"]).columns:
-                                        graded_export[column] = graded_export[column].map(safe_spreadsheet_cell)
-                                    st.download_button(
-                                        "Download verified projection results CSV",
-                                        data=graded_export.to_csv(index=False),
-                                        file_name=f"nba_verified_projection_results_{slate_date.isoformat()}.csv",
-                                        mime="text/csv",
-                                        help="Exports only matched verified finals and their projection errors.",
-                                    )
-                                    st.caption(f"Graded {len(graded)} of {len(saved)} saved prop rows. "
-                                               "MAE and bias describe this matched sample only.")
-                                else:
-                                    st.info("No verified matching final player-games in the "
-                                            "currently loaded history sample. Select a later "
-                                            "as-of slate date and load the relevant finals.")
-                        except (ValueError, TypeError, KeyError, UnicodeError, pd.errors.ParserError) as exc:
-                            st.error(f"Could not grade the uploaded research CSV: {exc}")
             else:
                 st.info("No ESPN players meet the five-game minimum for automatic "
                         "pregame baseline projections in this historical sample.")
@@ -445,6 +386,65 @@ if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), h
                 if espn_history.get("failures"):
                     st.warning("Some historical requests failed. Review ESPN retrieval "
                                "health for missing dates or boxscores.")
+            with st.expander("Grade saved research baselines against loaded verified finals"):
+                st.caption("Upload a previously saved ESPN research baselines CSV. "
+                           "Only matching verified final player-games already present "
+                           "in the loaded ESPN history sample can be graded; "
+                           "unmatched forecasts remain ungraded.")
+                uploaded_baselines = st.file_uploader(
+                    "Saved ESPN research baselines CSV",
+                    type=["csv"], key="espn_baseline_results_upload")
+                if uploaded_baselines is not None:
+                    try:
+                        saved = pd.read_csv(uploaded_baselines, dtype={"player_id": str, "slate_date": str})
+                        required = {"player_id", "slate_date", "prop", "baseline"}
+                        if not required.issubset(saved.columns):
+                            st.error("CSV missing required fields: " +
+                                     ", ".join(sorted(required - set(saved.columns))))
+                        else:
+                            graded = score_pregame_baselines(
+                                saved.to_dict("records"), espn_history["observations"])
+                            coverage = projection_grading_coverage(
+                                saved.to_dict("records"), graded)
+                            st.caption(
+                                f"Grading coverage: {coverage['graded_forecasts']} of "
+                                f"{coverage['eligible_forecasts']} eligible forecasts "
+                                f"({coverage['grading_coverage_pct']}%). "
+                                f"Unmatched: {coverage['unmatched_forecasts']}."
+                                if coverage["grading_coverage_pct"] is not None
+                                else "No eligible forecasts found in the uploaded CSV."
+                            )
+                            if graded:
+                                st.dataframe(pd.DataFrame(graded)[
+                                    ["player", "team", "slate_date", "prop", "baseline",
+                                     "actual", "projection_error", "absolute_error"]
+                                ], use_container_width=True, hide_index=True)
+                                st.dataframe(pd.DataFrame(summarize_projection_errors(graded)),
+                                             use_container_width=True, hide_index=True)
+                                with st.expander("Accuracy by slate date"):
+                                    st.caption("Per-slate errors use only verified matched finals. "
+                                               "Low sample counts may be unstable.")
+                                    st.dataframe(
+                                        pd.DataFrame(summarize_projection_errors_by_slate(graded)),
+                                        use_container_width=True, hide_index=True)
+                                graded_export = pd.DataFrame(graded).copy()
+                                for column in graded_export.select_dtypes(include=["object", "string"]).columns:
+                                    graded_export[column] = graded_export[column].map(safe_spreadsheet_cell)
+                                st.download_button(
+                                    "Download verified projection results CSV",
+                                    data=graded_export.to_csv(index=False),
+                                    file_name=f"nba_verified_projection_results_{slate_date.isoformat()}.csv",
+                                    mime="text/csv",
+                                    help="Exports only matched verified finals and their projection errors.",
+                                )
+                                st.caption(f"Graded {len(graded)} of {len(saved)} saved prop rows. "
+                                           "MAE and bias describe this matched sample only.")
+                            else:
+                                st.info("No verified matching final player-games in the "
+                                        "currently loaded history sample. Select a later "
+                                        "as-of slate date and load the relevant finals.")
+                    except (ValueError, TypeError, KeyError, UnicodeError, pd.errors.ParserError) as exc:
+                        st.error(f"Could not grade the uploaded research CSV: {exc}")
             trends = espn_recent_trends(espn_history["observations"], slate_date.isoformat())
             if trends:
                 st.caption("ESPN L5/L10: averages use up to 5 or 10 verified games available "
