@@ -42,3 +42,27 @@ def test_espn_history_health_no_requests():
 def test_espn_history_health_rejects_bad_counters(bad):
     with pytest.raises(ValueError):
         espn_history_health(bad)
+
+
+def test_history_health_reports_actual_verified_date_range():
+    health = espn_history_health({
+        "games_requested": 3, "games_loaded": 2, "dates_checked": 5,
+        "failures": [{"error": "timeout"}],
+        "observations": [
+            {"game_date": "2026-10-18"},
+            {"game_date": "2026-10-20"},
+            {"game_date": "20261019"},  # noncanonical: ignored
+            {"game_date": "invalid"},
+        ],
+    })
+    assert health["Oldest verified game"] == "2026-10-18"
+    assert health["Newest verified game"] == "2026-10-20"
+
+
+def test_history_health_no_verified_dates_is_explicitly_missing():
+    health = espn_history_health({
+        "games_requested": 0, "games_loaded": 0, "dates_checked": 1,
+        "failures": [], "observations": [],
+    })
+    assert health["Oldest verified game"] is None
+    assert health["Newest verified game"] is None
