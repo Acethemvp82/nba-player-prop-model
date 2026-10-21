@@ -30,6 +30,8 @@ def fetch_boxscore_players(game_id):
 def collect_recent_history(schedule, as_of, max_games=80, loader=fetch_boxscore_players):
     """Return observations and collection diagnostics.
 
+    Custom loaders must return players ONLY for verified final box scores.
+
     The game budget caps network calls; failed games are reported and omitted.
     It does not imply full-season coverage.
     """
@@ -52,7 +54,7 @@ def collect_recent_history(schedule, as_of, max_games=80, loader=fetch_boxscore_
     seen = set()
     for _, gid, game in eligible:
         if gid not in seen and len(selected) < max_games:
-            selected.append(game)
+            selected.append({**game, "gameStatus": 3})
             seen.add(gid)
     errors = []
     loaded = []
