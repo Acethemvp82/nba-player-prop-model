@@ -72,3 +72,16 @@ def test_coverage_excludes_other_team_when_first_team_has_conflicting_duplicates
     rows = espn_history_coverage([original, conflicting, other_team], {"BOS", "NYK"})
     assert all(row["Player-game records"] == 0 for row in rows)
     assert all(row["Historical players"] == 0 for row in rows)
+
+
+def test_coverage_ignores_unhashable_provider_team_values():
+    malformed = [
+        {**record("BOS", 1, 10), "team": ["BOS"]},
+        {**record("BOS", 2, 11), "team": {"code": "BOS"}},
+    ]
+    result = espn_history_coverage(
+        malformed + [record("BOS", 3, 12)], {"BOS", "NYK"}
+    )
+    by_team = {row["Team"]: row for row in result}
+    assert by_team["BOS"]["Player-game records"] == 1
+    assert by_team["NYK"]["Player-game records"] == 0
