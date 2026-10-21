@@ -271,8 +271,22 @@ if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), h
                     st.dataframe(pd.DataFrame(trend_rows),
                                  use_container_width=True, hide_index=True)
             with st.expander("Individual verified ESPN player-game observations"):
-                st.dataframe(pd.DataFrame(espn_history["observations"]),
-                             use_container_width=True, hide_index=True)
+                observation_frame = pd.DataFrame(espn_history["observations"])
+                st.dataframe(observation_frame, use_container_width=True, hide_index=True)
+                # The raw verified sample is useful for auditing individual
+                # averages. It is not a full-season archive or a betting feed.
+                export_observations = observation_frame.copy()
+                for column in export_observations.select_dtypes(include=["object", "str"]).columns:
+                    export_observations[column] = export_observations[column].map(safe_spreadsheet_cell)
+                export_observations.insert(0, "Research Status", "VERIFIED SAMPLE — NOT COMPLETE HISTORY")
+                st.download_button(
+                    "Download verified ESPN player-game sample (CSV)",
+                    data=export_observations.to_csv(index=False).encode("utf-8-sig"),
+                    file_name=f"espn_verified_sample_{slate_date.isoformat()}.csv",
+                    mime="text/csv",
+                    help="Includes only validated final-game observations actually retrieved "
+                         "within the selected lookback and game-request limit.",
+                )
 
 st.subheader("Historical player statistics — research preview")
 st.caption("Official completed-game box scores only. These are descriptive averages, not predictions or betting edges.")
