@@ -8,9 +8,9 @@ from math import isfinite
 PROPS = ("points", "rebounds", "assists", "threes")
 
 def baseline_projections(summaries, min_games=5):
-    """Blend last-5, last-10 and collected-season per-minute production.
+    """Blend last-5, last-10 and collected-sample per-game averages.
 
-    A player must have >= min_games valid appearances and >= 3 valid
+    A player must have >= min_games appearances and >= min_games valid
     observations for the specific prop. This does not account for opponent,
     injuries, starting status, or changes in rotation.
     """
