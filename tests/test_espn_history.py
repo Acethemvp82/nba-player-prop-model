@@ -60,3 +60,29 @@ def test_unverified_player_rows_do_not_count_as_loaded_games():
     assert result["games_loaded"] == 0
     assert result["observations"] == []
     assert len(result["failures"]) == 1
+
+
+def test_explicitly_unfinished_games_do_not_consume_boxscore_budget():
+    fetched = []
+    def fetch(eid):
+        fetched.append(eid)
+        return [player()]
+    result = collect_espn_history(
+        "2026-10-21", days=1, max_games=1,
+        schedule_loader=lambda _: [
+            {"espnEventId": "100", "espnCompleted": False},
+            {"espnEventId": "101", "espnCompleted": True}],
+        boxscore_loader=fetch)
+    assert fetched == ["101"]
+    assert result["games_requested"] == 1
+    assert result["games_loaded"] == 1
+
+
+def test_unknown_finality_still_requires_verified_boxscore():
+    fetched = []
+    result = collect_espn_history(
+        "2026-10-21", days=1, max_games=1,
+        schedule_loader=lambda _: [{"espnEventId": "100", "espnCompleted": None}],
+        boxscore_loader=lambda eid: fetched.append(eid) or [player()])
+    assert fetched == ["100"]
+    assert result["games_loaded"] == 1
