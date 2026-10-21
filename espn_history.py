@@ -104,8 +104,10 @@ def collect_espn_history(as_of, days=7, max_games=30,
                     expected_teams = {home_code, away_code}
                     if len(expected_teams) != 2:
                         raise NBADataError("Identical ESPN scheduled matchup teams")
-                    valid_players = [player for player in valid_players
-                                     if player["team"] in expected_teams]
+                    # Do not silently drop an unrelated team's rows: that
+                    # would make a corrupted final look like a complete sample.
+                    if any(player["team"] not in expected_teams for player in valid_players):
+                        raise NBADataError("ESPN boxscore player team outside scheduled matchup")
                 if not valid_players:
                     raise NBADataError("No validated ESPN player observations for this matchup")
                 # An athlete cannot represent both opponents in one final game.
