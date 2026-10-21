@@ -208,6 +208,20 @@ if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), h
                        "historical sample may exclude additional games.")
             st.dataframe(pd.DataFrame([espn_history_health(espn_history)]),
                          use_container_width=True, hide_index=True)
+            if espn_history["failures"]:
+                st.caption("Failed schedule dates and boxscore validations are excluded "
+                           "from verified historical statistics.")
+                failure_rows = [
+                    {
+                        "Date": failure.get("date", "Unknown"),
+                        "Stage": "Boxscore" if "event_id" in failure else "Schedule",
+                        "ESPN Event ID": failure.get("event_id", ""),
+                        "Reason": str(failure.get("error", "Unknown error"))[:240],
+                    }
+                    for failure in espn_history["failures"]
+                ]
+                st.dataframe(pd.DataFrame(failure_rows), use_container_width=True,
+                             hide_index=True)
         if any("event_id" not in failure for failure in espn_history["failures"]):
             st.warning(
                 "One or more ESPN schedule dates failed to load. Even when every requested "
