@@ -12,6 +12,7 @@ from espn_history import collect_espn_history, espn_final_game_players
 from espn_averages import espn_player_averages
 from espn_trends import espn_recent_trends
 from espn_history_coverage import espn_history_coverage
+from espn_board_quality import history_sample_status
 from csv_export import safe_spreadsheet_cell
 from history_collection import recent_player_summaries, fetch_boxscore_players
 from projection_baseline import baseline_projections
@@ -543,6 +544,13 @@ if not board.empty:
                     f"Available last {n} games")
                 for _, row in board.iterrows()
             ]
+        board["ESPN History Status"] = [
+            history_sample_status(row["ESPN Sample Games"],
+                                  row["ESPN L5 Games"], row["ESPN L10 Games"])
+            for _, row in board.iterrows()
+        ]
+        st.caption("ESPN History Status describes verified sample size only; "
+                   "it is not a betting tier or confidence prediction.")
         st.caption("ESPN historical and L5/L10 averages use available verified pre-slate games (sample counts shown), not a "
                    "betting projection. Missing values indicate unavailable matched history.")
         # Make missing ESPN history visible by prop; a roster listing alone
