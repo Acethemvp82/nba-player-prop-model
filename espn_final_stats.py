@@ -48,14 +48,18 @@ def parse_final_espn_boxscore(payload, expected_event_id):
         code = ESPN_TO_NBA.get(code.upper(), code.upper())
         if len(code) != 3 or not code.isalpha():
             continue
-        for section in group.get("statistics", []):
+        sections = group.get("statistics")
+        if not isinstance(sections, list):
+            continue
+        for section in sections:
             if not isinstance(section, dict):
                 continue
             labels = section.get("labels") or section.get("keys")
             athletes = section.get("athletes")
             if not isinstance(labels, list) or not isinstance(athletes, list):
                 continue
-            indexes = {label.upper(): i for i, label in enumerate(labels) if isinstance(label, str)}
+            indexes = {label.strip().upper(): i for i, label in enumerate(labels)
+                       if isinstance(label, str)}
             if not all(key in indexes for key in ("PTS", "REB", "AST", "3PT")):
                 continue
             for item in athletes:
