@@ -648,6 +648,17 @@ if not board.empty:
                 "with_five_games": "At least 5 games",
                 "with_ten_games": "At least 10 games",
             }), use_container_width=True, hide_index=True)
+            sample_age = pd.to_numeric(board["ESPN Days Since Sample"], errors="coerce")
+            st.caption("Sample freshness across listed player-prop rows. Missing observations "
+                       "are counted separately rather than treated as recent or zero.")
+            st.dataframe(pd.DataFrame([{
+                "Listed player-props": len(board),
+                "Sample within 7 days": int(sample_age.between(0, 7).sum()),
+                "Sample within 14 days": int(sample_age.between(0, 14).sum()),
+                "Sample within 30 days": int(sample_age.between(0, 30).sum()),
+                "Older than 30 days": int(sample_age.gt(30).sum()),
+                "No verified sample": int(sample_age.isna().sum()),
+            }]), use_container_width=True, hide_index=True)
         if board["ESPN Historical Avg"].isna().any():
             st.warning("Some player-prop rows have no verified matching ESPN history. "
                        "Blank averages are unavailable data, not zero performance.")
