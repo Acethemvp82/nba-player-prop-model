@@ -183,11 +183,8 @@ refresh_espn_history = st.button(
     help="Clear cached ESPN historical schedules, final boxscores, and assembled samples "
          "before loading the selected slate again.",
 )
-if st.button("Load ESPN completed-game stats") or refresh_espn_history:
-    if refresh_espn_history:
-        load_espn_history.clear()
-        load_espn_history_schedule.clear()
-        load_espn_history_final.clear()
+load_espn_history_clicked = st.button("Load ESPN completed-game stats")
+if load_espn_history_clicked or refresh_espn_history:
     # Clear stale samples before starting a new request, including failed ones.
     st.session_state.pop("espn_history_preview", None)
     st.session_state.pop("espn_history_parameters", None)
@@ -195,6 +192,10 @@ if st.button("Load ESPN completed-game stats") or refresh_espn_history:
     st.session_state.pop("espn_history_error_parameters", None)
     try:
         with st.spinner("Checking completed ESPN boxscores..."):
+            if refresh_espn_history:
+                load_espn_history.clear()
+                load_espn_history_schedule.clear()
+                load_espn_history_final.clear()
             espn_history = load_espn_history(slate_date.isoformat(), history_days, espn_game_budget)
     except (NBADataError, ValueError, TypeError, KeyError, OSError, requests.RequestException) as exc:
         st.session_state["espn_history_error"] = str(exc)
