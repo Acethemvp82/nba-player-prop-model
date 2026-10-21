@@ -3,7 +3,6 @@
 Collect only FINAL games with a date strictly earlier than the requested
 as-of date. Never replace missing or failed box scores with fabricated stats.
 """
-from datetime import date
 from nba_data import NBADataError, _get_json, BASE
 from player_stats import completed_game_observations
 from historical_stats import _day, player_history_summaries
@@ -56,16 +55,21 @@ def collect_recent_history(schedule, as_of, max_games=80, loader=fetch_boxscore_
             selected.append(game)
             seen.add(gid)
     errors = []
+    loaded = []
     def safe_loader(gid):
         try:
-            return loader(gid)
+            players = loader(gid)
+            if not isinstance(players, list):
+                raise NBADataError("Box score player list is invalid")
+            loaded.append(gid)
+            return players
         except (NBADataError, ValueError, TypeError, KeyError) as exc:
             errors.append({"game_id": gid, "error": str(exc)})
             return []
     observations = completed_game_observations(selected, safe_loader)
     return {"observations": observations,
             "games_requested": len(selected),
-            "games_loaded": len(selected) - len(errors),
+            "games_loaded": len(loaded),
             "failed_games": errors,
             "eligible_games": len(seen) if len(eligible) <= max_games else len({g for _, g, _ in eligible})}
 
