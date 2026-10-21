@@ -43,7 +43,14 @@ def game_players(game_id: str) -> list[dict]:
     result = []
     for side in ("homeTeam", "awayTeam"):
         team = game.get(side) or {}
-        for player in team.get("players") or []:
+        if not isinstance(team, dict):
+            continue
+        players = team.get("players")
+        if not isinstance(players, list):
+            continue
+        for player in players:
+            if not isinstance(player, dict):
+                continue
             result.append({
                 "player_id": player.get("personId"),
                 "player": player.get("name"),
