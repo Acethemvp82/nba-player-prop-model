@@ -91,3 +91,8 @@ def test_mismatched_player_names_are_not_scored():
 def test_final_without_valid_minutes_is_not_graded():
     for minutes in (None, 0, -1, 61, float("nan"), float("inf")):
         assert score_pregame_baselines([forecast()], [final(minutes=minutes)]) == []
+
+
+def test_missing_forecast_or_final_collection_returns_no_grades():
+    assert score_pregame_baselines(None, [final()]) == []
+    assert score_pregame_baselines([forecast()], None) == []
