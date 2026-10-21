@@ -102,3 +102,16 @@ def test_identical_duplicate_final_boxscore_rows_are_counted_once():
     rows = parse_final_espn_boxscore(data, "4012")
     assert len(rows) == 1
     assert rows[0]["points"] == 24
+
+
+def test_same_athlete_on_two_teams_rejects_final_boxscore():
+    data = sample()
+    data["boxscore"]["players"].append({
+        "team": {"abbreviation": "BOS"},
+        "statistics": [{
+            "labels": ["MIN", "3PT", "REB", "AST", "PTS"],
+            "athletes": [{"athlete": {"id": "22", "displayName": "Sample Guard"},
+                          "stats": ["34", "3-7", "8", "6", "24"]}]
+        }]})
+    with pytest.raises(NBADataError, match="both teams"):
+        parse_final_espn_boxscore(data, "4012")
