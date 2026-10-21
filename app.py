@@ -414,6 +414,13 @@ if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), h
                                 if coverage["grading_coverage_pct"] is not None
                                 else "No eligible forecasts found in the uploaded CSV."
                             )
+                            if coverage["unmatched_forecasts"]:
+                                st.info(
+                                    f"{coverage['unmatched_forecasts']} eligible projections "
+                                    "have no verified final match in the loaded history. "
+                                    "To grade more, select an as-of date after those games "
+                                    "and reload ESPN completed-game history."
+                                )
                             if coverage["eligible_forecasts"]:
                                 st.progress(coverage["graded_forecasts"] /
                                             coverage["eligible_forecasts"],
