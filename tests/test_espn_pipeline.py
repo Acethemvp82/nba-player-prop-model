@@ -50,6 +50,7 @@ def test_final_summary_flows_into_history_averages_trends_and_coverage():
     assert averages[0]["Player"] == "Sample Guard"
     assert averages[0]["Team"] == "NYK"
     assert averages[0]["Sample games"] == 2
+    assert averages[0]["Latest verified game"] == "2026-10-20"
     assert averages[0]["Points avg"] == 20
 
     trends = espn_recent_trends(result["observations"], "2026-10-21")
