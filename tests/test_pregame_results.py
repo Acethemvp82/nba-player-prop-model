@@ -77,3 +77,12 @@ def test_projection_accuracy_summary_by_prop():
 
 def test_empty_accuracy_summary_has_no_fake_zeroes():
     assert summarize_projection_errors([]) == []
+
+
+def test_mismatched_player_names_are_not_scored():
+    assert score_pregame_baselines(
+        [forecast(player="Expected Athlete")],
+        [final(player="Different Athlete")]) == []
+    assert len(score_pregame_baselines(
+        [forecast(player="Expected Athlete")],
+        [final(player=" expected athlete ") ])) == 1
