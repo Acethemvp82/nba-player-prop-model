@@ -28,7 +28,7 @@ jobs:
       - name: Run automated tests
         run: python -m pytest -q
       - name: Validate module imports
-        run: python -c "import baseline_backtest, espn_averages, espn_final_stats, espn_history, espn_history_coverage, espn_players, espn_schedule, espn_trends, historical_stats, history_collection, history_quality, nba_data, opponent_stats, player_stats, pregame_roster, projection_baseline, roster_coverage, season_schedule"
+        run: python -c "import baseline_backtest, csv_export, espn_board_quality, espn_history_health, espn_averages, espn_final_stats, espn_history, espn_history_coverage, espn_players, espn_schedule, espn_trends, historical_stats, history_collection, history_quality, nba_data, opponent_stats, player_stats, pregame_roster, projection_baseline, roster_coverage, season_schedule"
       - name: Live ESPN completed-game probe (manual opt-in)
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.live_espn_probe }}
         run: python scripts/espn_live_probe.py
