@@ -9,6 +9,7 @@ from espn_schedule import espn_games_on
 from espn_players import espn_game_players, espn_team_roster
 from espn_history import collect_espn_history
 from espn_averages import espn_player_averages
+from espn_trends import espn_recent_trends
 from history_collection import recent_player_summaries, fetch_boxscore_players
 from projection_baseline import baseline_projections
 from pregame_roster import candidate_players
@@ -451,7 +452,21 @@ if not board.empty:
             average_lookup.get((str(row["Player ID"]), row["Team"]), {}).get(prop_avg[row["Prop"]])
             for _, row in board.iterrows()
         ]
-        st.caption("ESPN Historical Avg is a descriptive pre-slate sample mean, not a "
+        trends = espn_recent_trends(espn_history_board["observations"], slate_date.isoformat())
+        prop_key = {"Points": "points", "Rebounds": "rebounds",
+                    "Assists": "assists", "3-Pointers": "threes"}
+        for n in (5, 10):
+            board[f"ESPN L{n} Avg"] = [
+                trends.get((str(row["Player ID"]), row["Team"]), {}).get(
+                    f"{prop_key[row['Prop']]} L{n} avg")
+                for _, row in board.iterrows()
+            ]
+            board[f"ESPN L{n} Games"] = [
+                trends.get((str(row["Player ID"]), row["Team"]), {}).get(
+                    f"Available last {n} games")
+                for _, row in board.iterrows()
+            ]
+        st.caption("ESPN historical and L5/L10 averages use available verified pre-slate games (sample counts shown), not a "
                    "betting projection. Missing values indicate unavailable matched history.")
 
     st.caption(f"{board['Player'].nunique()} players from available game feeds or historical candidates. Roster Source and Last Seen show where each listing came from; availability is not verified.")
