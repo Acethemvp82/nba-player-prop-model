@@ -396,3 +396,31 @@ def test_request_budget_counts_distinct_omitted_games_across_all_dates():
     assert result["eligible_games_omitted"] == 3
     assert result["request_limit_reached"] is True
     assert result["failures"] == []
+
+
+def test_exact_request_cap_without_other_games_is_not_truncated():
+    result = collect_espn_history(
+        "2026-10-21", days=2, max_games=2,
+        schedule_loader=lambda day: [game("100"), game("101")]
+        if day == "2026-10-20" else [],
+        boxscore_loader=lambda _: [player()],
+    )
+    assert result["dates_checked"] == 2
+    assert result["games_requested"] == 2
+    assert result["request_limit_reached"] is True
+    assert result["eligible_games_omitted"] == 0
+    assert result["history_truncated"] is False
+
+
+def test_unfinished_games_do_not_count_as_omitted():
+    result = collect_espn_history(
+        "2026-10-21", days=1, max_games=1,
+        schedule_loader=lambda _: [
+            game("100"),
+            {"espnEventId": "101", "espnCompleted": False},
+        ],
+        boxscore_loader=lambda _: [player()],
+    )
+    assert result["games_requested"] == 1
+    assert result["eligible_games_omitted"] == 0
+    assert result["history_truncated"] is False
