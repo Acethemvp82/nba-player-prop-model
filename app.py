@@ -906,6 +906,29 @@ with st.expander("Evaluate saved predictions against final box scores"):
         st.session_state.pop("tracker_report", None)
         st.session_state.pop("tracker_collection_audit", None)
         st.session_state.pop("tracker_collection_failures", None)
+    if st.button("Evaluate locally saved predictions", key="tracker_evaluate_local"):
+        try:
+            from automatic_tracking import refresh_saved_tracking
+            with st.spinner("Fetching final NBA box scores for saved predictions..."):
+                local_report = refresh_saved_tracking(
+                    "pregame_snapshots", max_games=20,
+                    min_samples=int(minimum_tracked_samples)
+                )
+            st.session_state["tracker_report"] = local_report
+            collection = local_report["collection_audit"]
+            st.session_state["tracker_collection_audit"] = {
+                "Games requested": collection["games_requested"],
+                "Games loaded": collection["games_loaded"],
+                "Games omitted by limit": collection["games_omitted_by_limit"],
+                "Failed games": len(collection["failures"]),
+                "Invalid stored files": local_report["storage_audit"]["invalid_files"],
+            }
+            st.session_state["tracker_collection_failures"] = collection["failures"]
+        except (ValueError, TypeError, KeyError, OSError, requests.RequestException) as exc:
+            st.session_state.pop("tracker_report", None)
+            st.session_state.pop("tracker_collection_audit", None)
+            st.session_state.pop("tracker_collection_failures", None)
+            st.error(f"Could not evaluate locally saved predictions: {exc}")
     if st.button("Fetch NBA finals for uploaded predictions", key="tracker_fetch_finals"):
         if snapshot_upload is None:
             st.warning("Upload pregame snapshots first.")
