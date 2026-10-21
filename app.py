@@ -202,6 +202,15 @@ if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), h
                            "verified sample below. Not calibrated betting projections.")
                 st.dataframe(pd.DataFrame(averages).drop(columns=["Player ID"]),
                              use_container_width=True, hide_index=True)
+            trends = espn_recent_trends(espn_history["observations"], slate_date.isoformat())
+            if trends:
+                st.caption("ESPN L5/L10: averages use up to 5 or 10 verified games available "
+                           "in this limited lookback. They are not guaranteed complete "
+                           "last-5 or last-10 NBA game samples.")
+                with st.expander("ESPN recent player trends (verified sample)"):
+                    st.dataframe(pd.DataFrame(trends).drop(
+                        columns=["Player ID"], errors="ignore"),
+                        use_container_width=True, hide_index=True)
             with st.expander("Individual verified ESPN player-game observations"):
                 st.dataframe(pd.DataFrame(espn_history["observations"]),
                              use_container_width=True, hide_index=True)
