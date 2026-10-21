@@ -131,6 +131,7 @@ def collect_espn_history(as_of, days=7, max_games=30,
                     and isfinite(player["minutes"])
                     and all(type(player.get(prop)) is int and player[prop] >= 0
                             for prop in ("points", "rebounds", "assists", "threes"))
+                    and player["threes"] * 3 <= player["points"]
                 ]
                 # A final game with a malformed player row must not silently
                 # become a seemingly complete historical sample.
