@@ -184,6 +184,7 @@ if not board.empty:
                       "Assists": "assists", "3-Pointers": "threes"}
         board["Historical baseline"] = [baseline_lookup.get((str(item.get("Player ID")), prop_codes[item["Prop"]]))
                                         for item in rows]
+        board = board.sort_values(["Historical baseline", "Player"], ascending=[False, True], na_position="last")
     st.dataframe(board, use_container_width=True, hide_index=True)
 else:
     st.warning("No player listings available yet. Some box scores may not publish rosters before tipoff.")
@@ -191,7 +192,7 @@ if failures:
     with st.expander(f"NBA game feeds unavailable ({len(failures)})"):
         for failure in failures:
             st.write(failure)
-st.caption("FanDuel lines, probabilities and edges remain blank until sourced and validated. Statistical baselines are descriptive, not betting projections.")
+st.caption("Historical baseline ordering is for research only, NOT an OVER ranking. FanDuel lines, probabilities and edges remain blank until sourced and validated.")
 with st.expander("Model methodology and safeguards"):
     st.markdown("""
 - Next: season and recent-game player statistics, minutes and roster coverage.
