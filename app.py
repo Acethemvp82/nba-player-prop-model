@@ -375,17 +375,12 @@ elif slate_teams:
 if roster_listings:
     st.caption(f"Roster coverage: {coverage['represented_teams']}/{coverage['scheduled_teams']} scheduled teams; "
                f"{coverage['players']} unique player/team listings "
-               f"({coverage['feed_players']} from NBA/ESPN game feeds (ESPN unconfirmed), "
+               f"({coverage['feed_players']} from NBA feeds or ESPN listings (ESPN unconfirmed), "
                f"{coverage['historical_candidates']} historical candidates).")
 if slate_teams:
     with st.expander("Team-by-team roster coverage and data sources"):
         st.caption("These are unique candidate listings, not confirmed active players. "
                    "Zero listings may indicate a provider outage or an unpublished roster.")
-        st.dataframe(pd.DataFrame(team_source_coverage(roster_listings, slate_teams)),
-                     use_container_width=True, hide_index=True)
-if slate_teams:
-    with st.expander("Player coverage by team and data source"):
-        st.caption("Counts are unconfirmed player listings, not verified active rosters.")
         st.dataframe(pd.DataFrame(team_source_coverage(roster_listings, slate_teams)),
                      use_container_width=True, hide_index=True)
 board = pd.DataFrame(rows, columns=columns)
