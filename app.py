@@ -918,6 +918,25 @@ with st.expander("Evaluate saved predictions against final box scores"):
     if local_tracker_data["invalid_files"]:
         st.warning(f"{len(local_tracker_data['invalid_files'])} local snapshot file(s) "
                    "failed validation and will not be scored.")
+    backup_upload = st.file_uploader(
+        "Restore exported local prediction backup (JSON)",
+        type=["json"], key="tracker_restore_backup"
+    )
+    if st.button("Restore backup without overwriting predictions",
+                 key="tracker_restore_button", disabled=backup_upload is None):
+        try:
+            import json
+            from snapshot_backup import restore_snapshot_backup
+            restored = restore_snapshot_backup(
+                json.loads(backup_upload.getvalue()), "pregame_snapshots"
+            )
+            st.success(f"Restored {restored['imported']} predictions; "
+                       f"{restored['already_present']} already existed.")
+            st.warning("Imported capture timestamps cannot be independently verified. "
+                       "Do not treat restored records as authenticated pregame evidence.")
+            st.session_state.pop("tracker_report", None)
+        except (ValueError, TypeError, OSError, UnicodeError) as exc:
+            st.error(f"Backup restore failed: {exc}")
     if st.button("Evaluate locally saved predictions", key="tracker_evaluate_local",
                  disabled=not bool(local_tracker_data["snapshots"])):
         try:
