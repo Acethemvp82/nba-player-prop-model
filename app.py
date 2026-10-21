@@ -186,6 +186,18 @@ if history_for_slate and history_for_slate.get("summaries"):
                              "Confidence": "Historical candidate; unconfirmed"})
             known.add(key)
             break
+# Data-quality diagnostics: expose incomplete roster coverage instead of
+# presenting a partial slate as if every team were represented.
+listed_teams = {str(item["Team"]) for item in rows if item.get("Team")}
+slate_teams = {str((game.get(side) or {}).get("teamTricode"))
+               for game in slate_games for side in ("homeTeam", "awayTeam")
+               if (game.get(side) or {}).get("teamTricode")}
+missing_teams = sorted(slate_teams - listed_teams)
+if missing_teams:
+    st.warning("No players available for scheduled teams: " + ", ".join(missing_teams) +
+               ". The master board is incomplete; do not interpret missing players as inactive.")
+elif slate_teams:
+    st.caption("Every scheduled team has at least one listed player. This does NOT verify full rosters.")
 board = pd.DataFrame(rows, columns=columns)
 if not board.empty:
     st.caption(f"{board['Player'].nunique()} players from available game feeds or historical candidates. Roster Source and Last Seen show where each listing came from; availability is not verified.")
