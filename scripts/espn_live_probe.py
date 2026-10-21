@@ -46,7 +46,7 @@ def check_recent_finals(today=None, days=7, schedule_loader=espn_games_on,
         for game in games:
             if completed >= max_attempts:
                 break
-            if not isinstance(game, dict) or game.get("espnCompleted") is not True:
+            if game.get("espnCompleted") is not True:
                 continue
             event_id = game.get("espnEventId")
             if not (isinstance(event_id, str) and event_id.isascii()
