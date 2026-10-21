@@ -11,7 +11,8 @@ SCHEDULE_URL = "https://cdn.nba.com/static/json/staticData/scheduleLeagueV2_1.js
 
 def season_schedule():
     payload = _get_json(SCHEDULE_URL)
-    dates = payload.get("leagueSchedule", {}).get("gameDates")
+    league = payload.get("leagueSchedule")
+    dates = league.get("gameDates") if isinstance(league, dict) else None
     if not isinstance(dates, list):
         raise NBADataError("NBA season schedule response has no gameDates list.")
     return dates
@@ -46,7 +47,8 @@ def games_on(day, schedule=None):
                 continue
             game_day = _day(game.get("gameDateEst") or game.get("gameDate")) or entry_day
             game_id = str(game.get("gameId") or "")
-            if game_day == day and game_id.isdigit() and game_id not in seen_ids:
+            if (game_day == day and game_id.isascii() and game_id.isdigit()
+                    and game_id not in seen_ids):
                 games.append(game)
                 seen_ids.add(game_id)
     return games
