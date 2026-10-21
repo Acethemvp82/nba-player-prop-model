@@ -252,7 +252,10 @@ if not board.empty:
         st.caption("Historical averages are ordered within each prop category, not across incomparable stats. This is not an OVER edge ranking.")
     st.dataframe(board.drop(columns=["Player ID"]), use_container_width=True, hide_index=True)
 else:
-    st.warning("No player listings available yet. Some box scores may not publish rosters before tipoff.")
+    if selected:
+        st.warning("No player listings available yet. Some box scores may not publish rosters before tipoff.")
+    else:
+        st.caption("Master board hidden because no prop categories are selected.")
 if failures:
     with st.expander(f"NBA game feeds unavailable ({len(failures)})"):
         for failure in failures:
