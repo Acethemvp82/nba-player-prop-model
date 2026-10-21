@@ -11,6 +11,7 @@ def game(event_id):
 def verified_player():
     return {"player_id": "espn:5", "player": "Example", "team": "BOS",
             "points": 20, "rebounds": 6, "assists": 4, "threes": 2,
+            "minutes": 30.0, "is_final": True,
             "source": "ESPN verified final boxscore"}
 
 
