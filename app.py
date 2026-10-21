@@ -17,7 +17,7 @@ from espn_history_health import espn_history_health
 from csv_export import safe_spreadsheet_cell
 from history_collection import recent_player_summaries, fetch_boxscore_players
 from projection_baseline import baseline_projections
-from pregame_results import score_pregame_baselines, summarize_projection_errors, projection_grading_coverage, summarize_projection_errors_by_slate, summarize_grading_by_slate
+from pregame_results import score_pregame_baselines, summarize_projection_errors, projection_grading_coverage, summarize_projection_errors_by_slate, summarize_grading_by_slate, summarize_unmatched_forecasts_by_slate
 from pregame_roster import candidate_players
 from matchup_validation import valid_game_player
 from opponent_stats import opponent_game_totals, opponent_sample_summary
@@ -414,6 +414,20 @@ if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), h
                                 if coverage["grading_coverage_pct"] is not None
                                 else "No eligible forecasts found in the uploaded CSV."
                             )
+                            if coverage["unmatched_forecasts"]:
+                                with st.expander("Unmatched projections by slate and prop"):
+                                    st.caption("These projections are ungraded, not recorded as misses.")
+                                    missing_breakdown = pd.DataFrame(
+                                        summarize_unmatched_forecasts_by_slate(
+                                            saved.to_dict("records"), graded))
+                                    st.dataframe(missing_breakdown,
+                                                 use_container_width=True, hide_index=True)
+                                    st.download_button(
+                                        "Download unmatched breakdown CSV",
+                                        data=missing_breakdown.to_csv(index=False),
+                                        file_name=f"nba_unmatched_projections_{slate_date.isoformat()}.csv",
+                                        mime="text/csv",
+                                    )
                             if coverage["unmatched_forecasts"]:
                                 st.info(
                                     f"{coverage['unmatched_forecasts']} eligible projections "
