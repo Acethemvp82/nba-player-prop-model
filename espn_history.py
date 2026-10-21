@@ -38,6 +38,9 @@ def collect_espn_history(as_of, days=7, max_games=30,
     dates_checked = 0
     games_requested = games_loaded = 0
     seen = set()
+    # Count eligible distinct events that could not be requested because of
+    # the cap, rather than treating exactly hitting the cap as proof of truncation.
+    omitted_eligible_games = 0
     for offset in range(1, days + 1):
         day = cutoff - timedelta(days=offset)
         dates_checked += 1
@@ -90,18 +93,17 @@ def collect_espn_history(as_of, days=7, max_games=30,
             failures.append({"date": day.isoformat(), "error": "Duplicate schedule event ID"})
             continue
         for game in games:
-            if games_requested >= max_games:
-                break
-            if not isinstance(game, dict):
-                continue
             # Explicitly unfinished games cannot contribute final boxscore history.
             # Unknown finality is still checked by the strict summary parser.
             if game.get("espnCompleted") is False:
                 continue
-            eid = game.get("espnEventId")
-            if not isinstance(eid, str) or not eid.isascii() or not eid.isdigit() or eid in seen:
+            eid = game["espnEventId"]
+            if eid in seen:
                 continue
             seen.add(eid)
+            if games_requested >= max_games:
+                omitted_eligible_games += 1
+                continue
             games_requested += 1
             try:
                 players = boxscore_loader(eid)
@@ -179,10 +181,9 @@ def collect_espn_history(as_of, days=7, max_games=30,
                                          "game_date": day.isoformat()})
             except (NBADataError, ValueError, TypeError, KeyError, requests.RequestException, OSError) as exc:
                 failures.append({"event_id": eid, "date": day.isoformat(), "error": str(exc)})
-        if games_requested >= max_games:
-            break
     return {"observations": observations, "dates_checked": dates_checked,
             "request_limit_reached": games_requested >= max_games,
+            "eligible_games_omitted": omitted_eligible_games,
             "games_requested": games_requested,
             "games_loaded": games_loaded, "failures": failures,
             "source": "ESPN verified final boxscores"}
