@@ -343,6 +343,14 @@ if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), h
             )
             if espn_forecasts:
                 st.subheader("ESPN pregame baseline projections — research")
+                st.caption(f"Eligible player-prop baselines: {len(espn_forecasts)} across "
+                           f"{len({row['player_id'] for row in espn_forecasts})} unique players.")
+                if espn_history.get("history_truncated"):
+                    st.warning("Historical request limit omitted eligible games. These "
+                               "baselines may not reflect each player's full recent sample.")
+                if espn_history.get("failures"):
+                    st.warning("Some ESPN schedule or final-boxscore requests failed. "
+                               "Review ESPN retrieval health before relying on these baselines.")
                 st.caption("Automatically generated from verified ESPN final-game samples "
                            "strictly before the slate date. These are unadjusted statistical "
                            "forecasts, not FanDuel lines or betting probabilities. "
