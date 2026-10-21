@@ -424,9 +424,17 @@ if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), h
                                 with st.expander("Accuracy by slate date"):
                                     st.caption("Per-slate errors use only verified matched finals. "
                                                "Low sample counts may be unstable.")
-                                    st.dataframe(
-                                        pd.DataFrame(summarize_projection_errors_by_slate(graded)),
-                                        use_container_width=True, hide_index=True)
+                                    slate_accuracy = pd.DataFrame(
+                                        summarize_projection_errors_by_slate(graded))
+                                    st.dataframe(slate_accuracy,
+                                                 use_container_width=True, hide_index=True)
+                                    st.download_button(
+                                        "Download per-slate accuracy CSV",
+                                        data=slate_accuracy.to_csv(index=False),
+                                        file_name="nba_per_slate_projection_accuracy.csv",
+                                        mime="text/csv",
+                                        help="Verified matched forecasts only; includes sample counts, MAE, and bias.",
+                                    )
                                 graded_export = pd.DataFrame(graded).copy()
                                 for column in graded_export.select_dtypes(include=["object", "string"]).columns:
                                     graded_export[column] = graded_export[column].map(safe_spreadsheet_cell)
