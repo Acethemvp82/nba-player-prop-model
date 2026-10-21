@@ -99,3 +99,12 @@ def test_rmse_emphasizes_large_misses():
 def test_rmse_unavailable_when_no_predictions():
     result = baseline_backtest([], "2026-10-08")
     assert all(r["rmse"] is None for r in result)
+
+
+def test_cutoff_exclusions_are_not_reported_as_invalid():
+    rows = [game(i, 10) for i in range(1, 6)]
+    rows.extend([game(6, 20), game(7, 30)])
+    result = {r["prop"]: r for r in baseline_backtest(rows, "2026-10-07")}
+    assert result["points"]["excluded_on_or_after_cutoff"] == 1
+    assert result["points"]["excluded_invalid_rows"] == 0
+    assert result["points"]["evaluated"] == 1
