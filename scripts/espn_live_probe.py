@@ -20,6 +20,8 @@ def check_recent_finals(today=None, days=7, schedule_loader=espn_games_on,
     """
     if not isinstance(max_attempts, int) or isinstance(max_attempts, bool) or max_attempts < 1:
         raise ValueError("max_attempts must be a positive integer")
+    if not isinstance(days, int) or isinstance(days, bool) or not 1 <= days <= 30:
+        raise ValueError("days must be between 1 and 30")
     today = today or datetime.now(timezone.utc).date()
     errors = []
     completed = 0
