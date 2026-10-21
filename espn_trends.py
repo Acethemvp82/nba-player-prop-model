@@ -18,6 +18,7 @@ def espn_recent_trends(observations, as_of):
         pid, team, game_id = row.get("player_id"), row.get("team"), row.get("game_id")
         if not (isinstance(pid, str) and pid.startswith("espn:") and pid[5:].isascii()
                 and pid[5:].isdigit() and isinstance(team, str) and len(team) == 3
+                and team.isascii() and team.isalpha() and team.isupper()
                 and isinstance(game_id, str) and game_id.startswith("espn:")
                 and game_id[5:].isascii() and game_id[5:].isdigit()):
             continue
