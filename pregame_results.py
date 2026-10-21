@@ -24,6 +24,7 @@ def score_pregame_baselines(forecasts, final_observations):
         finals.setdefault(key, []).append(row)
 
     scored = []
+    seen_forecasts = set()
     for row in forecasts:
         if not isinstance(row, dict):
             continue
@@ -33,6 +34,12 @@ def score_pregame_baselines(forecasts, final_observations):
                 or prop not in PROPS or type(baseline) not in (int, float)
                 or not isfinite(baseline) or baseline < 0):
             continue
+        # Only a verified final for the same player and slate date can score.
+        # Reject duplicate forecast keys to avoid double-counting accuracy.
+        forecast_key = (str(pid), day, prop)
+        if forecast_key in seen_forecasts:
+            continue
+        seen_forecasts.add(forecast_key)
         candidates = finals.get((str(pid), day), [])
         if len(candidates) != 1:
             continue
