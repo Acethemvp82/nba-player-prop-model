@@ -75,7 +75,15 @@ def parse_final_espn_boxscore(payload, expected_event_id):
                 points, rebounds, assists = (read(key) for key in ("PTS", "REB", "AST"))
                 three_idx = indexes["3PT"]
                 three_text = values[three_idx] if three_idx < len(values) else None
-                threes = _whole(str(three_text).split("-")[0]) if isinstance(three_text, str) else None
+                # ESPN 3PT is made-attempted (e.g. 3-7), not a plain count.
+                # Reject malformed strings and impossible made > attempted values.
+                threes = None
+                if isinstance(three_text, str):
+                    parts = three_text.split("-")
+                    if len(parts) == 2:
+                        made, attempted = _whole(parts[0]), _whole(parts[1])
+                        if made is not None and attempted is not None and made <= attempted:
+                            threes = made
                 if None in (points, rebounds, assists, threes):
                     continue
                 key = (aid, code)
