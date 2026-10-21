@@ -75,3 +75,13 @@ def test_empty_backtest_has_no_coverage_percentage():
     result = baseline_backtest([], "2026-10-07")
     assert all(r["eligible_appearances"] == 0 and r["coverage_pct"] is None
                for r in result)
+
+
+def test_backtest_reports_excluded_rows():
+    rows = [game(i, 10) for i in range(1, 6)]
+    rows += [game(6, 20), game(6, 90), None,
+             {**game(7, 10), "is_final": False}]
+    result = {r["prop"]: r for r in baseline_backtest(rows, "2026-10-08")}
+    assert result["points"]["excluded_duplicate_rows"] == 1
+    assert result["points"]["excluded_invalid_rows"] == 2
+    assert result["points"]["evaluated"] == 1
