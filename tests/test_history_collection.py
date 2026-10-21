@@ -59,3 +59,13 @@ def test_stale_schedule_status_uses_verified_boxscore_loader():
     assert called == ["555"]
     assert result["games_loaded"] == 1
     assert result["observations"][0]["points"] == 16
+
+
+def test_parent_schedule_date_is_preserved():
+    schedule = [{"gameDate": "10/19/2026 12:00:00 AM",
+                 "games": [{"gameId": "888", "gameStatus": 1}]}]
+    result = collect_recent_history(schedule, "2026-10-20",
+        loader=lambda gid: [{"player_id": 2, "player": "Sample",
+                             "statistics": {"minutes": "PT20M", "points": 11}}])
+    assert result["games_loaded"] == 1
+    assert result["observations"][0]["game_date"] == "2026-10-19"
