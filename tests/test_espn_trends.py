@@ -22,3 +22,19 @@ def test_unverified_and_invalid_rows_are_excluded():
     bad = row("2026-10-19", "103", 20)
     bad["source"] = "ESPN team roster (unconfirmed)"
     assert espn_recent_trends([bad], "2026-10-21") == {}
+
+
+def test_conflicting_duplicate_game_is_excluded_from_trends():
+    rows = [row("2026-10-17", "101", 10),
+            row("2026-10-18", "102", 20),
+            row("2026-10-18", "102", 99),
+            row("2026-10-18", "102", 20)]
+    trend = espn_recent_trends(rows, "2026-10-21")[("espn:12", "BOS")]
+    assert trend["Sample games"] == 1
+    assert trend["points L5 avg"] == 10
+
+
+def test_all_conflicted_games_produce_no_trend():
+    rows = [row("2026-10-18", "102", 20),
+            row("2026-10-18", "102", 99)]
+    assert espn_recent_trends(rows, "2026-10-21") == {}
