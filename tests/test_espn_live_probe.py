@@ -256,3 +256,47 @@ def test_probe_rejects_changed_recent_trend(monkeypatch):
     )
     assert result["players"] == 0
     assert "trends changed player totals" in result["errors"][0]
+
+
+def test_probe_rejects_malformed_schedule_day_without_requesting_boxscore():
+    requested = []
+    result = check_recent_finals(
+        date(2026, 10, 21), days=1,
+        schedule_loader=lambda _: [game("101"), None],
+        boxscore_loader=lambda eid: requested.append(eid) or [verified_player()],
+    )
+    assert result["players"] == 0
+    assert requested == []
+    assert "malformed game entry" in result["errors"][0]
+
+
+def test_probe_reports_invalid_completed_event_before_valid_final():
+    result = check_recent_finals(
+        date(2026, 10, 21), days=1,
+        schedule_loader=lambda _: [game(None), game("101")],
+        boxscore_loader=lambda _: [verified_player()],
+    )
+    assert result["event_id"] == "101"
+    assert "invalid ESPN event ID" in result["errors"][0]
+
+
+def test_probe_rejects_cross_team_duplicate_athlete():
+    second = dict(verified_player(), team="NYK")
+    result = check_recent_finals(
+        date(2026, 10, 21), days=1,
+        schedule_loader=lambda _: [game("101")],
+        boxscore_loader=lambda _: [verified_player(), second],
+    )
+    assert result["players"] == 0
+    assert "opposing teams" in result["errors"][0]
+
+
+def test_probe_rejects_missing_player_name():
+    unnamed = dict(verified_player(), player=" ")
+    result = check_recent_finals(
+        date(2026, 10, 21), days=1,
+        schedule_loader=lambda _: [game("101")],
+        boxscore_loader=lambda _: [unnamed],
+    )
+    assert result["players"] == 0
+    assert "invalid player observation" in result["errors"][0]
