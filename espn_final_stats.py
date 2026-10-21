@@ -38,6 +38,7 @@ def parse_final_espn_boxscore(payload, expected_event_id):
         raise NBADataError("ESPN final game has no player boxscore")
     output = []
     seen = {}
+    athlete_teams = {}
     for group in groups:
         if not isinstance(group, dict):
             continue
@@ -90,6 +91,9 @@ def parse_final_espn_boxscore(payload, expected_event_id):
                             threes = made
                 if None in (points, rebounds, assists, threes):
                     continue
+                previous_team = athlete_teams.setdefault(aid, code)
+                if previous_team != code:
+                    raise NBADataError("ESPN athlete appears on both teams in final boxscore")
                 key = (aid, code)
                 row = {"player_id": f"espn:{aid}", "player": name.strip(),
                        "team": code, "points": points, "rebounds": rebounds,
