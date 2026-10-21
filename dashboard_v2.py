@@ -85,11 +85,34 @@ def render_dashboard():
                 "stale_history": "Stale"}).fillna("Unknown")
             frame["Player"] = frame["player"]
             frame["Team"] = frame["team"]
-            selected = st.multiselect("Prop categories", list(PROPS.values()), default=list(PROPS.values()))
-            frame = frame[frame["Prop"].isin(selected)]
+            filters = st.columns([2, 2, 2])
+            with filters[0]:
+                selected = st.multiselect(
+                    "Prop categories", list(PROPS.values()),
+                    default=list(PROPS.values()))
+            with filters[1]:
+                teams = sorted(frame["Team"].dropna().unique().tolist())
+                chosen_teams = st.multiselect("Teams", teams, default=teams)
+            with filters[2]:
+                readiness = st.multiselect(
+                    "Data readiness", ["Established", "Limited", "Stale"],
+                    default=["Established", "Limited", "Stale"])
+            frame = frame[
+                frame["Prop"].isin(selected)
+                & frame["Team"].isin(chosen_teams)
+                & frame["Readiness"].isin(readiness)
+            ].copy()
             frame = frame.sort_values(["Sample", "Player", "Prop"],
                                       ascending=[False, True, True]).reset_index(drop=True)
             frame.insert(0, "Research Rank", range(1, len(frame) + 1))
+            established = int((frame["Readiness"] == "Established").sum())
+            limited = int((frame["Readiness"] == "Limited").sum())
+            stale = int((frame["Readiness"] == "Stale").sum())
+            x, y, z, w = st.columns(4)
+            x.metric("Visible projections", len(frame))
+            y.metric("Established", established)
+            z.metric("Limited", limited)
+            w.metric("Stale", stale)
             columns = ["Research Rank", "Player", "Team", "Opponent", "Prop",
                        "Projection", "Sample", "Readiness"]
             st.dataframe(frame[columns].style.map(
