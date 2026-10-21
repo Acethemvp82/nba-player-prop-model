@@ -14,7 +14,7 @@ def fetch_boxscore_players(game_id):
     game = payload.get("game")
     if not isinstance(game, dict) or str(game.get("gameId")) != str(game_id):
         raise NBADataError("Box score game ID mismatch")
-    if game.get("gameStatus") != 3:
+    if str(game.get("gameStatus")) != "3":
         raise NBADataError("Box score is not final")
     players = []
     for side, opposite in (("homeTeam", "awayTeam"), ("awayTeam", "homeTeam")):
