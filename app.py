@@ -25,8 +25,6 @@ def load_players(game_id):
 if st.button("Refresh NBA feed"):
     load_games.clear()
     load_players.clear()
-    load_schedule.clear()
-    load_historical_summary.clear()
     st.rerun()
 
 st.caption("Feed checked on refresh or after cache expiry. Games update approximately every 5 minutes; player listings every 15 minutes.")
