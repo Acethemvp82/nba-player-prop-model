@@ -47,7 +47,8 @@ def espn_player_averages(observations, as_of):
                 continue
             previous = unique.get(game_id)
             if previous is not None:
-                if any(previous[prop] != row[prop] for prop in PROPS):
+                if any(previous[prop] != row[prop] for prop in PROPS) or (
+                        previous["game_date"] != row["game_date"]):
                     conflicted.add(game_id)
                     unique.pop(game_id, None)
                 continue
