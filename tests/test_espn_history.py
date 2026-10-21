@@ -210,3 +210,18 @@ def test_history_rejects_mixed_verified_and_unverified_player_rows():
     assert result["observations"] == []
     assert len(result["failures"]) == 1
     assert "unverified player rows" in result["failures"][0]["error"]
+
+
+def test_history_rejects_entire_game_with_unrelated_team_player():
+    scheduled = {**game("100"), "homeTeam": {"teamTricode": "BOS"},
+                 "awayTeam": {"teamTricode": "NYK"}}
+    unrelated = {**player(), "player_id": "espn:10", "team": "LAL"}
+    result = collect_espn_history(
+        "2026-10-21", days=1, max_games=1,
+        schedule_loader=lambda _: [scheduled],
+        boxscore_loader=lambda _: [player(), unrelated],
+    )
+    assert result["games_loaded"] == 0
+    assert result["observations"] == []
+    assert len(result["failures"]) == 1
+    assert "outside scheduled matchup" in result["failures"][0]["error"]
