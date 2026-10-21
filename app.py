@@ -362,6 +362,16 @@ if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), h
                 st.dataframe(forecast_frame[
                     [col for col in display_fields if col in forecast_frame.columns]
                 ], use_container_width=True, hide_index=True)
+                forecast_export = forecast_frame.copy()
+                for column in forecast_export.select_dtypes(include=["object", "string"]).columns:
+                    forecast_export[column] = forecast_export[column].map(safe_spreadsheet_cell)
+                st.download_button(
+                    "Download ESPN research baselines CSV",
+                    data=forecast_export.to_csv(index=False),
+                    file_name=f"espn_research_baselines_{slate_date.isoformat()}.csv",
+                    mime="text/csv",
+                    help="Date-frozen, unadjusted research projections only; no sportsbook lines or calibrated probabilities.",
+                )
             else:
                 st.info("No ESPN players meet the five-game minimum for automatic "
                         "pregame baseline projections in this historical sample.")
