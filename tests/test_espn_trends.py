@@ -57,3 +57,8 @@ def test_trends_cross_team_conflict_when_first_team_has_disputed_totals():
     disputed = {**first, "points": 25}
     opposing = {**first, "team": "NYK", "points": 30}
     assert espn_recent_trends([first, disputed, opposing], "2026-10-21") == {}
+
+
+def test_noncanonical_espn_date_is_excluded():
+    invalid = {"source": "ESPN verified final boxscore", "player_id": "espn:12", "player": "Player One", "team": "BOS", "game_id": "espn:100", "game_date": "20261019", "points": 20, "rebounds": 5, "assists": 3, "threes": 2}
+    assert espn_recent_trends([invalid], "2026-10-21") == {}
