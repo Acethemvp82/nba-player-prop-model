@@ -62,3 +62,21 @@ def test_did_not_play_entries_are_excluded():
     data["boxscore"]["players"][0]["statistics"][0]["athletes"][0]["didNotPlay"] = True
     with pytest.raises(NBADataError, match="no validated"):
         parse_final_espn_boxscore(data, "4012")
+
+
+def test_malformed_statistics_sections_are_skipped():
+    data = sample()
+    data["boxscore"]["players"].insert(0, {
+        "team": {"abbreviation": "BOS"}, "statistics": None})
+    rows = parse_final_espn_boxscore(data, "4012")
+    assert len(rows) == 1
+    assert rows[0]["player_id"] == "espn:22"
+
+
+def test_stat_labels_allow_surrounding_whitespace():
+    data = sample()
+    data["boxscore"]["players"][0]["statistics"][0]["labels"] = [
+        "MIN", " 3pt ", "reb ", " Ast", " pts "]
+    rows = parse_final_espn_boxscore(data, "4012")
+    assert rows[0]["points"] == 24
+    assert rows[0]["threes"] == 3
