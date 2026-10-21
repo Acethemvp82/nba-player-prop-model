@@ -80,6 +80,7 @@ def render_dashboard():
             frame["Prop"] = frame["prop"].map(PROPS)
             frame["Projection"] = pd.to_numeric(frame["baseline"], errors="coerce").round(1)
             frame["Sample"] = frame["sample_games"]
+            frame["Recent MPG"] = pd.to_numeric(frame["recent_minutes"], errors="coerce").round(1)
             frame["Readiness"] = frame["research_readiness"].map({
                 "history_ready": "Established", "limited_sample": "Limited",
                 "stale_history": "Stale"}).fillna("Unknown")
@@ -97,14 +98,31 @@ def render_dashboard():
                 readiness = st.multiselect(
                     "Data readiness", ["Established", "Limited", "Stale"],
                     default=["Established", "Limited", "Stale"])
+            player_search = st.text_input(
+                "Find player", placeholder="Search by player name…")
+            sort_choice = st.selectbox(
+                "Sort research board",
+                ["Most historical games", "Highest baseline within prop", "Player name"])
+            frame = frame[
+                frame["Player"].str.contains(player_search, case=False, regex=False, na=False)
+            ]
             frame = frame[
                 frame["Prop"].isin(selected)
                 & frame["Team"].isin(chosen_teams)
                 & frame["Readiness"].isin(readiness)
             ].copy()
-            frame = frame.sort_values(["Sample", "Player", "Prop"],
-                                      ascending=[False, True, True]).reset_index(drop=True)
-            frame.insert(0, "Research Rank", range(1, len(frame) + 1))
+            if sort_choice == "Highest baseline within prop":
+                frame = frame.sort_values(
+                    ["Prop", "Projection", "Sample", "Player"],
+                    ascending=[True, False, False, True]).reset_index(drop=True)
+            elif sort_choice == "Player name":
+                frame = frame.sort_values(
+                    ["Player", "Prop"], ascending=[True, True]).reset_index(drop=True)
+            else:
+                frame = frame.sort_values(
+                    ["Sample", "Player", "Prop"],
+                    ascending=[False, True, True]).reset_index(drop=True)
+            frame.insert(0, "Row", range(1, len(frame) + 1))
             established = int((frame["Readiness"] == "Established").sum())
             limited = int((frame["Readiness"] == "Limited").sum())
             stale = int((frame["Readiness"] == "Stale").sum())
@@ -113,8 +131,8 @@ def render_dashboard():
             y.metric("Established", established)
             z.metric("Limited", limited)
             w.metric("Stale", stale)
-            columns = ["Research Rank", "Player", "Team", "Opponent", "Prop",
-                       "Projection", "Sample", "Readiness"]
+            columns = ["Row", "Player", "Team", "Opponent", "Prop",
+                       "Projection", "Sample", "Recent MPG", "Readiness"]
             st.dataframe(
                 frame[columns].style.map(
                     lambda v: "background-color: #174d36; color: white" if v == "Established"
@@ -123,9 +141,10 @@ def render_dashboard():
                     subset=["Readiness"]),
                 use_container_width=True, hide_index=True,
                 column_config={
-                    "Research Rank": st.column_config.NumberColumn("Sample rank", help="Sorted by sample size, not betting value."),
+                    "Row": st.column_config.NumberColumn("#", help="Display order only, not a betting ranking."),
                     "Projection": st.column_config.NumberColumn("Baseline", format="%.1f", help="Unadjusted historical projection."),
                     "Sample": st.column_config.NumberColumn("Games sampled"),
+                    "Recent MPG": st.column_config.NumberColumn("Recent minutes", format="%.1f"),
                     "Readiness": st.column_config.TextColumn("History quality"),
                 })
             st.download_button("Download projections CSV",
