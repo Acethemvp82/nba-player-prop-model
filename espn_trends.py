@@ -39,6 +39,20 @@ def espn_recent_trends(observations, as_of):
                 grouped[key][game_id] = None
             continue
         grouped[key][game_id] = (played, row)
+    ownership = {}
+    cross_team_conflicts = set()
+    for (pid, team), games in grouped.items():
+        for gid, observation in games.items():
+            if observation is None:
+                continue
+            player_game = (pid, gid)
+            previous_team = ownership.setdefault(player_game, team)
+            if previous_team != team:
+                cross_team_conflicts.add(player_game)
+    for (pid, team), games in grouped.items():
+        for gid in list(games):
+            if (pid, gid) in cross_team_conflicts:
+                del games[gid]
     result = {}
     for key, games in grouped.items():
         verified = [item for item in games.values() if item is not None]
