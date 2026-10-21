@@ -260,6 +260,37 @@ def summarize_unmatched_by_team_and_prop(forecasts, scored_rows):
     ]
 
 
+
+def summarize_forecast_upload_quality(forecasts):
+    """Describe malformed upload rows and duplicate valid keys before grading."""
+    summary = {
+        "total_rows": 0, "eligible_unique_forecasts": 0,
+        "duplicate_forecasts": 0, "invalid_forecasts": 0,
+    }
+    keys = set()
+    for row in forecasts or []:
+        summary["total_rows"] += 1
+        if not isinstance(row, dict):
+            summary["invalid_forecasts"] += 1
+            continue
+        pid, day, prop, baseline = (
+            row.get("player_id"), row.get("slate_date"),
+            row.get("prop"), row.get("baseline"))
+        if (not isinstance(pid, (str, int)) or isinstance(pid, bool)
+                or not _valid_iso_day(day) or prop not in PROPS
+                or type(baseline) not in (int, float)
+                or not isfinite(baseline) or baseline < 0):
+            summary["invalid_forecasts"] += 1
+            continue
+        key = (str(pid), day, prop)
+        if key in keys:
+            summary["duplicate_forecasts"] += 1
+        else:
+            keys.add(key)
+    summary["eligible_unique_forecasts"] = len(keys)
+    return summary
+
+
 def summarize_grading_by_slate(forecasts, scored_rows):
     """Coverage by slate date; unmatched rows are not counted as losses."""
     dates = sorted({
