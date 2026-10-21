@@ -114,7 +114,8 @@ if st.button("Load historical player averages"):
         st.error(f"Historical data could not be loaded: {exc}")
 
 historical = st.session_state.get("nba_historical_preview")
-if st.session_state.get("nba_historical_preview_date") != slate_date.isoformat():
+if (st.session_state.get("nba_historical_preview_date") != slate_date.isoformat() or
+        st.session_state.get("nba_historical_preview_limit") != history_limit):
     historical = None
 if historical:
     st.caption(f"Historical sample as of {st.session_state.get('nba_historical_preview_date')}: "
@@ -210,7 +211,8 @@ for game in slate_rows:
                 "Confidence": "Not calculated",
             })
 history_for_slate = st.session_state.get("nba_historical_preview")
-if st.session_state.get("nba_historical_preview_date") != slate_date.isoformat():
+if (st.session_state.get("nba_historical_preview_date") != slate_date.isoformat() or
+        st.session_state.get("nba_historical_preview_limit") != history_limit):
     history_for_slate = None
 if history_for_slate and history_for_slate.get("summaries"):
     candidates = candidate_players(slate_games, history_for_slate["summaries"], slate_date)
@@ -257,7 +259,8 @@ board = pd.DataFrame(rows, columns=columns)
 if not board.empty:
     st.caption(f"{board['Player'].nunique()} players from available game feeds or historical candidates. Roster Source and Last Seen show where each listing came from; availability is not verified.")
     historical_board = st.session_state.get("nba_historical_preview")
-    if st.session_state.get("nba_historical_preview_date") != slate_date.isoformat():
+    if (st.session_state.get("nba_historical_preview_date") != slate_date.isoformat() or
+        st.session_state.get("nba_historical_preview_limit") != history_limit):
         historical_board = None
     if historical_board and historical_board.get("summaries"):
         baseline_lookup = {(str(item["player_id"]), item["prop"]): item["baseline"]
