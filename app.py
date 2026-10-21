@@ -1,3 +1,8 @@
+from dashboard_v2 import render_dashboard
+render_dashboard()
+import streamlit as st
+st.stop()
+
 """NBA Player Prop Model — live schedule and player feed preview."""
 from datetime import datetime, timezone, date
 from zoneinfo import ZoneInfo
