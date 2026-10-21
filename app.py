@@ -73,6 +73,22 @@ except NBADataError as exc:
     st.warning(str(exc))
     slate_games = []
 st.caption(f"{len(slate_games)} scheduled games for {slate_date}")
+slate_rows = []
+for scheduled in slate_games:
+    home = scheduled.get("homeTeam") or {}
+    away = scheduled.get("awayTeam") or {}
+    slate_rows.append({
+        "Game ID": str(scheduled.get("gameId") or ""),
+        "Matchup": f'{away.get("teamTricode", "?")} @ {home.get("teamTricode", "?")}',
+        "Status": scheduled.get("gameStatusText") or "Scheduled",
+        "Tipoff (UTC)": scheduled.get("gameTimeUTC") or "Not available",
+    })
+if slate_rows:
+    st.dataframe(pd.DataFrame(slate_rows).drop(columns=["Game ID"]),
+                 use_container_width=True, hide_index=True)
+else:
+    st.info("No games listed for the selected date.")
+
 st.subheader("Today's NBA games")
 if game_rows:
     st.dataframe(pd.DataFrame(game_rows).drop(columns=["Game ID"]), use_container_width=True, hide_index=True)
