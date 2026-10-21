@@ -148,3 +148,17 @@ def test_impossible_calendar_date_is_not_graded_or_eligible():
         [final(game_date="2026-02-30")]) == []
     assert projection_grading_coverage(
         [forecast(slate_date="2026-02-30")], [])["eligible_forecasts"] == 0
+
+
+def test_per_slate_accuracy_ignores_impossible_dates():
+    rows = [
+        {"slate_date": "2026-02-30", "prop": "points",
+         "projection_error": 5.0, "result_status": "verified_final"},
+        {"slate_date": "2026-02-28", "prop": "points",
+         "projection_error": -2.0, "result_status": "verified_final"},
+    ]
+    assert summarize_projection_errors_by_slate(rows) == [
+        {"slate_date": "2026-02-28", "prop": "points",
+         "graded_projections": 1, "mean_absolute_error": 2.0,
+         "mean_projection_bias": -2.0}
+    ]
