@@ -54,3 +54,20 @@ def test_scoreboard_skips_malformed_games(monkeypatch):
     monkeypatch.setattr(nba_data, "_get_json", lambda _: {
         "scoreboard": {"games": [None, "bad", {"gameId": "123"}]}})
     assert nba_data.scoreboard() == [{"gameId": "123"}]
+
+
+def test_scoreboard_rejects_malformed_scoreboard_object(monkeypatch):
+    monkeypatch.setattr(nba_data, "_get_json", lambda _: {"scoreboard": ["invalid"]})
+    with pytest.raises(nba_data.NBADataError, match="games list"):
+        nba_data.scoreboard()
+
+
+def test_live_players_handle_malformed_opponent_object(monkeypatch):
+    monkeypatch.setattr(nba_data, "_get_json", lambda _: {
+        "game": {"gameId": "123",
+                 "homeTeam": {"teamTricode": "BOS", "players": [
+                     {"personId": 1, "name": "Example"}]},
+                 "awayTeam": ["malformed"]}})
+    players = nba_data.game_players("123")
+    assert len(players) == 1
+    assert players[0]["opponent"] is None
