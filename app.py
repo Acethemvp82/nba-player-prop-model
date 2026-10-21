@@ -431,7 +431,7 @@ if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), h
                                     st.download_button(
                                         "Download per-slate accuracy CSV",
                                         data=slate_accuracy.to_csv(index=False),
-                                        file_name="nba_per_slate_projection_accuracy.csv",
+                                        file_name=f"nba_per_slate_projection_accuracy_{slate_date.isoformat()}.csv",
                                         mime="text/csv",
                                         help="Verified matched forecasts only; includes sample counts, MAE, and bias.",
                                     )
