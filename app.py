@@ -283,6 +283,8 @@ if st.button("Refresh NBA feeds and cached history"):
     load_espn_players.clear()
     load_espn_team_roster.clear()
     load_espn_history.clear()
+    load_espn_history_schedule.clear()
+    load_espn_history_final.clear()
     st.session_state.pop('espn_history_preview', None)
     st.session_state.pop('espn_history_parameters', None)
     load_players.clear()
