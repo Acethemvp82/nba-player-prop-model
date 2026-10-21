@@ -139,3 +139,17 @@ def test_history_rejects_game_when_no_players_match_scheduled_teams():
     assert result["games_loaded"] == 0
     assert result["observations"] == []
     assert len(result["failures"]) == 1
+
+
+def test_history_rejects_identical_or_malformed_matchup_teams():
+    for away_code in ("BOS", "XX", "nyk", None):
+        matchup = {"espnEventId": "100",
+                   "homeTeam": {"teamTricode": "BOS"},
+                   "awayTeam": {"teamTricode": away_code}}
+        result = collect_espn_history(
+            "2026-10-21", days=1, max_games=1,
+            schedule_loader=lambda _: [matchup],
+            boxscore_loader=lambda _: [player()])
+        assert result["games_loaded"] == 0
+        assert result["observations"] == []
+        assert len(result["failures"]) == 1
