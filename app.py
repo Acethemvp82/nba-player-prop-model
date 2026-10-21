@@ -844,6 +844,17 @@ with st.expander("Evaluate saved predictions against final box scores"):
         "Minimum observations for probability accuracy", min_value=2,
         max_value=10000, value=30, step=1, key="tracker_min_samples"
     )
+    # A new upload invalidates previously displayed results and fetch diagnostics.
+    tracker_file_signature = (
+        snapshot_upload.getvalue() if snapshot_upload is not None else None,
+        finals_upload.getvalue() if finals_upload is not None else None,
+        int(minimum_tracked_samples),
+    )
+    if st.session_state.get("tracker_file_signature") != tracker_file_signature:
+        st.session_state["tracker_file_signature"] = tracker_file_signature
+        st.session_state.pop("tracker_report", None)
+        st.session_state.pop("tracker_collection_audit", None)
+        st.session_state.pop("tracker_collection_failures", None)
     if st.button("Fetch NBA finals for uploaded predictions", key="tracker_fetch_finals"):
         if snapshot_upload is None:
             st.warning("Upload pregame snapshots first.")
@@ -854,7 +865,7 @@ with st.expander("Evaluate saved predictions against final box scores"):
                 from tracking_pipeline import evaluate_tracked_slate
 
                 from snapshot_batch import validate_snapshot_batch
-                snapshot_rows = validate_snapshot_batch(json.load(snapshot_upload))
+                snapshot_rows = validate_snapshot_batch(json.loads(snapshot_upload.getvalue()))
                 if not isinstance(snapshot_rows, list) or len(snapshot_rows) > 100000:
                     raise ValueError("Snapshots must be a JSON array of at most 100,000 records.")
                 if not all(isinstance(row, dict) for row in snapshot_rows):
@@ -889,8 +900,8 @@ with st.expander("Evaluate saved predictions against final box scores"):
                 from pregame_snapshot import validate_pregame_snapshot
 
                 from snapshot_batch import validate_snapshot_batch
-                snapshot_rows = validate_snapshot_batch(json.load(snapshot_upload))
-                final_rows = json.load(finals_upload)
+                snapshot_rows = validate_snapshot_batch(json.loads(snapshot_upload.getvalue()))
+                final_rows = json.loads(finals_upload.getvalue())
                 if not isinstance(snapshot_rows, list) or not isinstance(final_rows, list):
                     raise ValueError("Both files must contain JSON arrays.")
                 if len(snapshot_rows) > 100000 or len(final_rows) > 100000:
