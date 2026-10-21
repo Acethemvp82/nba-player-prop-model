@@ -22,3 +22,11 @@ def test_espn_averages_reject_invalid_and_unscoped_identifiers():
          "game_date": "2026-10-20", "game_id": "espn:1",
          "points": 10, "rebounds": 2, "assists": 1, "threes": 1},
     ], "2026-10-21") == []
+
+
+def test_malformed_espn_game_ids_are_excluded():
+    base = {"player_id": "espn:12", "player": "Player One", "team": "BOS",
+            "game_date": "2026-10-20", "source": "ESPN verified final boxscore",
+            "points": 20, "rebounds": 5, "assists": 3, "threes": 2}
+    assert espn_player_averages([{**base, "game_id": "espn:invalid"}], "2026-10-21") == []
+    assert espn_player_averages([{**base, "game_id": "espn:100"}], "2026-10-21")[0]["Sample games"] == 1
