@@ -28,6 +28,10 @@ class SnapshotBatchTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "JSON array"):
             validate_snapshot_batch({})
 
+    def test_empty_rejected(self):
+        with self.assertRaisesRegex(ValueError, "empty"):
+            validate_snapshot_batch([])
+
     def test_cap(self):
         with self.assertRaisesRegex(ValueError, "Too many"):
             validate_snapshot_batch([record()], max_rows=0)
