@@ -323,6 +323,8 @@ for game in slate_rows:
     except NBADataError as exc:
         failures.append(f'{game["Matchup"]}: {exc}')
         continue
+    if not players:
+        failures.append(f'{game["Matchup"]}: No player listings available from connected providers')
     # Deduplicate across game-summary and team-roster sources by namespaced ID.
     # Prefer game-summary records when the same athlete appears twice.
     deduped = {}
