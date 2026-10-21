@@ -18,6 +18,9 @@ class PregameBaselineBoardTests(unittest.TestCase):
         self.assertEqual(points["baseline"], 10)
         self.assertIsNone(points["over_probability"])
         self.assertIsNone(points["sportsbook_line"])
+        self.assertEqual(points["history_coverage"], "limited")
+        self.assertEqual(points["last_game_date"], "2026-10-10")
+        self.assertEqual(points["days_since_last_game"], 11)
 
     def test_no_history_no_forecast(self):
         self.assertEqual(build_pregame_baseline_board([], "2026-10-21"), [])
