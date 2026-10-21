@@ -92,7 +92,7 @@ def summarize_projection_errors(scored_rows):
     An empty prop is omitted rather than reported as zero error.
     """
     groups = {prop: [] for prop in PROPS}
-    for row in scored_rows:
+    for row in scored_rows or []:
         if not isinstance(row, dict) or row.get("result_status") != "verified_final":
             continue
         prop = row.get("prop")
