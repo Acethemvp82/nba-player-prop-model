@@ -13,6 +13,24 @@ def _whole(value):
     return int(raw) if raw.isascii() and raw.isdigit() else None
 
 
+def _minutes(value):
+    """Parse ESPN played minutes, including MM:SS notation."""
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)) and 0 <= value <= 60:
+        return float(value)
+    if not isinstance(value, str):
+        return None
+    parts = value.strip().split(":")
+    if len(parts) == 1 and parts[0].replace(".", "", 1).isascii() and parts[0].replace(".", "", 1).isdigit():
+        number = float(parts[0])
+        return number if 0 <= number <= 60 else None
+    if len(parts) == 2 and all(p.isascii() and p.isdigit() for p in parts):
+        minute, second = map(int, parts)
+        return minute + second / 60 if minute <= 60 and second < 60 else None
+    return None
+
+
 def parse_final_espn_boxscore(payload, expected_event_id):
     """Parse ESPN boxscore statistics only for a confirmed final event."""
     if not isinstance(payload, dict):
@@ -64,7 +82,7 @@ def parse_final_espn_boxscore(payload, expected_event_id):
             # ESPN variants can include both human-readable "names" and
             # abbreviated "labels". Choose the header array that actually
             # contains every required stat, not simply the first array.
-            required = ("PTS", "REB", "AST", "3PT")
+            required = ("PTS", "REB", "AST", "3PT", "MIN")
             indexes = None
             for field in ("labels", "names", "keys"):
                 labels = section.get(field)
@@ -103,7 +121,9 @@ def parse_final_espn_boxscore(payload, expected_event_id):
                         made, attempted = _whole(parts[0]), _whole(parts[1])
                         if made is not None and attempted is not None and made <= attempted:
                             threes = made
-                if None in (points, rebounds, assists, threes):
+                minute_idx = indexes["MIN"]
+                minutes = _minutes(values[minute_idx]) if minute_idx < len(values) else None
+                if None in (points, rebounds, assists, threes, minutes) or minutes <= 0:
                     continue
                 previous_team = athlete_teams.setdefault(aid, code)
                 if previous_team != code:
@@ -111,7 +131,8 @@ def parse_final_espn_boxscore(payload, expected_event_id):
                 key = (aid, code)
                 row = {"player_id": f"espn:{aid}", "player": name.strip(),
                        "team": code, "points": points, "rebounds": rebounds,
-                       "assists": assists, "threes": threes,
+                       "assists": assists, "threes": threes, "minutes": minutes,
+                       "is_final": True,
                        "source": "ESPN verified final boxscore"}
                 if key in seen:
                     if any(seen[key][stat] != row[stat]
