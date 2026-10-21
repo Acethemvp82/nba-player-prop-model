@@ -55,6 +55,13 @@ def collect_espn_history(as_of, days=7, max_games=30,
         if any(not isinstance(game, dict) for game in games):
             failures.append({"date": day.isoformat(), "error": "Malformed schedule game entry"})
             continue
+        # Missing or invalid event IDs previously disappeared without a
+        # diagnostic, overstating historical sample completeness.
+        if any(not isinstance(game.get("espnEventId"), str)
+               or not game["espnEventId"].isascii()
+               or not game["espnEventId"].isdigit() for game in games):
+            failures.append({"date": day.isoformat(), "error": "Invalid schedule event ID"})
+            continue
         for game in games:
             if games_requested >= max_games:
                 break
