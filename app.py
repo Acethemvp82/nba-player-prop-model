@@ -167,8 +167,12 @@ if st.session_state.get("espn_history_parameters") == (slate_date.isoformat(), h
     espn_history = st.session_state.get("espn_history_preview")
     if espn_history:
         st.caption(f"Verified ESPN final games: {espn_history['games_loaded']} of "
-                   f"{espn_history['games_requested']} requested; "
+                   f"{espn_history['games_requested']} requested across "
+                   f"{espn_history.get('dates_checked', '?')} schedule dates checked; "
                    f"{len(espn_history['observations'])} player-game observations.")
+        if espn_history["games_loaded"] < espn_history["games_requested"]:
+            st.warning("ESPN historical sample is incomplete. Do not interpret these averages "
+                       "as full-season or last-N-game statistics.")
         if espn_history["failures"]:
             st.warning(f"{len(espn_history['failures'])} schedule or boxscore requests failed validation.")
             with st.expander("ESPN historical data errors"):
