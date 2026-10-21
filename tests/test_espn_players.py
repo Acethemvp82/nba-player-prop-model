@@ -110,3 +110,18 @@ def test_espn_team_roster_rejects_invalid_identifiers():
     for team_id in (True, None, "１２", "../2"):
         with pytest.raises(NBADataError, match="Invalid ESPN team ID"):
             espn_team_roster(team_id, "BOS")
+
+
+def test_espn_team_roster_accepts_nested_athlete_profiles():
+    class Response:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {"team": {"abbreviation": "NY"}, "athletes": [
+                {"items": [{"athlete": {"id": "321", "displayName": "Nested Player"}}]}
+            ]}
+    with patch("espn_players.requests.get", return_value=Response()):
+        players = espn_team_roster("18", "NYK")
+    assert len(players) == 1
+    assert players[0]["player_id"] == "espn:321"
