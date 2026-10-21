@@ -70,3 +70,24 @@ def test_probe_handles_malformed_schedule_collection():
     )
     assert result["players"] == 0
     assert "invalid game collection" in result["errors"][0]
+
+
+def test_probe_respects_boxscore_attempt_limit():
+    requested = []
+    result = check_recent_finals(
+        date(2026, 10, 21), days=3, max_attempts=2,
+        schedule_loader=lambda _: [game("101"), game("102"), game("103")],
+        boxscore_loader=lambda eid: requested.append(eid) or [],
+    )
+    assert requested == ["101", "102"]
+    assert result["completed"] == 2
+    assert result["players"] == 0
+
+
+def test_probe_rejects_invalid_request_budget():
+    import pytest
+
+    with pytest.raises(ValueError, match="max_attempts"):
+        check_recent_finals(date(2026, 10, 21), max_attempts=0)
+    with pytest.raises(ValueError, match="max_attempts"):
+        check_recent_finals(date(2026, 10, 21), max_attempts=True)
