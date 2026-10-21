@@ -85,8 +85,13 @@ def collect_espn_history(as_of, days=7, max_games=30,
                 ]
                 if not valid_players:
                     raise NBADataError("No validated ESPN player observations")
-                games_loaded += 1
+                # A provider response may repeat the same athlete in multiple
+                # stat sections. Count one verified player-game per ESPN ID/team.
+                unique_players = {}
                 for player in valid_players:
+                    unique_players.setdefault((player["player_id"], player["team"]), player)
+                games_loaded += 1
+                for player in unique_players.values():
                     observations.append({**player, "game_id": f"espn:{eid}",
                                          "game_date": day.isoformat()})
             except (NBADataError, ValueError, TypeError, KeyError) as exc:
