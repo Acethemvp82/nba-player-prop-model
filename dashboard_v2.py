@@ -115,11 +115,19 @@ def render_dashboard():
             w.metric("Stale", stale)
             columns = ["Research Rank", "Player", "Team", "Opponent", "Prop",
                        "Projection", "Sample", "Readiness"]
-            st.dataframe(frame[columns].style.map(
-                lambda v: "background-color: #174d36; color: white" if v == "Established"
-                else "background-color: #6b491d; color: white" if v == "Limited"
-                else "background-color: #692a2a; color: white" if v == "Stale" else "",
-                subset=["Readiness"]), use_container_width=True, hide_index=True)
+            st.dataframe(
+                frame[columns].style.map(
+                    lambda v: "background-color: #174d36; color: white" if v == "Established"
+                    else "background-color: #6b491d; color: white" if v == "Limited"
+                    else "background-color: #692a2a; color: white" if v == "Stale" else "",
+                    subset=["Readiness"]),
+                use_container_width=True, hide_index=True,
+                column_config={
+                    "Research Rank": st.column_config.NumberColumn("Sample rank", help="Sorted by sample size, not betting value."),
+                    "Projection": st.column_config.NumberColumn("Baseline", format="%.1f", help="Unadjusted historical projection."),
+                    "Sample": st.column_config.NumberColumn("Games sampled"),
+                    "Readiness": st.column_config.TextColumn("History quality"),
+                })
             st.download_button("Download projections CSV",
                                frame[columns].to_csv(index=False),
                                file_name=f"nba_baselines_{day.isoformat()}.csv",
