@@ -99,3 +99,16 @@ def test_missing_player_name_or_invalid_team_never_loads():
         assert result["games_loaded"] == 0
         assert result["observations"] == []
         assert len(result["failures"]) == 1
+
+
+def test_repeated_athlete_rows_count_as_one_player_game():
+    first = player()
+    duplicate = {**first}
+    second = {**first, "player_id": "espn:10", "player": "Other"}
+    result = collect_espn_history(
+        "2026-10-21", days=1, max_games=1,
+        schedule_loader=lambda _: [game("100")],
+        boxscore_loader=lambda _: [first, duplicate, second])
+    assert result["games_loaded"] == 1
+    assert len(result["observations"]) == 2
+    assert {item["player_id"] for item in result["observations"]} == {"espn:9", "espn:10"}
