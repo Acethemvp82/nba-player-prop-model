@@ -4,6 +4,9 @@ Run: python scripts/espn_live_probe.py
 """
 from datetime import datetime, timedelta, timezone
 import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from espn_history import espn_final_game_players
 from espn_schedule import espn_games_on
