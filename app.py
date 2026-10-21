@@ -183,15 +183,20 @@ if st.button("Load ESPN completed-game stats"):
     st.session_state.pop("espn_history_preview", None)
     st.session_state.pop("espn_history_parameters", None)
     st.session_state.pop("espn_history_error", None)
+    st.session_state.pop("espn_history_error_parameters", None)
     try:
         with st.spinner("Checking completed ESPN boxscores..."):
             espn_history = load_espn_history(slate_date.isoformat(), history_days, espn_game_budget)
     except (NBADataError, ValueError, TypeError, KeyError, OSError, requests.RequestException) as exc:
         st.session_state["espn_history_error"] = str(exc)
+        st.session_state["espn_history_error_parameters"] = (
+            slate_date.isoformat(), history_days, espn_game_budget)
     else:
         st.session_state["espn_history_preview"] = espn_history
         st.session_state["espn_history_parameters"] = (slate_date.isoformat(), history_days, espn_game_budget)
-if st.session_state.get("espn_history_error"):
+if (st.session_state.get("espn_history_error")
+        and st.session_state.get("espn_history_error_parameters") == (
+            slate_date.isoformat(), history_days, espn_game_budget)):
     st.error("ESPN history could not be loaded: "
              + st.session_state["espn_history_error"]
              + ". Previous historical values have been cleared.")
