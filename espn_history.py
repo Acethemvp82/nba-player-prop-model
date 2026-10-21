@@ -41,7 +41,7 @@ def collect_espn_history(as_of, days=7, max_games=30,
         dates_checked += 1
         try:
             games = schedule_loader(day.isoformat())
-        except (NBADataError, ValueError, TypeError) as exc:
+        except (NBADataError, ValueError, TypeError, requests.RequestException, OSError) as exc:
             failures.append({"date": day.isoformat(), "error": str(exc)})
             continue
         if not isinstance(games, list):
@@ -135,7 +135,7 @@ def collect_espn_history(as_of, days=7, max_games=30,
                 for player in unique_players.values():
                     observations.append({**player, "game_id": f"espn:{eid}",
                                          "game_date": day.isoformat()})
-            except (NBADataError, ValueError, TypeError, KeyError) as exc:
+            except (NBADataError, ValueError, TypeError, KeyError, requests.RequestException, OSError) as exc:
                 failures.append({"event_id": eid, "date": day.isoformat(), "error": str(exc)})
         if games_requested >= max_games:
             break
