@@ -80,3 +80,25 @@ def test_stat_labels_allow_surrounding_whitespace():
     rows = parse_final_espn_boxscore(data, "4012")
     assert rows[0]["points"] == 24
     assert rows[0]["threes"] == 3
+
+
+def test_conflicting_duplicate_final_boxscore_rows_are_rejected():
+    data = sample()
+    section = data["boxscore"]["players"][0]["statistics"][0]
+    original = section["athletes"][0]
+    section["athletes"].append({
+        "athlete": dict(original["athlete"]),
+        "stats": ["34", "3-7", "8", "6", "25"]})
+    with pytest.raises(NBADataError, match="Conflicting ESPN final stats"):
+        parse_final_espn_boxscore(data, "4012")
+
+
+def test_identical_duplicate_final_boxscore_rows_are_counted_once():
+    data = sample()
+    section = data["boxscore"]["players"][0]["statistics"][0]
+    section["athletes"].append({
+        "athlete": dict(section["athletes"][0]["athlete"]),
+        "stats": list(section["athletes"][0]["stats"])})
+    rows = parse_final_espn_boxscore(data, "4012")
+    assert len(rows) == 1
+    assert rows[0]["points"] == 24
