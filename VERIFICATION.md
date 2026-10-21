@@ -50,3 +50,20 @@ Hosted inspection after milestone 1 found the old `NBA feed preview v0.2` UI,
 while its source button pointed at this repository, `main`, `app.py`. The public
 page did not expose owner reboot controls. Do not count this deployment as updated
 until the rebuild milestone marker is visibly present.
+
+## Rebuild milestone 2 — slate coverage
+
+The hosted milestone-1 board was subsequently verified at the public URL with
+240 baseline rows after increasing the history cap to 100. Those rows represented
+only nine scheduled teams, so a populated board alone did not imply full coverage.
+
+Milestone 2 accounts for every scheduled team before search/category filters:
+observed players, players with baselines, baseline row counts, most appearances,
+and the reason a team has no baseline rows. Separate downloadable short-history
+averages expose players with one to four pre-slate appearances without lowering
+the five-game projection minimum or assigning matchup forecasts to these rows.
+Historical team membership still does not establish today's player availability.
+
+Validation includes duplicate and future-game exclusion, latest-team assignment,
+missing teams, distinct player counts across props, and Streamlit checks that
+short-history averages remain separate from forecasts.

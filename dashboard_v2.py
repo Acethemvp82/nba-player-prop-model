@@ -9,6 +9,7 @@ from espn_history import collect_espn_history, espn_final_game_players
 from pregame_baseline_board import build_pregame_baseline_board
 from matchup_scoring import matchup_context, attach_matchups
 from csv_export import safe_spreadsheet_cell
+from slate_coverage import slate_coverage
 
 ET = ZoneInfo("America/New_York")
 PROPS = {"points": "Points", "rebounds": "Rebounds",
@@ -38,7 +39,7 @@ def tipoff_et(value):
 def render_dashboard():
     st.set_page_config(page_title="NBA Prop Board", page_icon="🏀", layout="wide")
     st.title("NBA Player Prop Board")
-    st.caption("Rebuild milestone 1 · Baseline + matchup context")
+    st.caption("Rebuild milestone 2 · Slate coverage + matchup context")
     st.caption("Player baselines • Opponent matchup context • Points, rebounds, assists and threes")
     with st.sidebar:
         st.header("Slate controls")
@@ -98,6 +99,33 @@ def render_dashboard():
             history.get("observations", []), day.isoformat(), min_games=5)
         forecasts = attach_matchups(forecasts, opponents,
             matchup_context(history.get("observations", []), day.isoformat()))
+        coverage, sparse = slate_coverage(history.get("observations", []),
+            day.isoformat(), opponents, forecasts)
+        covered = sum(r["Baseline rows"] > 0 for r in coverage)
+        st.metric("Teams with baselines", f"{covered} / {len(opponents)}")
+        missing = [r["Team"] for r in coverage if not r["Baseline rows"]]
+        if missing:
+            st.warning("No five-game baselines for: " + ", ".join(missing)
+                       + ". See coverage and short-history averages below.")
+        with st.expander("Slate coverage — every scheduled team"):
+            if coverage:
+                st.dataframe(pd.DataFrame(coverage), hide_index=True, use_container_width=True)
+            st.caption("Counts are before board filters and use historical team membership. "
+                       "They do not verify today's roster, starters or injury status.")
+        with st.expander(f"Short-history averages — {len(sparse)} players below five appearances"):
+            st.caption("Observed averages only. These players do not meet the five-game "
+                       "baseline minimum and are excluded from the projection board. "
+                       "Samples may include preseason; availability is unconfirmed.")
+            if sparse:
+                sparse_frame = pd.DataFrame(sparse)
+                st.dataframe(sparse_frame, hide_index=True, use_container_width=True,
+                    column_config={key: st.column_config.NumberColumn(key, format="%.1f")
+                                   for key in sparse_frame.columns if key.endswith(" avg")})
+                st.download_button("Download short-history averages CSV",
+                    sparse_frame.map(safe_spreadsheet_cell).to_csv(index=False),
+                    file_name=f"nba_short_history_{day.isoformat()}.csv", mime="text/csv")
+            else:
+                st.caption("No short-history player samples in the retrieved data.")
         st.caption("Last successful build: " + st.session_state.get("nba_v2_loaded_at", "Unknown"))
         st.caption(f"{len(forecasts)} eligible player-prop projections from teams on this slate. "
                    "Baseline values are not calibrated betting probabilities or matchup-adjusted forecasts.")
