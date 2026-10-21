@@ -109,3 +109,36 @@ def test_probe_does_not_pass_on_unverified_boxscore_rows():
     assert result["players"] == 0
     assert result["completed"] == 1
     assert "Unverified or invalid" in result["errors"][0]
+
+
+def test_probe_rejects_player_from_wrong_matchup():
+    scheduled = {**game("101"), "homeTeam": {"teamTricode": "NYK"},
+                 "awayTeam": {"teamTricode": "LAL"}}
+    result = check_recent_finals(
+        date(2026, 10, 21), days=1,
+        schedule_loader=lambda _: [scheduled],
+        boxscore_loader=lambda _: [verified_player()],
+    )
+    assert result["players"] == 0
+    assert "does not match scheduled game" in result["errors"][0]
+
+
+def test_probe_rejects_duplicate_player_rows():
+    result = check_recent_finals(
+        date(2026, 10, 21), days=1,
+        schedule_loader=lambda _: [game("101")],
+        boxscore_loader=lambda _: [verified_player(), verified_player()],
+    )
+    assert result["players"] == 0
+    assert "Duplicate player" in result["errors"][0]
+
+
+def test_probe_accepts_valid_scheduled_matchup():
+    scheduled = {**game("101"), "homeTeam": {"teamTricode": "BOS"},
+                 "awayTeam": {"teamTricode": "NYK"}}
+    result = check_recent_finals(
+        date(2026, 10, 21), days=1,
+        schedule_loader=lambda _: [scheduled],
+        boxscore_loader=lambda _: [verified_player()],
+    )
+    assert result["players"] == 1
