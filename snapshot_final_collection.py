@@ -6,6 +6,7 @@ Network errors are reported per game and never converted to losses.
 from history_collection import fetch_boxscore_players
 from player_stats import normalize_player_boxscore
 from nba_data import NBADataError
+from math import isfinite
 from pregame_snapshot import validate_pregame_snapshot
 
 
@@ -33,6 +34,12 @@ def collect_snapshot_finals(snapshots, loader=fetch_boxscore_players, max_games=
                 pid = str(record.get("player_id") or "") if record else ""
                 if not pid.isascii() or not pid.isdigit() or pid in seen:
                     raise NBADataError("Invalid or duplicate player in final box score")
+                if not isinstance(record.get("team"), str) or not record["team"]:
+                    raise NBADataError("Missing team identity in final box score")
+                if not any(type(record.get(prop)) in (int, float)
+                           and isfinite(record[prop]) and record[prop] >= 0
+                           for prop in ("points", "rebounds", "assists", "threes")):
+                    raise NBADataError("No valid player statistics in final box score")
                 seen.add(pid)
                 normalized.append(record)
             observations.extend(normalized)
