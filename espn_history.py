@@ -87,21 +87,19 @@ def collect_espn_history(as_of, days=7, max_games=30,
                 # statistics from an unrelated matchup to this game.
                 home = game.get("homeTeam")
                 away = game.get("awayTeam")
-                expected_teams = (
-                    {home["teamTricode"], away["teamTricode"]}
-                    if isinstance(home, dict) and isinstance(away, dict)
-                    and isinstance(home.get("teamTricode"), str)
-                    and isinstance(away.get("teamTricode"), str)
-                    else None
-                )
-                if expected_teams is not None:
-                    # A verified game has two distinct teams. Incomplete schedule
-                    # metadata must not silently turn into a one-team filter.
-                    if len(expected_teams) != 2 or any(
-                            not isinstance(team, str) or len(team) != 3
-                            or not team.isascii() or not team.isalpha()
-                            or not team.isupper() for team in expected_teams):
+                expected_teams = None
+                if home is not None or away is not None:
+                    if not isinstance(home, dict) or not isinstance(away, dict):
+                        raise NBADataError("Incomplete ESPN scheduled matchup")
+                    home_code = home.get("teamTricode")
+                    away_code = away.get("teamTricode")
+                    if any(not isinstance(team, str) or len(team) != 3
+                           or not team.isascii() or not team.isalpha()
+                           or not team.isupper() for team in (home_code, away_code)):
                         raise NBADataError("Invalid ESPN scheduled matchup teams")
+                    expected_teams = {home_code, away_code}
+                    if len(expected_teams) != 2:
+                        raise NBADataError("Identical ESPN scheduled matchup teams")
                     valid_players = [player for player in valid_players
                                      if player["team"] in expected_teams]
                 if not valid_players:
