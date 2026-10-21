@@ -277,11 +277,11 @@ if not board.empty:
         st.session_state.get("nba_historical_preview_limit") != history_limit):
         historical_board = None
     if historical_board and historical_board.get("summaries"):
-        baseline_lookup = {(str(item["player_id"]), item["prop"]): item["baseline"]
+        baseline_lookup = {(str(item["player_id"]), item["team"], item["prop"]): item["baseline"]
                            for item in baseline_projections(historical_board["summaries"])}
         prop_codes = {"Points": "points", "Rebounds": "rebounds",
                       "Assists": "assists", "3-Pointers": "threes"}
-        board["Historical baseline"] = [baseline_lookup.get((str(item.get("Player ID")), prop_codes[item["Prop"]]))
+        board["Historical baseline"] = [baseline_lookup.get((str(item.get("Player ID")), item.get("Team"), prop_codes[item["Prop"]]))
                                         for item in rows]
         usable = board.groupby("Prop", sort=False)["Historical baseline"].agg(
             listed="size", baselines=lambda values: int(values.notna().sum()))
