@@ -66,3 +66,54 @@ def espn_game_players(event_id):
     if not result:
         raise NBADataError("ESPN game summary has no usable player listings; pregame rosters may not be published")
     return result
+
+
+ROSTER_URL = "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/{team_id}/roster"
+
+
+def espn_team_roster(team_id, expected_team):
+    """Retrieve ESPN team roster candidates, NOT confirmed active players."""
+    if (not isinstance(team_id, (str, int)) or isinstance(team_id, bool)
+            or not str(team_id).isascii() or not str(team_id).isdigit()):
+        raise NBADataError("Invalid ESPN team ID")
+    if not isinstance(expected_team, str) or len(expected_team) != 3 or not expected_team.isascii() or not expected_team.isalpha():
+        raise NBADataError("Invalid expected NBA team code")
+    try:
+        response = requests.get(ROSTER_URL.format(team_id=team_id),
+                                headers={"User-Agent": "Mozilla/5.0", "Accept": "application/json"},
+                                timeout=12)
+        response.raise_for_status()
+        payload = response.json()
+    except (requests.RequestException, ValueError) as exc:
+        raise NBADataError(f"ESPN team roster unavailable: {exc}") from exc
+    if not isinstance(payload, dict):
+        raise NBADataError("Invalid ESPN team roster")
+    team = payload.get("team")
+    if isinstance(team, dict):
+        actual = team.get("abbreviation")
+        if isinstance(actual, str):
+            actual = ESPN_TO_NBA.get(actual.upper(), actual.upper())
+            if actual != expected_team:
+                raise NBADataError("ESPN roster team does not match scheduled team")
+    athletes = payload.get("athletes")
+    if not isinstance(athletes, list):
+        raise NBADataError("ESPN team roster has no athletes list")
+    result = []
+    seen = set()
+    for athlete in athletes:
+        if not isinstance(athlete, dict):
+            continue
+        identifier = athlete.get("id")
+        name = athlete.get("displayName")
+        if (not isinstance(identifier, (str, int)) or isinstance(identifier, bool)
+                or not str(identifier).isascii() or not str(identifier).isdigit()
+                or not isinstance(name, str) or not name.strip()):
+            continue
+        if str(identifier) in seen:
+            continue
+        seen.add(str(identifier))
+        result.append({"player_id": f"espn:{identifier}", "player": name.strip(),
+                       "team": expected_team, "source": "ESPN team roster (unconfirmed)"})
+    if not result:
+        raise NBADataError("ESPN team roster has no usable athletes")
+    return result
