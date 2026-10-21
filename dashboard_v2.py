@@ -261,7 +261,7 @@ def render_schedule(day):
 
 
 @st.cache_data(ttl=3600, show_spinner=False)
-def validation_for(observations, day):
+def validation_for(observations, day, schema_version=2):
     return evaluate_baselines(observations, day, min_training_games=5)
 
 
@@ -270,7 +270,7 @@ def render_validation(history, day):
     st.caption("Retrospective walk-forward check: each forecast uses at least five appearances "
                "from strictly earlier dates. Same-day results never enter training. "
                "These are reconstructed forecasts, not saved pregame predictions.")
-    result = validation_for(history.get("observations", []), day)
+    result = validation_for(history.get("observations", []), day, schema_version=2)
     summary = pd.DataFrame(result["summary"])
     evaluated = int(summary["evaluated"].sum())
     if not evaluated:
@@ -281,6 +281,11 @@ def render_validation(history, day):
                "Four props from one appearance are four forecasts, not four independent games.")
     if history.get("history_truncated") or history.get("failures"):
         st.warning("Validation uses an incomplete retrieved sample. Missing games can change both forecasts and measured error.")
+    # Older cached evaluations may lack this newly introduced summary field.
+    if "different_from_last5" not in summary:
+        summary["different_from_last5"] = summary["prop"].map(lambda prop: sum(
+            abs(d["baseline"] - d["last5_baseline"]) > 0.005
+            for d in result.get("details", []) if d.get("prop") == prop))
     if int(summary["different_from_last5"].sum()) == 0:
         st.info("The blend and last-five forecasts are identical in this evaluation sample. "
                 "This comparison cannot yet establish an advantage for either method.")
