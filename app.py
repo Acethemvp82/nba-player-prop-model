@@ -1,5 +1,6 @@
 """NBA Player Prop Model — live schedule and player feed preview."""
 from datetime import datetime, timezone, date
+from zoneinfo import ZoneInfo
 import pandas as pd
 import streamlit as st
 from nba_data import NBADataError, scoreboard, game_players
@@ -44,7 +45,7 @@ for game in games:
     })
 
 st.subheader("Upcoming NBA slate")
-slate_date = st.date_input("Slate date", value=date.today())
+slate_date = st.date_input("Slate date", value=datetime.now(ZoneInfo("America/New_York")).date())
 try:
     slate_games = games_on(slate_date, season_schedule())
 except NBADataError as exc:
@@ -109,6 +110,8 @@ board = pd.DataFrame(rows, columns=columns)
 if not board.empty:
     st.caption(f"{board['Player'].nunique()} unique players listed in available game feeds; not necessarily the complete active NBA roster.")
     historical_board = st.session_state.get("nba_historical_preview")
+    if st.session_state.get("nba_historical_preview_date") != slate_date.isoformat():
+        historical_board = None
     if historical_board and historical_board.get("summaries"):
         baseline_lookup = {(str(item["player_id"]), item["prop"]): item["baseline"]
                            for item in baseline_projections(historical_board["summaries"])}
@@ -144,14 +147,16 @@ history_limit = st.select_slider("Recent completed games to retrieve", options=[
 if st.button("Load historical player averages"):
     try:
         with st.spinner("Loading completed NBA game data..."):
-            historical = load_historical_summary(date.today().isoformat(), history_limit)
+            historical = load_historical_summary(slate_date.isoformat(), history_limit)
         st.session_state["nba_historical_preview"] = historical
-        st.session_state["nba_historical_preview_date"] = date.today().isoformat()
+        st.session_state["nba_historical_preview_date"] = slate_date.isoformat()
         st.session_state["nba_historical_preview_limit"] = history_limit
     except (NBADataError, ValueError, TypeError, KeyError) as exc:
         st.error(f"Historical data could not be loaded: {exc}")
 
 historical = st.session_state.get("nba_historical_preview")
+if st.session_state.get("nba_historical_preview_date") != slate_date.isoformat():
+    historical = None
 if historical:
     st.caption(f"Historical sample as of {st.session_state.get('nba_historical_preview_date')}: "
                f"{historical['games_loaded']} of {historical['games_requested']} requested games loaded "
