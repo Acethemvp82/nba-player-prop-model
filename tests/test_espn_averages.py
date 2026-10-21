@@ -73,3 +73,12 @@ def test_averages_reject_noncanonical_team_codes():
              "points": 12, "rebounds": 5, "assists": 3, "threes": 2}
     assert espn_player_averages([{**valid, "team": "bos"},
                                  {**valid, "team": "B0S"}], "2026-10-21") == []
+
+
+def test_averages_exclude_cross_team_athlete_game_conflict():
+    def observation(team):
+        return {"player_id": "espn:12", "player": "Player One",
+                "team": team, "game_date": "2026-10-19",
+                "game_id": "espn:100", "source": "ESPN verified final boxscore",
+                "points": 20, "rebounds": 6, "assists": 4, "threes": 2}
+    assert espn_player_averages([observation("BOS"), observation("NYK")], "2026-10-21") == []
