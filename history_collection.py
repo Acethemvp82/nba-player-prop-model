@@ -43,7 +43,9 @@ def collect_recent_history(schedule, as_of, max_games=80, loader=fetch_boxscore_
     eligible = []
     for entry in schedule:
         for game in entry.get("games", []):
-            if game.get("gameStatus") != 3:
+            # Static schedules can have stale statuses; finality is verified
+            # against each box score by the default loader.
+            if str(game.get("gameStatus")) == "2":
                 continue
             played = _day(game.get("gameDateEst") or game.get("gameDate"))
             gid = str(game.get("gameId") or "")
