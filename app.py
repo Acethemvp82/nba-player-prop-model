@@ -25,6 +25,8 @@ def load_players(game_id):
 if st.button("Refresh NBA feed"):
     load_games.clear()
     load_players.clear()
+    load_schedule.clear()
+    load_historical_summary.clear()
     st.rerun()
 
 st.caption("Feed checked on refresh or after cache expiry. Games update approximately every 5 minutes; player listings every 15 minutes.")
@@ -45,10 +47,14 @@ for game in games:
         "Tipoff (UTC)": game.get("gameTimeUTC") or "Not available",
     })
 
+@st.cache_data(ttl=3600, show_spinner=False)
+def load_schedule():
+    return season_schedule()
+
 st.subheader("Upcoming NBA slate")
 slate_date = st.date_input("Slate date", value=datetime.now(ZoneInfo("America/New_York")).date())
 try:
-    slate_games = games_on(slate_date, season_schedule())
+    slate_games = games_on(slate_date, load_schedule())
 except NBADataError as exc:
     st.warning(str(exc))
     slate_games = []
@@ -79,7 +85,7 @@ st.subheader("Historical player statistics — research preview")
 st.caption("Official completed-game box scores only. These are descriptive averages, not predictions or betting edges.")
 @st.cache_data(ttl=3600, show_spinner=False)
 def load_historical_summary(as_of, game_limit):
-    return recent_player_summaries(season_schedule(), as_of=as_of, max_games=game_limit)
+    return recent_player_summaries(load_schedule(), as_of=as_of, max_games=game_limit)
 
 history_limit = st.select_slider("Recent completed games to retrieve", options=[10, 20, 40, 80], value=20)
 if st.button("Load historical player averages"):
