@@ -22,12 +22,7 @@ def load_games():
 def load_players(game_id):
     return game_players(str(game_id))
 
-if st.button("Refresh NBA feed"):
-    load_games.clear()
-    load_players.clear()
-    st.rerun()
-
-st.caption("Feed checked on refresh or after cache expiry. Games update approximately every 5 minutes; player listings every 15 minutes.")
+st.caption("Live scoreboard and player listings update from cached NBA feeds. Schedule and historical statistics use separate caches.")
 try:
     games = load_games()
 except NBADataError as exc:
@@ -89,6 +84,17 @@ def load_final_boxscore(game_id):
 def load_historical_summary(as_of, game_limit):
     return recent_player_summaries(load_schedule(), as_of=as_of,
                                    max_games=game_limit, loader=load_final_boxscore)
+
+if st.button("Refresh NBA feeds and cached history"):
+    load_games.clear()
+    load_players.clear()
+    load_schedule.clear()
+    load_final_boxscore.clear()
+    load_historical_summary.clear()
+    st.session_state.pop("nba_historical_preview", None)
+    st.session_state.pop("nba_historical_preview_date", None)
+    st.session_state.pop("nba_historical_preview_limit", None)
+    st.rerun()
 
 history_limit = st.select_slider("Recent completed games to retrieve", options=[10, 20, 40, 80, 160, 320], value=80)
 st.caption("Larger samples may require hundreds of NBA requests on first load. Verified final-game box scores are cached individually for 24 hours; aggregate summaries for one hour.")
