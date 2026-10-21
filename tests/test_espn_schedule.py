@@ -222,3 +222,18 @@ def test_espn_schedule_completed_flag_requires_explicit_boolean():
     with patch("espn_schedule.requests.get", return_value=Response()):
         games = espn_games_on("2026-10-21")
     assert [game["espnCompleted"] for game in games] == [True, False, None]
+
+
+def test_espn_schedule_rejects_duplicate_home_or_away_entries():
+    class Response:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {"events": [{"id": "40101", "competitions": [{"competitors": [
+                {"homeAway": "home", "team": {"abbreviation": "BOS"}},
+                {"homeAway": "home", "team": {"abbreviation": "NYK"}},
+            ]}]}]}
+
+    with patch("espn_schedule.requests.get", return_value=Response()):
+        assert espn_games_on("2026-10-21") == []
