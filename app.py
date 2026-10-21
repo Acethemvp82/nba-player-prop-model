@@ -286,13 +286,14 @@ if not board.empty:
         usable = board.groupby("Prop", sort=False)["Historical baseline"].agg(
             listed="size", baselines=lambda values: int(values.notna().sum()))
         usable["Coverage %"] = (100 * usable["baselines"] / usable["listed"]).round(1)
-        st.caption("Baseline availability by prop (listed players are not confirmed active):")
+        st.caption("Baseline availability by prop (listed players are not confirmed active; "
+                   "historical baselines require a matching current team):")
         st.dataframe(usable.reset_index().rename(columns={
             "Prop": "Prop", "listed": "Listed players", "baselines": "Usable baselines"
         }), use_container_width=True, hide_index=True)
         if board["Historical baseline"].isna().any():
-            st.warning("Some listed players lack sufficient valid historical observations for a baseline. "
-                       "Missing baselines are not zero projections.")
+            st.warning("Some listed players lack a matching-team historical baseline or sufficient "
+                       "valid observations. Missing baselines are not zero projections.")
         board = board.sort_values(["Prop", "Historical baseline", "Player"], ascending=[True, False, True], na_position="last")
     if "Historical baseline" in board.columns:
         st.caption("Historical averages are ordered within each prop category, not across incomparable stats. This is not an OVER edge ranking.")
