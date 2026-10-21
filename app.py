@@ -180,8 +180,9 @@ def load_espn_history(as_of, days, max_games):
         boxscore_loader=load_espn_history_final,
     )
 
-history_days = st.select_slider("ESPN history lookback (days)", options=[3, 7, 14, 21, 30], value=7)
-espn_game_budget = st.select_slider("ESPN historical game request limit", options=[5, 10, 20, 30, 50], value=10)
+history_days = st.select_slider("ESPN history lookback (days)", options=[3, 7, 14, 21, 30], value=14)
+espn_game_budget = st.select_slider("ESPN historical game request limit", options=[5, 10, 20, 30, 50, 75, 100], value=50)
+st.caption("Research history: defaults to 14 days / up to 50 verified final games. Larger samples make five-game player baselines more attainable but may load more slowly. ESPN request limit is shared across the entire slate, not per player.")
 refresh_espn_history = st.button(
     "Refresh ESPN history from source",
     help="Clear cached ESPN historical schedules, final boxscores, and assembled samples "
