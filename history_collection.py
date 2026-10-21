@@ -48,12 +48,17 @@ def collect_recent_history(schedule, as_of, max_games=80, loader=fetch_boxscore_
         raise ValueError("as_of must be a valid date")
     if not isinstance(max_games, int) or isinstance(max_games, bool) or not 1 <= max_games <= 500:
         raise ValueError("max_games must be between 1 and 500")
+    if not isinstance(schedule, list):
+        raise NBADataError("Invalid NBA historical schedule")
     eligible = []
     for entry in schedule:
         if not isinstance(entry, dict):
             continue
         entry_day = _day(entry.get("gameDate"))
-        for game in entry.get("games", []):
+        games = entry.get("games")
+        if not isinstance(games, list):
+            continue
+        for game in games:
             if not isinstance(game, dict):
                 continue
             # Static schedules can have stale statuses; finality is verified
