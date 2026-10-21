@@ -339,3 +339,38 @@ def test_repeated_event_on_different_dates_still_counts_once():
     assert result["games_requested"] == 1
     assert result["games_loaded"] == 1
     assert result["failures"] == []
+
+
+def test_invalid_scoreboard_matchup_rejects_entire_date():
+    for bad_game in (
+        {"espnEventId": "101", "homeTeam": {"teamTricode": "BOS"}},
+        {"espnEventId": "101", "homeTeam": {"teamTricode": "BOS"},
+         "awayTeam": {"teamTricode": "BOS"}},
+        {"espnEventId": "101", "homeTeam": {"teamTricode": "bos"},
+         "awayTeam": {"teamTricode": "NYK"}},
+    ):
+        fetched = []
+        result = collect_espn_history(
+            "2026-10-21", days=1, max_games=3,
+            schedule_loader=lambda _, bad_game=bad_game: [game("100"), bad_game],
+            boxscore_loader=lambda eid: fetched.append(eid) or [player()],
+        )
+        assert fetched == []
+        assert result["games_requested"] == 0
+        assert result["games_loaded"] == 0
+        assert result["observations"] == []
+        assert len(result["failures"]) == 1
+        assert "schedule matchup" in result["failures"][0]["error"]
+
+
+def test_valid_scoreboard_matchup_still_loads():
+    scheduled = {"espnEventId": "100",
+                 "homeTeam": {"teamTricode": "BOS"},
+                 "awayTeam": {"teamTricode": "NYK"}}
+    result = collect_espn_history(
+        "2026-10-21", days=1, max_games=1,
+        schedule_loader=lambda _: [scheduled],
+        boxscore_loader=lambda _: [player()],
+    )
+    assert result["games_loaded"] == 1
+    assert result["failures"] == []
