@@ -284,6 +284,14 @@ for game in slate_rows:
     except NBADataError as exc:
         failures.append(f'{game["Matchup"]}: {exc}')
         continue
+    # Deduplicate across game-summary and team-roster sources by namespaced ID.
+    # Prefer game-summary records when the same athlete appears twice.
+    deduped = {}
+    for player in players:
+        key = (str(player.get("player_id")), player.get("team"))
+        if key not in deduped:
+            deduped[key] = player
+    players = list(deduped.values())
     for player in players:
         if source == "NBA game feed":
             if not valid_game_player(player, game["Matchup"]):
