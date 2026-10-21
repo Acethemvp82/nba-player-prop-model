@@ -37,11 +37,21 @@ def espn_player_averages(observations, as_of):
     for (pid, team), games in grouped.items():
         games.sort(key=lambda entry: entry[0], reverse=True)
         unique = {}
+        conflicted = set()
         for day, row in games:
             game_id = row.get("game_id")
-            if (isinstance(game_id, str) and game_id.startswith("espn:")
+            if not (isinstance(game_id, str) and game_id.startswith("espn:")
                     and game_id[5:].isascii() and game_id[5:].isdigit()):
-                unique.setdefault(game_id, row)
+                continue
+            if game_id in conflicted:
+                continue
+            previous = unique.get(game_id)
+            if previous is not None:
+                if any(previous[prop] != row[prop] for prop in PROPS):
+                    conflicted.add(game_id)
+                    unique.pop(game_id, None)
+                continue
+            unique[game_id] = row
         if not unique:
             continue
         rows = list(unique.values())
