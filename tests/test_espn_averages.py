@@ -12,6 +12,7 @@ def test_espn_averages_deduplicate_games_and_exclude_slate_day():
             row("2026-10-21", "espn:102", 90)]
     result = espn_player_averages(rows, "2026-10-21")
     assert result[0]["Sample games"] == 2
+    assert result[0]["Latest verified game"] == "2026-10-19"
     assert result[0]["Points avg"] == 25
     assert result[0]["Threes avg"] == 2
 
