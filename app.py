@@ -828,6 +828,57 @@ if historical:
 
 
 st.divider()
+st.subheader("Capture a pregame prediction — manual research")
+st.caption("This form records a supplied research probability and line; it does not generate "
+           "a model forecast or fetch sportsbook odds. Saved files are local to this app "
+           "instance and may disappear on redeployment.")
+with st.expander("Save a pre-tipoff NBA prediction"):
+    with st.form("capture_pregame_form"):
+        capture_game = st.text_input("NBA game ID (numeric)", key="capture_game_id")
+        capture_player = st.text_input("NBA player ID (numeric)", key="capture_player_id")
+        capture_prop = st.selectbox("Prop", ["points", "rebounds", "assists", "threes"],
+                                    key="capture_prop")
+        capture_line = st.number_input("Prop line", min_value=0.0, value=20.5,
+                                       step=0.5, key="capture_line")
+        capture_probability = st.number_input("Research OVER probability (0–1)",
+                                               min_value=0.0, max_value=1.0,
+                                               value=0.5, step=0.01,
+                                               key="capture_probability")
+        capture_tipoff = st.text_input("Tipoff timestamp (ISO 8601 with timezone)",
+                                       placeholder="2026-10-22T23:30:00Z",
+                                       key="capture_tipoff")
+        capture_source = st.text_input("Line/probability source",
+                                       value="manual research", key="capture_source")
+        capture_submit = st.form_submit_button("Save pregame prediction")
+    if capture_submit:
+        try:
+            from pregame_capture import capture_pregame_prediction
+            capture_result = capture_pregame_prediction({
+                "game_id": capture_game.strip(), "player_id": capture_player.strip(),
+                "prop": capture_prop, "line": float(capture_line),
+                "over_probability": float(capture_probability),
+                "tipoff_at": capture_tipoff.strip(), "source": capture_source.strip(),
+            }, "pregame_snapshots")
+            if capture_result["created"]:
+                st.success("Pregame prediction saved with server capture time.")
+            else:
+                st.info("This game/player/prop/line already has a saved prediction; "
+                        "the original was preserved.")
+        except (ValueError, TypeError, OSError) as exc:
+            st.error(f"Could not save pregame prediction: {exc}")
+    from snapshot_storage import load_snapshots
+    saved_capture_data = load_snapshots("pregame_snapshots")
+    st.caption(f"Locally saved predictions: {len(saved_capture_data['snapshots'])}; "
+               f"invalid files: {len(saved_capture_data['invalid_files'])}.")
+    if saved_capture_data["snapshots"]:
+        import json
+        st.download_button(
+            "Export locally saved predictions (JSON)",
+            data=json.dumps(saved_capture_data["snapshots"], indent=2),
+            file_name="nba_pregame_snapshots.json",
+            mime="application/json", key="capture_export_json"
+        )
+
 st.subheader("Pregame prediction tracking — research preview")
 st.caption("Upload previously captured pre-tipoff prediction snapshots and verified final NBA player "
            "statistics as JSON arrays, or refresh final NBA box scores for uploaded snapshots. "
