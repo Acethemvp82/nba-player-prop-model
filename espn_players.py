@@ -100,9 +100,16 @@ def espn_team_roster(team_id, expected_team):
         raise NBADataError("ESPN team roster has no athletes list")
     result = []
     seen = set()
-    for athlete in athletes:
-        if not isinstance(athlete, dict):
+    expanded = []
+    for entry in athletes:
+        if not isinstance(entry, dict):
             continue
+        nested = entry.get("items")
+        if isinstance(nested, list):
+            expanded.extend(item for item in nested if isinstance(item, dict))
+        else:
+            expanded.append(entry)
+    for athlete in expanded:
         identifier = athlete.get("id")
         name = athlete.get("displayName")
         if (not isinstance(identifier, (str, int)) or isinstance(identifier, bool)
