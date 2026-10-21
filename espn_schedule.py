@@ -65,13 +65,16 @@ def espn_games_on(day):
         if len(sides) != 2 or sides["home"] == sides["away"]:
             continue
         matchup = (sides["away"], sides["home"])
-        if matchup in seen:
+        event_id = str(event.get("id") or "")
+        valid_event_id = event_id if event_id.isascii() and event_id.isdigit() else None
+        # ESPN event IDs identify games; a repeated matchup may be a separate game.
+        dedup_key = ("event", valid_event_id) if valid_event_id else ("matchup", matchup)
+        if dedup_key in seen:
             continue
-        seen.add(matchup)
+        seen.add(dedup_key)
         games.append({
             "gameId": None,  # ESPN IDs are not compatible with NBA boxscore URLs.
-            "espnEventId": str(event.get("id")) if str(event.get("id") or "").isascii()
-                           and str(event.get("id") or "").isdigit() else None,
+            "espnEventId": valid_event_id,
             "homeTeam": {"teamTricode": sides["home"]},
             "awayTeam": {"teamTricode": sides["away"]},
             "espnTeamIds": team_ids,
