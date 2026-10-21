@@ -26,7 +26,7 @@ def espn_player_averages(observations, as_of):
             day = date.fromisoformat(played)
         except ValueError:
             continue
-        if day >= cutoff:
+        if day.isoformat() != played or day >= cutoff:
             continue
         if row.get("source") != "ESPN verified final boxscore":
             continue
