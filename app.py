@@ -75,10 +75,50 @@ if game_rows:
 else:
     st.warning("No games returned by today's NBA scoreboard.")
 
+st.subheader("Historical player statistics — research preview")
+st.caption("Official completed-game box scores only. These are descriptive averages, not predictions or betting edges.")
+@st.cache_data(ttl=3600, show_spinner=False)
+def load_historical_summary(as_of, game_limit):
+    return recent_player_summaries(season_schedule(), as_of=as_of, max_games=game_limit)
+
+history_limit = st.select_slider("Recent completed games to retrieve", options=[10, 20, 40, 80], value=20)
+if st.button("Load historical player averages"):
+    try:
+        with st.spinner("Loading completed NBA game data..."):
+            historical = load_historical_summary(slate_date.isoformat(), history_limit)
+        st.session_state["nba_historical_preview"] = historical
+        st.session_state["nba_historical_preview_date"] = slate_date.isoformat()
+        st.session_state["nba_historical_preview_limit"] = history_limit
+    except (NBADataError, ValueError, TypeError, KeyError) as exc:
+        st.error(f"Historical data could not be loaded: {exc}")
+
+historical = st.session_state.get("nba_historical_preview")
+if st.session_state.get("nba_historical_preview_date") != slate_date.isoformat():
+    historical = None
+if historical:
+    st.caption(f"Historical sample as of {st.session_state.get('nba_historical_preview_date')}: "
+               f"{historical['games_loaded']} of {historical['games_requested']} requested games loaded "
+               f"({historical['eligible_games']} eligible games in schedule). "
+               "Season averages cover only the collected sample, not necessarily the full season.")
+    if historical["summaries"]:
+        fields = ["player", "team", "games_played", "minutes_last_5_avg",
+                  "points_last_5_avg", "rebounds_last_5_avg",
+                  "assists_last_5_avg", "threes_last_5_avg",
+                  "points_last_10_avg", "rebounds_last_10_avg",
+                  "assists_last_10_avg", "threes_last_10_avg"]
+        st.dataframe(pd.DataFrame(historical["summaries"])[fields],
+                     use_container_width=True, hide_index=True)
+    else:
+        st.warning("No usable completed-game player observations were returned.")
+    if historical["failed_games"]:
+        with st.expander(f"Historical box scores unavailable ({len(historical['failed_games'])})"):
+            st.dataframe(pd.DataFrame(historical["failed_games"]), hide_index=True)
+
+
 st.subheader("Master Player Prop Board — data preview")
 categories = ["Points", "Rebounds", "Assists", "3-Pointers"]
 selected = st.multiselect("Prop categories", categories, default=categories)
-columns = ["Game", "Player", "Team", "Opponent", "Prop", "FanDuel Line", "Over Odds", "Projection", "Over Probability", "Edge", "Confidence"]
+columns = ["Game", "Player", "Player ID", "Team", "Opponent", "Prop", "FanDuel Line", "Over Odds", "Projection", "Over Probability", "Edge", "Confidence"]
 rows = []
 failures = []
 for game in slate_rows:
@@ -133,7 +173,7 @@ if history_for_slate and history_for_slate.get("summaries"):
             break
 board = pd.DataFrame(rows, columns=columns)
 if not board.empty:
-    st.caption(f"{board['Player'].nunique()} unique players listed in available game feeds; not necessarily the complete active NBA roster.")
+    st.caption(f"{board['Player'].nunique()} players from available game feeds or historical candidates; availability is unconfirmed.")
     historical_board = st.session_state.get("nba_historical_preview")
     if st.session_state.get("nba_historical_preview_date") != slate_date.isoformat():
         historical_board = None
@@ -160,46 +200,6 @@ with st.expander("Model methodology and safeguards"):
 - Only compare against timestamped, authorized sportsbook lines.
 - Track outcomes, calibration and performance without look-ahead bias.
 """)
-
-
-st.subheader("Historical player statistics — research preview")
-st.caption("Official completed-game box scores only. These are descriptive averages, not predictions or betting edges.")
-@st.cache_data(ttl=3600, show_spinner=False)
-def load_historical_summary(as_of, game_limit):
-    return recent_player_summaries(season_schedule(), as_of=as_of, max_games=game_limit)
-
-history_limit = st.select_slider("Recent completed games to retrieve", options=[10, 20, 40, 80], value=20)
-if st.button("Load historical player averages"):
-    try:
-        with st.spinner("Loading completed NBA game data..."):
-            historical = load_historical_summary(slate_date.isoformat(), history_limit)
-        st.session_state["nba_historical_preview"] = historical
-        st.session_state["nba_historical_preview_date"] = slate_date.isoformat()
-        st.session_state["nba_historical_preview_limit"] = history_limit
-    except (NBADataError, ValueError, TypeError, KeyError) as exc:
-        st.error(f"Historical data could not be loaded: {exc}")
-
-historical = st.session_state.get("nba_historical_preview")
-if st.session_state.get("nba_historical_preview_date") != slate_date.isoformat():
-    historical = None
-if historical:
-    st.caption(f"Historical sample as of {st.session_state.get('nba_historical_preview_date')}: "
-               f"{historical['games_loaded']} of {historical['games_requested']} requested games loaded "
-               f"({historical['eligible_games']} eligible games in schedule). "
-               "Season averages cover only the collected sample, not necessarily the full season.")
-    if historical["summaries"]:
-        fields = ["player", "team", "games_played", "minutes_last_5_avg",
-                  "points_last_5_avg", "rebounds_last_5_avg",
-                  "assists_last_5_avg", "threes_last_5_avg",
-                  "points_last_10_avg", "rebounds_last_10_avg",
-                  "assists_last_10_avg", "threes_last_10_avg"]
-        st.dataframe(pd.DataFrame(historical["summaries"])[fields],
-                     use_container_width=True, hide_index=True)
-    else:
-        st.warning("No usable completed-game player observations were returned.")
-    if historical["failed_games"]:
-        with st.expander(f"Historical box scores unavailable ({len(historical['failed_games'])})"):
-            st.dataframe(pd.DataFrame(historical["failed_games"]), hide_index=True)
 
 
 st.subheader("Preliminary statistical baselines — not betting recommendations")
