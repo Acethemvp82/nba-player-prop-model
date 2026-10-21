@@ -273,26 +273,28 @@ for game in slate_rows:
             players = load_players(game["Game ID"])
         except NBADataError as exc:
             failures.append(f'{game["Matchup"]}: NBA player feed unavailable ({exc}); trying ESPN fallback')
-    # An empty NBA response is also incomplete, not evidence that no players exist.
-    if not players and (game.get("ESPN Event ID") or game.get("ESPN Team IDs")):
-        source = "ESPN team roster (unconfirmed)"
+    # A pregame NBA boxscore can list only one team. Supplement missing
+    # teams without replacing valid NBA athletes or mixing ID namespaces.
+    matchup = game["Matchup"].split(" @ ")
+    missing_teams = (set(matchup) - {p.get("team") for p in players}
+                     if len(matchup) == 2 else set())
+    if missing_teams and (game.get("ESPN Event ID") or game.get("ESPN Team IDs")):
+        fallback_players = []
         if game.get("ESPN Event ID"):
             try:
-                players = load_espn_players(game["ESPN Event ID"])
-                source = "ESPN game summary (unconfirmed)"
+                fallback_players = load_espn_players(game["ESPN Event ID"])
             except NBADataError:
                 pass
-        matchup = game["Matchup"].split(" @ ")
-        if len(matchup) == 2:
-            for side, team_code in (("away", matchup[0]), ("home", matchup[1])):
-                # Pregame game summaries may list only a subset of either team.
-                # Supplement with roster candidates, keeping them unconfirmed.
-                team_id = (game.get("ESPN Team IDs") or {}).get(side)
-                if team_id:
-                    try:
-                        players.extend(load_espn_team_roster(team_id, team_code))
-                    except NBADataError as roster_exc:
-                        failures.append(f'{team_code}: {roster_exc}')
+        for side, team_code in (("away", matchup[0]), ("home", matchup[1])):
+            if team_code not in missing_teams:
+                continue
+            team_id = (game.get("ESPN Team IDs") or {}).get(side)
+            if team_id:
+                try:
+                    fallback_players.extend(load_espn_team_roster(team_id, team_code))
+                except NBADataError as roster_exc:
+                    failures.append(f'{team_code}: {roster_exc}')
+        players.extend(p for p in fallback_players if p.get("team") in missing_teams)
     if not players:
         failures.append(f'{game["Matchup"]}: No player listings available from connected providers')
     # Deduplicate across game-summary and team-roster sources by namespaced ID.
@@ -304,7 +306,7 @@ for game in slate_rows:
             deduped[key] = player
     players = list(deduped.values())
     for player in players:
-        if source == "NBA game feed":
+        if player.get("source", source) == "NBA game feed":
             if not valid_game_player(player, game["Matchup"]):
                 continue
         else:
@@ -312,7 +314,7 @@ for game in slate_rows:
             if len(teams) != 2 or player.get("team") not in teams:
                 continue
             player["opponent"] = teams[0] if player["team"] == teams[1] else teams[1]
-        player_source = player.get("source", source) if source != "NBA game feed" else source
+        player_source = player.get("source", source)
         roster_listings.append({"player_id": player.get("player_id"), "team": player.get("team"), "source": player_source})
         for prop in selected:
             rows.append({
