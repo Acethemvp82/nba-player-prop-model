@@ -37,16 +37,18 @@ def game_players(game_id: str) -> list[dict]:
     if not str(game_id).isdigit():
         raise NBADataError("Invalid NBA game ID.")
     payload = _get_json(f"{BASE}/boxscore/boxscore_{game_id}.json")
-    game = payload.get("game", {})
+    game = payload.get("game")
+    if not isinstance(game, dict) or str(game.get("gameId")) != str(game_id):
+        raise NBADataError("NBA box score game ID mismatch or missing game data.")
     result = []
     for side in ("homeTeam", "awayTeam"):
-        team = game.get(side, {})
-        for player in team.get("players", []):
+        team = game.get(side) or {}
+        for player in team.get("players") or []:
             result.append({
                 "player_id": player.get("personId"),
                 "player": player.get("name"),
                 "team": team.get("teamTricode"),
-                "opponent": game.get("awayTeam" if side == "homeTeam" else "homeTeam", {}).get("teamTricode"),
+                "opponent": (game.get("awayTeam" if side == "homeTeam" else "homeTeam") or {}).get("teamTricode"),
                 "status": player.get("status"),
                 "statistics": player.get("statistics", {}),
             })
