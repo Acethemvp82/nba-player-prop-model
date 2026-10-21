@@ -190,6 +190,7 @@ def test_inconsistent_history_truncation_is_rejected(truncated, omitted):
     with pytest.raises(ValueError, match="truncation"):
         espn_history_health({
             "games_requested": 1, "games_loaded": 1, "dates_checked": 1,
+            "request_limit_reached": True,
             "eligible_games_omitted": omitted, "history_truncated": truncated,
             "failures": [], "observations": [],
         })
