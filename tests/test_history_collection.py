@@ -124,3 +124,22 @@ def test_duplicate_schedule_entries_count_once_even_when_budget_is_small():
     assert result["eligible_games"] == 2
     assert result["games_requested"] == 1
     assert called == ["100"]
+
+
+def test_missing_schedule_game_lists_are_skipped():
+    schedule = [
+        {"gameDate": "2026-10-19", "games": None},
+        {"gameDate": "2026-10-19"},
+        {"games": [{"gameId": "777", "gameStatus": 3,
+                    "gameDateEst": "2026-10-19"}]},
+    ]
+    result = collect_recent_history(schedule, "2026-10-20", loader=lambda _: [])
+    assert result["games_requested"] == 1
+    assert result["eligible_games"] == 1
+
+
+def test_invalid_schedule_is_rejected():
+    import pytest
+    from nba_data import NBADataError
+    with pytest.raises(NBADataError, match="schedule"):
+        collect_recent_history(None, "2026-10-20")
