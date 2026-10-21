@@ -83,6 +83,10 @@ def collect_espn_history(as_of, days=7, max_games=30,
                     and all(type(player.get(prop)) is int and player[prop] >= 0
                             for prop in ("points", "rebounds", "assists", "threes"))
                 ]
+                # A final game with a malformed player row must not silently
+                # become a seemingly complete historical sample.
+                if len(valid_players) != len(players):
+                    raise NBADataError("ESPN final boxscore contains unverified player rows")
                 # When the scoreboard provides both teams, never attach player
                 # statistics from an unrelated matchup to this game.
                 home = game.get("homeTeam")
