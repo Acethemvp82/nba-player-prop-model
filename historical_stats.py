@@ -11,6 +11,20 @@ from math import isfinite
 PROPS = ("points", "rebounds", "assists", "threes")
 
 
+def _valid_game_id(value):
+    """Accept NBA numeric IDs or explicitly namespaced ESPN event IDs."""
+    if isinstance(value, bool) or not isinstance(value, (str, int)):
+        return False
+    identifier = str(value)
+    if identifier.isascii() and identifier.isdigit():
+        return True
+    if identifier.startswith("espn:"):
+        suffix = identifier[5:]
+        return bool(suffix) and suffix.isascii() and suffix.isdigit()
+    return False
+
+
+
 def _day(value):
     if isinstance(value, datetime):
         return value.date()
@@ -56,7 +70,7 @@ def player_history_summaries(observations, as_of=None):
         if not isinstance(minutes, (int, float)) or isinstance(minutes, bool) or not isfinite(minutes) or minutes <= 0:
             continue
         pid = row.get("player_id")
-        if pid is None or not str(row.get("game_id") or "").isdigit():
+        if pid is None or not _valid_game_id(row.get("game_id")):
             continue
         groups[str(pid)].append((played, row))
     output = []
