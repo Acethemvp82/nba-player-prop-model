@@ -258,19 +258,25 @@ for game in slate_rows:
                 source = "ESPN game summary (unconfirmed)"
             except NBADataError:
                 players = []
-                team_ids = game.get("ESPN Team IDs") or {}
-                matchup = game["Matchup"].split(" @ ")
-                if len(matchup) == 2:
-                    for side, team_code in (("away", matchup[0]), ("home", matchup[1])):
-                        team_id = team_ids.get(side)
-                        if team_id:
-                            try:
-                                players.extend(load_espn_team_roster(team_id, team_code))
-                            except NBADataError as roster_exc:
-                                failures.append(f'{team_code}: {roster_exc}')
                 source = "ESPN team roster (unconfirmed)"
-                if not players:
-                    failures.append(f'{game["Matchup"]}: No usable ESPN player listings or team rosters')
+            # Game summaries can contain only one team's athletes before tipoff.
+            # Fill missing teams from their own roster endpoint, without
+            # duplicating summary athletes or upgrading candidate status.
+            team_ids = game.get("ESPN Team IDs") or {}
+            matchup = game["Matchup"].split(" @ ")
+            if len(matchup) == 2:
+                present = {p.get("team") for p in players}
+                for side, team_code in (("away", matchup[0]), ("home", matchup[1])):
+                    if team_code in present:
+                        continue
+                    team_id = team_ids.get(side)
+                    if team_id:
+                        try:
+                            players.extend(load_espn_team_roster(team_id, team_code))
+                        except NBADataError as roster_exc:
+                            failures.append(f'{team_code}: {roster_exc}')
+            if not players:
+                failures.append(f'{game["Matchup"]}: No usable ESPN player listings or team rosters')
         else:
             continue
     except NBADataError as exc:
@@ -285,7 +291,8 @@ for game in slate_rows:
             if len(teams) != 2 or player.get("team") not in teams:
                 continue
             player["opponent"] = teams[0] if player["team"] == teams[1] else teams[1]
-        roster_listings.append({"player_id": player.get("player_id"), "team": player.get("team"), "source": source})
+        player_source = player.get("source", source) if source != "NBA game feed" else source
+        roster_listings.append({"player_id": player.get("player_id"), "team": player.get("team"), "source": player_source})
         for prop in selected:
             rows.append({
                 "Game": game["Matchup"],
@@ -293,7 +300,7 @@ for game in slate_rows:
                 "Player ID": player.get("player_id"),
                 "Team": player.get("team"),
                 "Opponent": player.get("opponent"),
-                "Roster Source": source,
+                "Roster Source": player_source,
                 "Last Seen": None,
                 "Prop": prop,
                 "FanDuel Line": None,
