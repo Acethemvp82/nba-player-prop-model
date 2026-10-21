@@ -213,3 +213,31 @@ def test_list_unmatched_forecasts_excludes_graded_and_duplicates():
         ("espn:123", "assists"), ("espn:999", "points")
     ]
     assert all(row["result_status"] == "unmatched" for row in rows)
+
+
+def test_unmatched_breakdown_agrees_with_player_list_and_coverage():
+    forecasts = [
+        forecast(), forecast(), forecast(prop="assists"),
+        forecast(player_id="espn:999", prop="rebounds", player="Other"),
+        forecast(slate_date="2026-10-22"),
+        forecast(slate_date="2026-02-30"),
+        forecast(prop="steals"),
+        forecast(player_id=True),
+    ]
+    graded = score_pregame_baselines(forecasts, [final()])
+    unmatched = list_unmatched_forecasts(forecasts, graded)
+    breakdown = summarize_unmatched_forecasts_by_slate(forecasts, graded)
+    coverage = projection_grading_coverage(forecasts, graded)
+    assert len(unmatched) == sum(row["unmatched_forecasts"] for row in breakdown)
+    assert len(unmatched) == coverage["unmatched_forecasts"]
+    assert coverage["eligible_forecasts"] == coverage["graded_forecasts"] + len(unmatched)
+
+
+def test_unmatched_breakdown_handles_zero_matches_and_no_forecasts():
+    forecasts = [forecast(), forecast(prop="assists")]
+    assert summarize_unmatched_forecasts_by_slate(forecasts, []) == [
+        {"slate_date": "2026-10-21", "prop": "assists", "unmatched_forecasts": 1},
+        {"slate_date": "2026-10-21", "prop": "points", "unmatched_forecasts": 1},
+    ]
+    assert list_unmatched_forecasts(None, None) == []
+    assert summarize_unmatched_forecasts_by_slate(None, None) == []
