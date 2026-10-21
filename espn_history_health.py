@@ -26,8 +26,17 @@ def espn_history_health(history):
         item.get("date") for item in failures
         if "event_id" not in item and isinstance(item.get("date"), str)
     }
-    usable_schedule_dates = scanned - len(failed_schedule_dates)
-    if usable_schedule_dates < 0:
+    unassigned_schedule_failures = sum(
+        "event_id" not in item and not isinstance(item.get("date"), str)
+        for item in failures
+    )
+    # An undated schedule error makes the exact number of affected dates
+    # unknowable. Do not present an unjustified schedule coverage percentage.
+    usable_schedule_dates = (
+        scanned - len(failed_schedule_dates)
+        if not unassigned_schedule_failures else None
+    )
+    if usable_schedule_dates is not None and usable_schedule_dates < 0:
         raise ValueError("More failed schedule dates than dates checked")
     verified_dates = []
     for observation in observations:
@@ -47,7 +56,7 @@ def espn_history_health(history):
         "Newest verified game": max(verified_dates) if verified_dates else None,
         "Schedule dates checked": scanned,
         "Schedule dates usable": usable_schedule_dates,
-        "Schedule coverage %": round(100 * usable_schedule_dates / scanned, 1) if scanned else None,
+        "Schedule coverage %": round(100 * usable_schedule_dates / scanned, 1) if scanned and usable_schedule_dates is not None else None,
         "Final games requested": requested,
         "Verified final games": loaded,
         "Failed final-game requests": requested - loaded,
