@@ -149,6 +149,9 @@ if st.button("Load historical player averages"):
         st.session_state["nba_historical_preview_limit"] = history_limit
     except (NBADataError, ValueError, TypeError, KeyError) as exc:
         st.error(f"Historical data could not be loaded: {exc}")
+        st.info("Historical box scores still require access to the official NBA CDN. "
+                "The ESPN schedule fallback does not supply verified NBA game IDs "
+                "or historical player observations.")
 
 historical = st.session_state.get("nba_historical_preview")
 if (st.session_state.get("nba_historical_preview_date") != slate_date.isoformat() or
