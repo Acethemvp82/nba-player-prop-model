@@ -71,3 +71,9 @@ def test_live_players_handle_malformed_opponent_object(monkeypatch):
     players = nba_data.game_players("123")
     assert len(players) == 1
     assert players[0]["opponent"] is None
+
+
+def test_live_feed_rejects_boolean_and_unicode_digit_game_ids():
+    for game_id in (True, "１２３"):
+        with pytest.raises(nba_data.NBADataError, match="Invalid NBA game ID"):
+            nba_data.game_players(game_id)
