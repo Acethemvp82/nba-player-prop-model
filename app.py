@@ -11,6 +11,7 @@ from pregame_roster import candidate_players
 from matchup_validation import valid_game_player
 from opponent_stats import opponent_game_totals, opponent_sample_summary
 from roster_coverage import roster_coverage
+from history_quality import history_quality
 
 st.set_page_config(page_title="NBA Player Prop Model", page_icon="🏀", layout="wide")
 st.title("🏀 NBA Player Prop Model")
@@ -119,6 +120,10 @@ if historical:
                f"{historical['games_loaded']} of {historical['games_requested']} requested games loaded "
                f"({historical['eligible_games']} eligible games in schedule). "
                "Season averages cover only the collected sample, not necessarily the full season.")
+    quality = history_quality(historical.get("observations", []), slate_date)
+    with st.expander("Historical sample quality"):
+        st.caption("Counts describe only the collected box scores. They do not prove full-season coverage or predict outcomes.")
+        st.dataframe(pd.DataFrame([quality]), use_container_width=True, hide_index=True)
     if historical["summaries"]:
         st.metric("Players with completed-game observations", len(historical["summaries"]))
         st.metric("Players with 5+ sampled games", sum(item.get("games_played", 0) >= 5 for item in historical["summaries"]))
