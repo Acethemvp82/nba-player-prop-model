@@ -1,6 +1,6 @@
 from unittest.mock import patch
 import pytest
-from espn_players import espn_game_players
+from espn_players import espn_game_players, espn_team_roster
 from nba_data import NBADataError
 
 
@@ -54,3 +54,38 @@ def test_empty_espn_athlete_groups_are_reported_unavailable():
     with patch("espn_players.requests.get", return_value=Response()):
         with pytest.raises(NBADataError, match="no usable player listings"):
             espn_game_players("401234567")
+
+
+def test_espn_team_roster_accepts_grouped_positions_and_deduplicates():
+    class Response:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {"team": {"abbreviation": "NY"}, "athletes": [
+                {"position": "Guard", "items": [
+                    {"id": "12", "displayName": "Sample Guard"},
+                    {"id": "12", "displayName": "Sample Guard"},
+                ]},
+                {"position": "Forward", "items": [
+                    {"id": "13", "displayName": "Sample Forward"},
+                ]},
+            ]}
+    with patch("espn_players.requests.get", return_value=Response()):
+        players = espn_team_roster("18", "NYK")
+    assert [p["player_id"] for p in players] == ["espn:12", "espn:13"]
+    assert all(p["source"] == "ESPN team roster (unconfirmed)" for p in players)
+
+
+def test_espn_team_roster_rejects_wrong_team():
+    class Response:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {"team": {"abbreviation": "BOS"}, "athletes": [
+                {"id": "12", "displayName": "Sample Player"}
+            ]}
+    with patch("espn_players.requests.get", return_value=Response()):
+        with pytest.raises(NBADataError, match="does not match"):
+            espn_team_roster("18", "NYK")
