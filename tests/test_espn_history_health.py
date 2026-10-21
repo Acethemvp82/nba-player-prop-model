@@ -135,3 +135,12 @@ def test_dated_schedule_failure_preserves_measurable_coverage():
     })
     assert health["Schedule dates usable"] == 3
     assert health["Schedule coverage %"] == 75.0
+
+
+def test_history_health_reports_request_limit():
+    health = espn_history_health({
+        "games_requested": 2, "games_loaded": 2, "dates_checked": 1,
+        "request_limit_reached": True, "failures": [], "observations": [],
+    })
+    assert health["Request limit reached"] is True
+    assert health["Final-game success %"] == 100.0
