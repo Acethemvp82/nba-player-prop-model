@@ -94,6 +94,10 @@ def load_historical_summary(as_of, game_limit):
     return recent_player_summaries(load_schedule(), as_of=as_of,
                                    max_games=game_limit, loader=load_final_boxscore)
 
+@st.cache_data(ttl=3600, show_spinner=False)
+def load_baseline_backtest(observations, as_of):
+    return baseline_backtest(observations, as_of)
+
 if st.button("Refresh NBA feeds and cached history"):
     load_games.clear()
     load_players.clear()
@@ -150,10 +154,6 @@ if historical:
         with st.expander(f"Historical box scores unavailable ({len(historical['failed_games'])})"):
             st.dataframe(pd.DataFrame(historical["failed_games"]), hide_index=True)
 
-
-@st.cache_data(ttl=3600, show_spinner=False)
-def load_baseline_backtest(observations, as_of):
-    return baseline_backtest(observations, as_of)
 
 st.subheader("Walk-forward baseline accuracy — historical research")
 if historical and historical.get("observations"):
