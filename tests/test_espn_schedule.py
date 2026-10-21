@@ -169,3 +169,21 @@ def test_espn_team_ids_available_even_if_event_id_is_missing():
         game = espn_games_on("2026-10-21")[0]
     assert game["espnEventId"] is None
     assert game["espnTeamIds"]["home"] == "18"
+
+
+def test_distinct_espn_events_with_same_matchup_are_preserved():
+    class Response:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            event = {"competitions": [{"competitors": [
+                {"homeAway": "home", "team": {"abbreviation": "BOS"}},
+                {"homeAway": "away", "team": {"abbreviation": "NY"}},
+            ]}]}
+            return {"events": [{**event, "id": "40101"}, {**event, "id": "40102"},
+                               {**event, "id": "40101"}]}
+
+    with patch("espn_schedule.requests.get", return_value=Response()):
+        games = espn_games_on("2026-10-21")
+    assert [game["espnEventId"] for game in games] == ["40101", "40102"]
