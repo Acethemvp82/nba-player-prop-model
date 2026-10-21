@@ -33,6 +33,7 @@ def games_on(day, schedule=None):
     if not isinstance(dates, list):
         raise NBADataError("Invalid season schedule.")
     games = []
+    seen_ids = set()
     for entry in dates:
         if not isinstance(entry, dict):
             continue
@@ -44,6 +45,8 @@ def games_on(day, schedule=None):
             if not isinstance(game, dict):
                 continue
             game_day = _day(game.get("gameDateEst") or game.get("gameDate")) or entry_day
-            if game_day == day and str(game.get("gameId") or "").isdigit():
+            game_id = str(game.get("gameId") or "")
+            if game_day == day and game_id.isdigit() and game_id not in seen_ids:
                 games.append(game)
+                seen_ids.add(game_id)
     return games
