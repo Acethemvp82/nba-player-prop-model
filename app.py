@@ -251,7 +251,12 @@ for game in slate_rows:
     source = "NBA game feed"
     try:
         if game["Game ID"]:
-            players = load_players(game["Game ID"])
+            try:
+                players = load_players(game["Game ID"])
+            except NBADataError as nba_exc:
+                failures.append(f'{game["Matchup"]}: NBA player feed unavailable ({nba_exc})')
+                players = []
+                continue
         elif game.get("ESPN Event ID") or game.get("ESPN Team IDs"):
             players = []
             source = "ESPN team roster (unconfirmed)"
