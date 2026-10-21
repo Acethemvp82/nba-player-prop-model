@@ -1,4 +1,4 @@
-from pregame_results import score_pregame_baselines, summarize_projection_errors, projection_grading_coverage, summarize_projection_errors_by_slate, summarize_grading_by_slate, summarize_unmatched_forecasts_by_slate, list_unmatched_forecasts, summarize_unmatched_by_player, summarize_unmatched_by_prop, summarize_unmatched_by_team
+from pregame_results import score_pregame_baselines, summarize_projection_errors, projection_grading_coverage, summarize_projection_errors_by_slate, summarize_grading_by_slate, summarize_unmatched_forecasts_by_slate, list_unmatched_forecasts, summarize_unmatched_by_player, summarize_unmatched_by_prop, summarize_unmatched_by_team, summarize_unmatched_by_team_and_prop
 
 
 def forecast(**overrides):
@@ -283,3 +283,20 @@ def test_unmatched_team_summary_normalizes_labels_and_keeps_unknown():
         {"team": "UNKNOWN", "unmatched_forecasts": 1},
     ]
     assert summarize_unmatched_by_team(None, None) == []
+
+
+def test_unmatched_team_prop_matrix_matches_team_totals():
+    forecasts = [
+        forecast(team="BOS"), forecast(team="bos", prop="assists"),
+        forecast(team="NYK", player_id="espn:999", prop="rebounds"),
+        forecast(team="", slate_date="2026-10-22"),
+        forecast(team="BOS"),
+    ]
+    rows = summarize_unmatched_by_team_and_prop(forecasts, [])
+    assert rows == [
+        {"team": "BOS", "prop": "assists", "unmatched_forecasts": 1},
+        {"team": "BOS", "prop": "points", "unmatched_forecasts": 1},
+        {"team": "NYK", "prop": "rebounds", "unmatched_forecasts": 1},
+        {"team": "UNKNOWN", "prop": "points", "unmatched_forecasts": 1},
+    ]
+    assert sum(row["unmatched_forecasts"] for row in rows) == 4
