@@ -3,7 +3,6 @@
 These are *candidate* players seen in prior completed games, not confirmed
 active rosters or starters. Team membership may have changed.
 """
-from datetime import date
 from historical_stats import _day
 
 def candidate_players(games, summaries, as_of, max_age_days=30):
@@ -19,7 +18,7 @@ def candidate_players(games, summaries, as_of, max_age_days=30):
             code = team.get("teamTricode")
             if code:
                 teams.add(code)
-    candidates = []
+    latest_by_player = {}
     for row in summaries:
         team = row.get("team")
         last_day = _day(row.get("last_game_date"))
@@ -30,7 +29,11 @@ def candidate_players(games, summaries, as_of, max_age_days=30):
             continue
         if not row.get("player_id") or not row.get("player"):
             continue
-        candidates.append({"player_id": row["player_id"], "player": row["player"],
-                           "team": team, "last_seen": last_day.isoformat(),
-                           "source": "historical candidate; availability unconfirmed"})
-    return candidates
+        candidate = {"player_id": row["player_id"], "player": row["player"],
+                     "team": team, "last_seen": last_day.isoformat(),
+                     "source": "historical candidate; availability unconfirmed"}
+        key = str(row["player_id"])
+        prior = latest_by_player.get(key)
+        if prior is None or candidate["last_seen"] > prior["last_seen"]:
+            latest_by_player[key] = candidate
+    return sorted(latest_by_player.values(), key=lambda item: (item["team"], item["player"]))
