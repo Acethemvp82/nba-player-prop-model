@@ -184,9 +184,9 @@ if not board.empty:
                       "Assists": "assists", "3-Pointers": "threes"}
         board["Historical baseline"] = [baseline_lookup.get((str(item.get("Player ID")), prop_codes[item["Prop"]]))
                                         for item in rows]
-        board = board.sort_values(["Historical baseline", "Player"], ascending=[False, True], na_position="last")
+        board = board.sort_values(["Prop", "Historical baseline", "Player"], ascending=[True, False, True], na_position="last")
     if "Historical baseline" in board.columns:
-        st.caption("Baselines are raw stat totals across different categories; sorting does not measure betting value.")
+        st.caption("Historical averages are ordered within each prop category, not across incomparable stats. This is not an OVER edge ranking.")
     st.dataframe(board, use_container_width=True, hide_index=True)
 else:
     st.warning("No player listings available yet. Some box scores may not publish rosters before tipoff.")
