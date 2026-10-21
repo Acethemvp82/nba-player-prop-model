@@ -10,6 +10,7 @@ def game(event_id):
 def player():
     return {"player_id": "espn:9", "player": "Example", "team": "BOS",
             "points": 22, "rebounds": 7, "assists": 4, "threes": 2,
+            "minutes": 30.0, "is_final": True,
             "source": "ESPN verified final boxscore"}
 
 
