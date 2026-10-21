@@ -81,6 +81,7 @@ def espn_history_health(history):
                    if not requested and schedule_failures
                    else "No final games requested" if not requested
                    else "Partial historical retrieval" if loaded < requested or failures
-                   else "Request budget reached; all requested finals loaded" if limit_reached
+                   else "Historical sample truncated by request limit" if truncated
+                   else "Request limit reached; no eligible games omitted" if limit_reached
                    else "All requested finals loaded"),
     }
