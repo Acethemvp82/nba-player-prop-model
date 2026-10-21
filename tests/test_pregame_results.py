@@ -132,3 +132,11 @@ def test_per_slate_accuracy_keeps_dates_separate():
 def test_boolean_player_ids_never_grade_or_count_as_eligible():
     assert score_pregame_baselines([forecast(player_id=True)], [final(player_id=True)]) == []
     assert projection_grading_coverage([forecast(player_id=True)], [])["eligible_forecasts"] == 0
+
+
+def test_invalid_slate_date_shape_cannot_be_graded():
+    assert score_pregame_baselines(
+        [forecast(slate_date="20261021")],
+        [final(game_date="20261021")]) == []
+    assert projection_grading_coverage(
+        [forecast(slate_date="20261021")], [])["eligible_forecasts"] == 0
