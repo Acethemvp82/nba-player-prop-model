@@ -4,12 +4,13 @@ import os
 from zoneinfo import ZoneInfo
 import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
 
 from espn_schedule import espn_games_on
 from espn_history import collect_espn_history, espn_final_game_players
 from projection_core import core_projections as build_pregame_baseline_board
 from position_defense import positional_allowance as matchup_context
-from defensive_table import defensive_table_html
+from defensive_table import interactive_table_html
 from csv_export import safe_spreadsheet_cell
 from slate_coverage import slate_coverage
 from baseline_backtest import evaluate_baselines
@@ -154,7 +155,8 @@ def render_dashboard():
         columns=['Row','Team','Pos','Group','Player','Opponent','Line','L10','L5','H2H','H2H N',
                  'Projection','Model Min','Recent Min','Points','Rebounds','Assists','3PM','Steals','Blocks',
                  'Def Rank','Rank Teams','Defense Games','Sample','Status']
-        st.html(defensive_table_html(frame,show_ranks=show_ranks))
+        components.html(interactive_table_html(frame,show_ranks=show_ranks), height=750, scrolling=True)
+        st.caption("Click headings to sort. Click a defense or position to filter displayed rows; Clear table filters resets those clicks. Filters above control the source rows and CSV export.")
         with st.expander("Board data and sample counts"):
             st.dataframe(frame[columns],hide_index=True,use_container_width=True)
         st.download_button('Export board CSV',frame[columns].map(safe_spreadsheet_cell).to_csv(index=False),

@@ -50,3 +50,64 @@ def defensive_table_html(frame, show_ranks=True):
         rows.append('<tr>'+''.join(cells)+'</tr>')
     if not rows: rows=['<tr><td colspan="15">No players match these filters.</td></tr>']
     return css+'<div class="def-wrap"><table class="def-table"><thead><tr>'+''.join(f'<th>{h}</th>' for h in headers)+'</tr></thead><tbody>'+''.join(rows)+'</tbody></table></div>'
+
+
+def interactive_table_html(frame, show_ranks=True):
+    """Self-contained interactive table; filtering stays within the displayed rows."""
+    return defensive_table_html(frame, show_ranks) + '''
+    <style>
+    body{margin:0;background:#0e0f13;color:#ededf3;font:13px system-ui,sans-serif}
+    .table-tools{display:flex;gap:12px;align-items:center;padding:10px 4px}
+    button{background:#302337;border:1px solid #77538d;border-radius:5px;color:#ededf3;padding:6px 10px;cursor:pointer}
+    .def-table th button{background:none;border:0;padding:0;color:inherit;font:inherit;cursor:pointer}
+    .def-team button,.position-filter{background:none;border:0;padding:0;color:inherit;font:inherit;text-align:inherit;text-decoration:underline;text-decoration-style:dotted}
+    th[aria-sort]{color:#dfb4fa}.def-wrap{max-height:680px}
+    </style>
+    <div class="table-tools"><button id="reset">Clear table filters</button><span id="filter-status" role="status"></span></div><div id="player-detail" role="status" hidden style="padding:12px;border:1px solid #77538d;margin-bottom:10px"></div>
+    <script>
+    const table=document.querySelector('.def-table'),body=table.tBodies[0];
+    const rows=Array.from(body.rows).filter(r=>r.cells.length===15);
+    const filters={};let sorted=-1,ascending=false;
+    const status=document.getElementById('filter-status');
+    table.parentElement.before(document.querySelector('.table-tools'));
+    table.parentElement.before(document.getElementById('player-detail'));
+    for(const row of rows){const cell=row.cells[2],button=document.createElement('button');
+      button.className='position-filter';button.type='button';
+      while(cell.firstChild)button.append(cell.firstChild);cell.append(button);
+      button.title='Show player summary';button.onclick=()=>{
+        const panel=document.getElementById('player-detail');panel.replaceChildren();panel.hidden=false;
+        const title=document.createElement('strong');title.textContent=cell.textContent;panel.append(title);
+        for(const i of [0,3,4,5,6,7,8]){const item=document.createElement('div');
+          item.textContent=table.tHead.rows[0].cells[i].textContent.replace(' ↕','')+': '+row.cells[i].textContent;panel.append(item);}
+        const close=document.createElement('button');close.textContent='Close summary';close.onclick=()=>panel.hidden=true;panel.append(close);
+      };
+    }
+    function apply(){let visible=0;for(const row of rows){
+      row.hidden=Object.entries(filters).some(([i,v])=>row.cells[i].textContent!==v);
+      if(!row.hidden)visible++;
+    }status.textContent=visible+' players'+(Object.keys(filters).length?' · '+Object.values(filters).join(' · '):' · Click a heading to sort; a defense or position to filter.');}
+    for(const row of rows){for(const index of [0,1]){
+      const cell=row.cells[index],value=cell.textContent,button=document.createElement('button');
+      button.type='button';button.textContent=value;button.className='position-filter';
+      button.title='Filter table to '+value;
+      button.onclick=()=>{filters[index]=value;apply();};cell.replaceChildren(button);
+    }}
+    Array.from(table.tHead.rows[0].cells).forEach((cell,index)=>{
+      const label=cell.textContent,button=document.createElement('button');
+      button.textContent=label+' ↕';button.title='Sort by '+label;button.type='button';
+      button.onclick=()=>{
+        ascending=sorted===index?!ascending:index<3;sorted=index;
+        for(const th of table.tHead.rows[0].cells)th.removeAttribute('aria-sort');
+        cell.setAttribute('aria-sort',ascending?'ascending':'descending');
+        function value(row){const text=row.cells[index].textContent.trim();
+          return index<3?text:(text==='—'?null:parseFloat(text));}
+        rows.sort((a,b)=>{const x=value(a),y=value(b);
+          if(x===null||Number.isNaN(x))return y===null||Number.isNaN(y)?0:1;
+          if(y===null||Number.isNaN(y))return -1;
+          return (index<3?x.localeCompare(y):x-y)*(ascending?1:-1);});
+        for(const row of rows)body.append(row);
+      };cell.replaceChildren(button);
+    });
+    document.getElementById('reset').onclick=()=>{for(const k of Object.keys(filters))delete filters[k];apply();};
+    apply();
+    </script>'''
