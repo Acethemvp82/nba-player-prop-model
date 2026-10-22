@@ -21,11 +21,14 @@ jobs:
           python-version: '3.11'
       - run: python -m pip install -r requirements.txt
       - run: python scripts/track_regular_forecasts.py
+        env:
+          NBA_CAPTURE_QUOTES: ${{ vars.NBA_CAPTURE_QUOTES }}
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
       - name: Persist first forecasts and results
         run: |
           git config user.name 'nba-model-tracker[bot]'
           git config user.email 'nba-model-tracker@users.noreply.github.com'
-          git add data/forecasts data/forecast-results.json 2>/dev/null || git add data/forecast-results.json
+          git add data/
           if ! git diff --cached --quiet; then
             git commit -m 'Record pregame references and verified results'
             git pull --rebase origin main

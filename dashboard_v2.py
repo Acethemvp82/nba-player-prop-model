@@ -17,6 +17,7 @@ from position_defense import positional_allowance as matchup_context
 from defensive_table import interactive_table_html
 from csv_export import safe_spreadsheet_cell
 from prop_signal import prop_signal
+from validation_panel import render_paper_capture, render_market_validation
 from slate_coverage import slate_coverage
 from baseline_backtest import evaluate_baselines
 from player_research import player_games, compare_line, minutes_scenario
@@ -210,6 +211,7 @@ def render_dashboard():
         if forecasts: render_player_research(forecasts,history,day.isoformat())
         else: st.caption('Player line comparison needs a qualifying baseline.')
     render_saved_results()
+    render_market_validation(final_for)
     with st.expander("Data coverage and model checks"):
         if history.get('roster_checked'):
             st.write(official_schedule_check(day.isoformat(),tuple(sorted((g['awayTeam']['teamTricode'],g['homeTeam']['teamTricode']) for g in games))))
@@ -352,6 +354,7 @@ def render_player_research(forecasts, history, day):
                 st.metric("Odds break-even probability", f"{100 * result['break_even']:.1f}%")
                 st.caption("Break-even is calculated from your entered odds, before any vig adjustment. "
                            "It is not the model's predicted chance.")
+    render_paper_capture(selected,line,odds,schedule_for(day))
     with st.expander("Recent completed games and minutes scenario"):
         if games:
             st.dataframe(pd.DataFrame(games), hide_index=True, use_container_width=True)

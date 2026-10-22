@@ -21,6 +21,7 @@ def capture_forecasts(history, games, day, now=None):
         game=upcoming.get(row['team'])
         if not game: continue
         saved={k:row[k] for k in ('player_id','player','team','prop','baseline','reference_last5','evidence','source_season','slate_date','sample_games','forecast_minutes','current_season_games')}
+        saved.update({k:row.get(k) for k in ('minutes_low','minutes_high','research_readiness')})
         records.append({**saved,'event_id':game['espnEventId'],'tipoff':game['gameTimeUTC'],
                         'captured_at':now.isoformat(),'model_version':'regular-roster-v2'})
     return records

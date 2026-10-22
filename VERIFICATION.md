@@ -169,3 +169,6 @@ The new projection formula is a research model, not a demonstrated improvement.
 
 
 Regular-roster v2: Live October 22, 2026 audit retrieved 57 verified regular-season games, no collection failures, 68 current roster entries, 152 labeled prop references for 38 players. McCain 3PM previous-season reference 0.90 at 16 historical minutes replaces the preseason-derived 3.8. First 152 pre-tip records saved before scheduled games. No scored future results exist. NBA.com schedule returned 403; stats endpoint timed out locally. Offline suite: 430 tests, including season isolation, roster exclusion, pre-tip capture, append-only records and missing/DNP handling.
+
+
+Prospective market validation: fixed line-gap-v1 rules, two-sided American prices, strict pre-tip capture, source-separated cohorts and one-unit paper returns compared with a frozen last-five benchmark. Tests cover unequal Over/Under prices, wins/losses/pushes/passes, missing/DNP/finality, stale quotes, post-tip and wrong-game rejection, first-record retention, checksum corruption and a Streamlit freeze→grade flow. Provider requests remain disabled unless NBA_CAPTURE_QUOTES=true and ODDS_API_KEY is configured in GitHub; no live authenticated odds access or positive betting results are claimed. Manual session ledgers must be downloaded/imported and are unverified, not tamper-proof.

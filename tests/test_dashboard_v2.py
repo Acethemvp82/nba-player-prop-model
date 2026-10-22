@@ -34,7 +34,7 @@ def test_populated_board_filters_and_sort(monkeypatch):
     assert not at.exception
     at.text_input[0].input('nobody').run()
     assert len(next(d.value for d in at.dataframe if 'Projection' in d.value.columns)) == 0
-    at.button[0].click().run()
+    next(b for b in at.button if b.label=='Build / refresh projections').click().run()
     assert not at.exception
 
 

@@ -105,8 +105,8 @@ def fetch_event_odds(key, team, opponent, slate_date, now):
     return payload
 
 
-def select_quote(payload, player, prop, now):
-    if prop not in MARKETS: return None
+def select_quote(payload, player, prop, now, side="Over"):
+    if prop not in MARKETS or side not in ("Over","Under"): return None
     start = utc(payload.get('commence_time'))
     if not start or start <= now: return None
     quotes = []
@@ -118,7 +118,7 @@ def select_quote(payload, player, prop, now):
             parsed = utc(stamp)
             if not parsed or not -120 <= (now-parsed).total_seconds() <= 1800: continue
             for outcome in market.get('outcomes',[]):
-                if not isinstance(outcome,dict) or outcome.get('name') != 'Over': continue
+                if not isinstance(outcome,dict) or outcome.get('name') != side: continue
                 line, odds = outcome.get('point'), outcome.get('price')
                 if (normalized_name(outcome.get('description')) == normalized_name(player)
                     and type(line) in (int,float) and isfinite(line) and line >= 0
