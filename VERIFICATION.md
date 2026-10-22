@@ -102,3 +102,29 @@ release requirements remain: authorized live sportsbook data, confirmed player
 availability, sufficiently broad held-out evaluation, calibrated probabilities,
 and validated opponent/minutes adjustments. No auto-generated betting tier or
 expected value is supplied in their absence.
+
+## Live source integration
+
+ESPN's public injury feed is cached for five minutes and matched by team and
+normalized full player name. Feed timestamps older than one hour remain stale,
+unlisted players remain unconfirmed, and current reports are not attached to
+historical slate dates. Reported Out/Doubtful players can be hidden from the main
+board (default enabled). This is an injury-report flag, not confirmation of starters.
+
+The Odds API adapter uses the documented v4 events/event-odds endpoints,
+FanDuel only, and points/rebounds/assists/threes markets. A selected-matchup fetch
+requires `ODDS_API_KEY` in Streamlit Secrets or the server environment. There is
+no signup, payment, automatic quota polling or embedded key. Credentials are
+excluded from displayed exception messages. Event date/team matching, ambiguous
+quotes, stale/future timestamps, prices and already-started games are checked.
+The user can copy one fresh quote into the research comparison.
+
+Setup: obtain a key directly at https://the-odds-api.com/ and put
+`ODDS_API_KEY = "your-key"` in Streamlit's app Secrets, never in GitHub or chat.
+Provider access/coverage and quotas must be checked on the user's plan. No live
+authenticated odds request was verified without that credential.
+
+A validated probability feed is still not available. The 13 evaluated player
+appearances and absence of independently frozen market forecasts do not support
+claiming calibrated win probabilities. The app states this rather than presenting
+historical hit counts or an unvalidated normal approximation as model probabilities.

@@ -1,5 +1,6 @@
 """Clean NBA research dashboard. No fabricated betting probabilities or odds."""
-from datetime import datetime
+from datetime import datetime, timezone
+import os
 from zoneinfo import ZoneInfo
 import pandas as pd
 import streamlit as st
@@ -12,6 +13,7 @@ from csv_export import safe_spreadsheet_cell
 from slate_coverage import slate_coverage
 from baseline_backtest import evaluate_baselines
 from player_research import player_games, compare_line, minutes_scenario
+from live_sources import fetch_injuries, reported_status, fetch_event_odds, select_quote
 
 ET = ZoneInfo("America/New_York")
 PROPS = {"points": "Points", "rebounds": "Rebounds",
@@ -38,6 +40,11 @@ def tipoff_et(value):
         return "Unknown"
 
 
+@st.cache_data(ttl=300, show_spinner=False)
+def injuries_for():
+    return fetch_injuries()
+
+
 def render_dashboard():
     st.set_page_config(page_title="NBA Prop Board", page_icon="🏀", layout="wide")
     st.title("NBA Player Prop Board")
@@ -55,6 +62,7 @@ def render_dashboard():
         schedule_for.clear()
         final_for.clear()
         history_for.clear()
+        injuries_for.clear()
     if refresh or st.session_state.get("nba_v2_attempted_key") != key:
         st.session_state["nba_v2_attempted_key"] = key
         with st.spinner("Retrieving verified completed-game statistics…"):
@@ -101,6 +109,18 @@ def render_dashboard():
             history.get("observations", []), day.isoformat(), min_games=5)
         forecasts = attach_matchups(forecasts, opponents,
             matchup_context(history.get("observations", []), day.isoformat()))
+        if day == datetime.now(ET).date():
+            try:
+                injury_feed = injuries_for()
+                now = datetime.now(timezone.utc)
+                forecasts = [{**r, "availability": reported_status(injury_feed, r['player'], r['team'], now)}
+                             for r in forecasts]
+                st.caption("Injury feed retrieved: " + injury_feed['retrieved_at']
+                           + ". Reported status is not confirmed game availability.")
+            except ValueError as exc:
+                st.warning(str(exc))
+        forecasts = [{**r, "availability": r.get("availability", "Unknown — no current report")}
+                     for r in forecasts]
         coverage, sparse = slate_coverage(history.get("observations", []),
             day.isoformat(), opponents, forecasts)
         covered = sum(r["Baseline rows"] > 0 for r in coverage)
@@ -133,6 +153,7 @@ def render_dashboard():
                    "Baseline values are not calibrated betting probabilities or matchup-adjusted forecasts.")
         if forecasts:
             frame = pd.DataFrame(forecasts)
+            frame["Reported Status"] = frame["availability"]
             frame["Opponent"] = frame["opponent"]
             frame["Matchup"] = pd.to_numeric(frame["matchup_score"], errors="coerce")
             frame["Opp Games"] = frame["opponent_games"]
@@ -158,6 +179,7 @@ def render_dashboard():
                 readiness = st.multiselect(
                     "Data readiness", ["Established", "Limited", "Stale"],
                     default=["Established", "Limited", "Stale"])
+            hide_unavailable = st.checkbox("Hide players reported Out or Doubtful", value=True)
             player_search = st.text_input(
                 "Find player", placeholder="Search by player name…")
             sort_choice = st.selectbox(
@@ -171,6 +193,8 @@ def render_dashboard():
                 & frame["Team"].isin(chosen_teams)
                 & frame["Readiness"].isin(readiness)
             ].copy()
+            if hide_unavailable:
+                frame = frame[~frame["Reported Status"].str.casefold().isin(["out", "doubtful"])].copy()
             if sort_choice == "Highest baseline within prop":
                 frame = frame.sort_values(
                     ["Prop", "Projection", "Sample", "Player"],
@@ -194,7 +218,7 @@ def render_dashboard():
             y.metric("Established", established)
             z.metric("Limited", limited)
             w.metric("Stale", stale)
-            columns = ["Row", "Player", "Team", "Opponent", "Prop",
+            columns = ["Row", "Player", "Team", "Reported Status", "Opponent", "Prop",
                        "Projection", "Matchup", "Opp Games", "Opp Allowed", "Sample", "Recent MPG", "Readiness"]
             st.dataframe(
                 frame[columns].style.map(
@@ -327,6 +351,10 @@ def render_player_research(forecasts, history, day):
     label = st.selectbox("Player and prop", sorted(options))
     selected = options[label]
     games = player_games(history.get("observations", []), selected['player_id'], selected['prop'], day)
+    st.write("Reported availability: " + selected.get("availability", "Unknown"))
+    render_live_quote(selected, day)
+    st.caption("Validated model hit probability: unavailable. The current evaluation sample "
+               "does not establish calibrated probabilities; historical hit counts are not a substitute.")
     a, b, c = st.columns(3)
     a.metric("Baseline", f"{selected['baseline']:.1f}")
     b.metric("Recent minutes", f"{selected['recent_minutes']:.1f}")
@@ -378,3 +406,47 @@ def render_player_research(forecasts, history, day):
         st.download_button("Download player line research CSV",
             pd.DataFrame([record]).map(safe_spreadsheet_cell).to_csv(index=False),
             file_name=f"nba_player_research_{day}.csv", mime="text/csv")
+
+
+def odds_key():
+    key = os.environ.get("ODDS_API_KEY", "")
+    if not key:
+        try:
+            key = st.secrets.get("ODDS_API_KEY", "")
+        except (FileNotFoundError, KeyError):
+            pass
+    return key
+
+
+def render_live_quote(selected, day):
+    with st.expander("FanDuel line feed"):
+        key = odds_key()
+        if not key:
+            st.info("Live lines need a provider key. Add ODDS_API_KEY to Streamlit Secrets "
+                    "for The Odds API (the-odds-api.com). Do not put keys in GitHub or chat. "
+                    "Manual line entry remains available below.")
+            return
+        st.caption("Fetches four prop markets for this matchup only. Each provider request "
+                   "can consume plan credits; no automatic polling or paid signup occurs.")
+        identity = (day, selected['team'], selected['opponent'])
+        if st.button("Fetch current FanDuel lines for this matchup"):
+            try:
+                st.session_state['nba_live_quote'] = (identity,
+                    fetch_event_odds(key, selected['team'], selected['opponent'], day,
+                                     datetime.now(timezone.utc)))
+            except ValueError as exc:
+                st.error(str(exc))
+                st.session_state.pop('nba_live_quote', None)
+        cached = st.session_state.get('nba_live_quote')
+        if cached and cached[0] == identity:
+            quote = select_quote(cached[1], selected['player'], selected['prop'], datetime.now(timezone.utc))
+            if quote:
+                st.write(f"FanDuel Over {quote['line']} at {quote['odds']:+d}; provider updated {quote['updated_at']}")
+                st.caption("Quotes older than 30 minutes and started events are rejected. "
+                           "Confirm the current offer in your sportsbook.")
+                if st.button("Copy fetched quote into comparison"):
+                    st.session_state['line_' + str(selected['player_id']) + selected['prop']] = float(quote['line'])
+                    st.session_state['odds_' + str(selected['player_id']) + selected['prop']] = int(quote['odds'])
+            else:
+                st.info("No unique fresh FanDuel over quote for this player and prop. "
+                        "The market may be unavailable, stale, ambiguous or already started.")

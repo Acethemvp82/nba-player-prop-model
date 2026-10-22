@@ -4,6 +4,10 @@ import dashboard_v2 as dashboard
 
 
 def fixtures(monkeypatch, forecasts):
+    injury = lambda: {'reports':{}, 'feed_timestamp':None, 'retrieved_at':'test'}
+    injury.clear = lambda: None
+    monkeypatch.setattr(dashboard, 'injuries_for', injury)
+    monkeypatch.setattr(dashboard, 'odds_key', lambda: '')
     monkeypatch.setattr(dashboard, 'schedule_for', lambda day: [
         {'awayTeam': {'teamTricode': 'NYK'}, 'homeTeam': {'teamTricode': 'BOS'},
          'gameTimeUTC': '2026-10-21T23:30:00Z', 'gameStatusText': 'Scheduled'}])
@@ -123,3 +127,42 @@ def test_manual_line_workbench_counts_and_keeps_player_inputs_separate(monkeypat
     at.selectbox[1].select('Beta · NYK · Points').run()
     assert not at.exception
     assert at.number_input[0].value is None
+
+
+def test_authorized_feed_quote_can_fill_comparison_without_exposing_key(monkeypatch):
+    from datetime import datetime, timezone, timedelta
+    forecasts=[dict(player='Alpha',player_id='espn:1',team='NYK',prop='points',
+        baseline=20,sample_games=5,recent_minutes=30,research_readiness='limited_sample')]
+    fixtures(monkeypatch,forecasts)
+    monkeypatch.setattr(dashboard,'odds_key',lambda:'test-key')
+    now=datetime.now(timezone.utc)
+    payload={'commence_time':(now+timedelta(hours=3)).isoformat(),'bookmakers':[
+        {'key':'fanduel','markets':[{'key':'player_points','last_update':now.isoformat(),
+          'outcomes':[{'name':'Over','description':'Alpha','point':20.5,'price':-110}]}]}]}
+    monkeypatch.setattr(dashboard,'fetch_event_odds',lambda *a:payload)
+    at=AppTest.from_file(str(Path(__file__).resolve().parents[1] / 'app.py'),default_timeout=20).run()
+    next(b for b in at.button if b.label=='Fetch current FanDuel lines for this matchup').click().run()
+    assert not at.exception
+    next(b for b in at.button if b.label=='Copy fetched quote into comparison').click().run()
+    assert not at.exception
+    assert at.number_input[0].value == 20.5
+    assert at.number_input[1].value == -110
+    assert not any('test-key' in item.value for item in at.markdown)
+
+
+def test_reported_out_players_hidden_without_claiming_others_active(monkeypatch):
+    from datetime import datetime, timezone
+    forecasts=[dict(player='Alpha',player_id='espn:1',team='NYK',prop='points',
+        baseline=20,sample_games=5,recent_minutes=30,research_readiness='limited_sample')]
+    fixtures(monkeypatch,forecasts)
+    loader=lambda:{'reports':{('NYK','alpha'):{'status':'Out'}},
+                   'feed_timestamp':datetime.now(timezone.utc).isoformat(),'retrieved_at':'test'}
+    loader.clear=lambda:None
+    monkeypatch.setattr(dashboard,'injuries_for',loader)
+    at=AppTest.from_file(str(Path(__file__).resolve().parents[1] / 'app.py'),default_timeout=20).run()
+    board=next(d.value for d in at.dataframe if 'Projection' in d.value.columns)
+    assert len(board)==0
+    at.checkbox[0].set_value(False).run()
+    assert not at.exception
+    board=next(d.value for d in at.dataframe if 'Projection' in d.value.columns)
+    assert board.iloc[0]['Reported Status']=='Out'
