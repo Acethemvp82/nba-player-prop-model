@@ -68,6 +68,7 @@ def render_dashboard():
     key = (day.isoformat(),lookback,cap,"positional-core-v1")
     if refresh:
         schedule_for.clear(); final_for.clear(); history_for.clear(); injuries_for.clear()
+    render_schedule(day.isoformat())
     if refresh or st.session_state.get("nba_v2_attempted_key") != key:
         st.session_state["nba_v2_attempted_key"] = key
         with st.spinner("Loading completed-game history…"):
@@ -89,7 +90,6 @@ def render_dashboard():
     ready = st.session_state.get("nba_v2_key") == key
     if not ready:
         st.info("History has not loaded for these settings. Use **Build / refresh projections** to retry.")
-        render_schedule(day.isoformat())
         return
     history = st.session_state["nba_v2_history"]
     observations = history.get("observations",[])
@@ -177,7 +177,6 @@ def render_dashboard():
             st.caption('Short-history averages — observed results, not forecasts')
             st.dataframe(pd.DataFrame(sparse),hide_index=True,use_container_width=True)
         render_validation(history,day.isoformat())
-    render_schedule(day.isoformat())
     with st.expander("How to read this board"):
         st.write('L10 and L5 are means of up to ten and five available games, not guaranteed full samples. '
                  'H2H is the observed average against this opponent within the loaded window; its sample is shown. '
@@ -194,7 +193,7 @@ def render_schedule(day):
     except Exception as exc:
         st.warning(f"Schedule refresh unavailable: {exc}")
         return
-    with st.expander("Today's matchups and tipoffs"):
+    with st.expander("Today's matchups and tipoffs", expanded=True):
         if games:
             rows = []
             for game in games:
