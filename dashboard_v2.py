@@ -24,6 +24,8 @@ from player_research import player_games, compare_line, minutes_scenario
 from matchup_board import build_matchup_board, STATS
 from live_sources import fetch_injuries, reported_status, fetch_event_odds, select_quote
 
+BOARD_RELEASE = "market-validation-v1"
+
 ET = ZoneInfo("America/New_York")
 PROPS = {"points": "Points", "rebounds": "Rebounds",
          "assists": "Assists", "threes": "3-Pointers"}
