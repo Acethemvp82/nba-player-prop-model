@@ -150,3 +150,19 @@ expander. Player line tools remain in a separate expander. Streamlit theme setti
 live in `.streamlit/config.toml`; a hosted restart may be needed for the theme.
 Validation checks one-row pivoting, zero/missing handling, L10/L5/H2H cutoff and
 deduplication, provider positions, and all previous Streamlit interactions.
+
+## Core rebuild — positional defense and minutes model
+
+The active dashboard no longer imports the retired team-wide matchup-score
+engine. It uses `position_defense.py`, `projection_core.py` and the escaped HTML
+renderer `defensive_table.py`. Defensive stat cells now contain allowance values,
+not player forecasts; the team column is the defense. Rank badges always include
+the sample denominator. Player projections and model minutes remain separate.
+See MODEL_PLAN.md for exact sample gates, grouping and projection math.
+
+History/boxscore cache schemas were bumped so old snapshots missing position,
+steals or blocks fields are refreshed. Missing positions and optional stats are
+never zero-filled. Tests cover projection math, future filtering, traded-player
+history, conflicting duplicates, positional rank direction/ties/coverage,
+HTML escaping, rank visibility, and parity of walk-forward comparison dates.
+The new projection formula is a research model, not a demonstrated improvement.

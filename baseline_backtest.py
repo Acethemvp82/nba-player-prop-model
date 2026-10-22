@@ -12,13 +12,15 @@ from projection_baseline import baseline_projections
 PROPS = ("points", "rebounds", "assists", "threes")
 
 
-def evaluate_baselines(observations, as_of, min_training_games=5):
+def evaluate_baselines(observations, as_of, min_training_games=5, model="blend"):
     """Walk forward by game date, training exclusively on earlier dates.
 
     Same-day games are evaluated together to avoid using their outcomes as
     training data for one another. Duplicate player/game observations are
     counted once. Results are descriptive MAE and signed error by prop.
     """
+    if model not in ("blend","minutes"):
+        raise ValueError("Unknown projection model")
     cutoff = _day(as_of)
     if cutoff is None:
         raise ValueError("as_of must be a valid date")
@@ -65,6 +67,11 @@ def evaluate_baselines(observations, as_of, min_training_games=5):
         summaries = player_history_summaries(training, as_of=day)
         predictions = {(str(p["player_id"]), p["prop"]): p
                        for p in baseline_projections(summaries, min_games=min_training_games)}
+        reference_predictions = predictions
+        if model == "minutes":
+            from projection_core import core_projections
+            predictions = {(str(p["player_id"]),p["prop"]):p
+                           for p in core_projections(training,day,min_games=min_training_games)}
         summary_by_id = {str(s["player_id"]): s for s in summaries}
         for row in by_date[day]:
             for prop in PROPS:
@@ -79,7 +86,8 @@ def evaluate_baselines(observations, as_of, min_training_games=5):
                 if (predicted is not None and isinstance(actual, (int, float))
                         and not isinstance(actual, bool) and isfinite(actual) and actual >= 0):
                     summary = summary_by_id[str(row["player_id"])]
-                    benchmark = summary[prop + "_last_5_avg"]
+                    benchmark = (reference_predictions[(str(row["player_id"]),prop)]["baseline"]
+                                 if model == "minutes" else summary[prop + "_last_5_avg"])
                     different_forecasts[prop] += abs(predicted - benchmark) > 0.005
                     benchmark_errors[prop].append(float(benchmark) - float(actual))
                     details.append({"game_date": day.isoformat(), "game_id": str(row["game_id"]),
@@ -122,7 +130,8 @@ def evaluate_baselines(observations, as_of, min_training_games=5):
         for prop in PROPS
     ]
 
-    return {"summary": results, "details": details}
+    return {"summary": results, "details": details, "model": model,
+            "reference": "previous historical blend" if model == "minutes" else "last-five average"}
 
 
 def baseline_backtest(observations, as_of, min_training_games=5):

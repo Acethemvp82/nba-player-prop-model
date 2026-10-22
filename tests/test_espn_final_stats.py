@@ -195,3 +195,13 @@ def test_provider_position_is_preserved_when_present():
     payload = sample()
     payload['boxscore']['players'][0]['statistics'][0]['athletes'][0]['athlete']['position'] = {'abbreviation':'PG'}
     assert parse_final_espn_boxscore(payload,'4012')[0]['position'] == 'PG'
+
+
+def test_optional_steals_and_blocks_are_preserved_without_zero_filling():
+    payload=sample()
+    section=payload['boxscore']['players'][0]['statistics'][0]
+    section['labels']+=['STL','BLK']
+    section['athletes'][0]['stats']+=['2','0']
+    r=parse_final_espn_boxscore(payload,'4012')[0]
+    assert r['steals']==2 and r['blocks']==0
+    assert 'steals' not in parse_final_espn_boxscore(sample(),'4012')[0]

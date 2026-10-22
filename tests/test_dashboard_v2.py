@@ -28,9 +28,9 @@ def test_populated_board_filters_and_sort(monkeypatch):
     at = AppTest.from_file(str(Path(__file__).resolve().parents[1] / 'app.py'), default_timeout=20).run()
     assert not at.exception
     board = next(d.value for d in at.dataframe if 'Projection' in d.value.columns)
-    assert board.iloc[0]['Matchup'] == 65
+    assert board['Def Rank'].isna().all()
     assert board.iloc[0]['Projection'] == 24
-    next(w for w in at.selectbox if w.label=='Sort by').select('Highest matchup score').run()
+    next(w for w in at.selectbox if w.label=='Sort by').select('Highest positional allowance').run()
     assert not at.exception
     at.text_input[0].input('nobody').run()
     assert len(next(d.value for d in at.dataframe if 'Projection' in d.value.columns)) == 0
@@ -87,8 +87,8 @@ def test_validation_reports_auditable_espn_forecasts(monkeypatch):
     monkeypatch.setattr(dashboard, 'history_for', history)
     at = AppTest.from_file(str(Path(__file__).resolve().parents[1] / 'app.py'), default_timeout=20).run()
     assert not at.exception
-    scores = next(d.value for d in at.dataframe if 'Blend MAE' in d.value.columns)
-    assert scores.iloc[0]['Blend MAE'] == 10
+    scores = next(d.value for d in at.dataframe if 'Model MAE' in d.value.columns)
+    assert scores.iloc[0]['Model MAE'] == 10
     audit = next(d.value for d in at.dataframe if 'last_training_date' in d.value.columns)
     assert audit.iloc[0]['last_training_date'] < audit.iloc[0]['game_date']
 
@@ -162,7 +162,7 @@ def test_reported_out_players_hidden_without_claiming_others_active(monkeypatch)
     at=AppTest.from_file(str(Path(__file__).resolve().parents[1] / 'app.py'),default_timeout=20).run()
     board=next(d.value for d in at.dataframe if 'Projection' in d.value.columns)
     assert len(board)==0
-    at.checkbox[0].set_value(False).run()
+    next(w for w in at.checkbox if w.label=='Hide players reported Out or Doubtful').set_value(False).run()
     assert not at.exception
     board=next(d.value for d in at.dataframe if 'Projection' in d.value.columns)
     assert board.iloc[0]['Status']=='Out'

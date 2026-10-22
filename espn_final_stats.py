@@ -92,6 +92,7 @@ def parse_final_espn_boxscore(payload, expected_event_id):
                               for label in labels]
                 if all(normalized.count(key) == 1 for key in required):
                     indexes = {key: normalized.index(key) for key in required}
+                    indexes.update({key:normalized.index(key) for key in ("STL","BLK") if normalized.count(key)==1})
                     break
             if indexes is None:
                 continue
@@ -134,6 +135,10 @@ def parse_final_espn_boxscore(payload, expected_event_id):
                        "assists": assists, "threes": threes, "minutes": minutes,
                        "is_final": True,
                        "source": "ESPN verified final boxscore"}
+                for optional_label, optional_field in (("STL", "steals"), ("BLK", "blocks")):
+                    if optional_label in indexes:
+                        optional_value=read(optional_label)
+                        if optional_value is not None: row[optional_field]=optional_value
                 position = athlete.get("position")
                 if isinstance(position, dict) and isinstance(position.get("abbreviation"), str):
                     row["position"] = position["abbreviation"]

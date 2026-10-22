@@ -150,3 +150,12 @@ def test_malformed_namespaced_game_ids_are_excluded():
     rows = [{**game(i, 10), 'game_id':'espn:bad'} for i in range(1, 7)]
     result = baseline_backtest(rows, '2026-10-07')
     assert all(r['evaluated'] == 0 and r['excluded_invalid_rows'] == 6 for r in result)
+
+
+def test_new_minutes_model_is_evaluated_against_previous_blend_on_earlier_days():
+    from baseline_backtest import evaluate_baselines
+    rows=[game(i,10) for i in range(1,6)]+[game(6,20),game(7,15)]
+    result=evaluate_baselines(rows,'2026-10-08',model='minutes')
+    assert result['model']=='minutes' and result['reference']=='previous historical blend'
+    assert len([d for d in result['details'] if d['prop']=='points'])==2
+    assert all(d['last_training_date']<d['game_date'] for d in result['details'])

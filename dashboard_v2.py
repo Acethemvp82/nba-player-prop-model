@@ -7,8 +7,9 @@ import streamlit as st
 
 from espn_schedule import espn_games_on
 from espn_history import collect_espn_history, espn_final_game_players
-from pregame_baseline_board import build_pregame_baseline_board
-from matchup_scoring import matchup_context, attach_matchups
+from projection_core import core_projections as build_pregame_baseline_board
+from position_defense import positional_allowance as matchup_context
+from defensive_table import defensive_table_html
 from csv_export import safe_spreadsheet_cell
 from slate_coverage import slate_coverage
 from baseline_backtest import evaluate_baselines
@@ -25,11 +26,11 @@ def schedule_for(day):
     return espn_games_on(day)
 
 @st.cache_data(ttl=3600, show_spinner=False)
-def final_for(event_id):
+def final_for(event_id, schema_version=2):
     return espn_final_game_players(event_id)
 
 @st.cache_data(ttl=3600, show_spinner=False)
-def history_for(day, days, cap):
+def history_for(day, days, cap, schema_version="positional-core-v1"):
     return collect_espn_history(
         day, days=days, max_games=cap,
         schedule_loader=schedule_for, boxscore_loader=final_for)
@@ -56,7 +57,7 @@ def render_dashboard():
     div[data-testid="stVerticalBlock"] {gap:.65rem;}
     .nba-banner {padding:.8rem 1rem;border:1px solid #594369;border-radius:7px;
       background:linear-gradient(110deg,#30203f,#141825 65%);font-size:1.15rem;font-weight:700;}
-    </style><div class="nba-banner">NBA PLAYER MATCHUPS</div>""", unsafe_allow_html=True)
+    </style><div class="nba-banner">NBA DEFENSIVE MATCHUPS</div>""", unsafe_allow_html=True)
     with st.sidebar:
         st.header("Slate controls")
         day = st.date_input("Slate date", datetime.now(ET).date())
@@ -64,7 +65,7 @@ def render_dashboard():
         cap = st.select_slider("Completed games to retrieve", options=[10,20,30,50,75,100], value=100)
         refresh = st.button("Build / refresh projections", type="primary", use_container_width=True)
         st.caption("History cached for one hour. Line feed requires a configured provider key.")
-    key = (day.isoformat(),lookback,cap)
+    key = (day.isoformat(),lookback,cap,"positional-core-v1")
     if refresh:
         schedule_for.clear(); final_for.clear(); history_for.clear(); injuries_for.clear()
     if refresh or st.session_state.get("nba_v2_attempted_key") != key:
@@ -93,7 +94,9 @@ def render_dashboard():
     history = st.session_state["nba_v2_history"]
     observations = history.get("observations",[])
     context = matchup_context(observations,day.isoformat())
-    forecasts = attach_matchups(build_pregame_baseline_board(observations,day.isoformat(),min_games=5),opponents,context)
+    forecasts = [{**r,'opponent':opponents[r['team']]} for r in
+                 build_pregame_baseline_board(observations,day.isoformat(),min_games=5)
+                 if r.get('team') in opponents]
     injury_feed = None
     if day == datetime.now(ET).date():
         try:
@@ -112,66 +115,48 @@ def render_dashboard():
     if injury_feed:
         for r in rows: r['Status']=reported_status(injury_feed,r['Player'],r['Team'],now)
     with b:
-        position=st.selectbox("Position",["All"]+sorted({r['Pos'] for r in rows}))
+        position_options=["All"]+sorted({r['Group'] for r in rows})
+        position=st.selectbox("Position group",position_options,index=position_options.index("G") if "G" in position_options else 0)
     with c:
-        teams=st.multiselect("Teams",sorted(opponents),default=sorted(opponents))
+        teams=st.multiselect("Defenses",sorted(opponents),default=sorted(opponents))
     with d:
-        sort_choice=st.selectbox("Sort by",["Highest matchup score","Highest baseline within prop","Most historical games","Player name"])
+        sort_choice=st.selectbox("Sort by",["Highest positional allowance","Highest projection","Most historical games","Player name"])
     search_col,status_col=st.columns([3,2])
     with search_col:
         search=st.text_input("Find player",placeholder="Search players…")
     with status_col:
+        show_ranks=st.checkbox("Show rankings",value=True)
         hide_unavailable=st.checkbox("Hide players reported Out or Doubtful",value=True)
     covered=sum(any(f['team']==t for f in forecasts) for t in opponents)
-    st.caption(f"{len(games)} games · {len(opponents)} teams · {covered} teams with five-game baselines · "
+    st.caption(f"{len(games)} games · {len(opponents)} teams · {covered} teams with minutes-based projections · "
                + st.session_state.get("nba_v2_loaded_at","Unknown build time"))
-    st.caption(f"Line, L10, L5, H2H and Proj follow {selected_label}. Stat cells show player baselines; "
-               "their colors reflect opponent TEAM allowance context. Green ≥60 · amber 40–60 · red ≤40. "
-               "These are not position-specific defense rankings. H2H uses only the loaded window.")
+    st.caption(f"Line, L10, L5, H2H and Proj follow {selected_label}. The team column is the DEFENSE. "
+               "Colored stats are per-game allowance to all Guards (G), Forwards (F), or Centers (C). "
+               "Ranks compare qualified teams in this loaded sample; the denominator is shown. "
+               "Broad G/F labels are not inferred PG/SG roles.")
     if history.get('failures') or history.get('history_truncated'):
         st.warning("Retrieved history is incomplete. Coverage details are below the board.")
     if rows:
         frame=pd.DataFrame(rows)
         for i,r in frame.iterrows():
             frame.at[i,'Line']=st.session_state.get('line_'+str(r['player_id'])+prop)
-        frame=frame[frame['Team'].isin(teams) & frame['Player'].str.contains(search,case=False,regex=False,na=False)]
-        if position!='All': frame=frame[frame['Pos']==position]
+        frame=frame[frame['Opponent'].isin(teams) & frame['Player'].str.contains(search,case=False,regex=False,na=False)]
+        if position!='All': frame=frame[frame['Group']==position]
         if hide_unavailable: frame=frame[~frame['Status'].str.casefold().isin(['out','doubtful'])]
-        sorting={'Highest matchup score':(['Matchup','Sample','Player'],[False,False,True]),
-                 'Highest baseline within prop':(['Projection','Sample','Player'],[False,False,True]),
+        sorting={'Highest positional allowance':(['Matchup','Sample','Player'],[False,False,True]),
+                 'Highest projection':(['Projection','Sample','Player'],[False,False,True]),
                  'Most historical games':(['Sample','Player'],[False,True]),
                  'Player name':(['Player'],[True])}
         by,asc=sorting[sort_choice]
         frame=frame.sort_values(by,ascending=asc,na_position='last').reset_index(drop=True)
         frame.insert(0,'Row',range(1,len(frame)+1))
-        st.caption(f"{len(frame)} players shown · one row per player · blank baseline = fewer than five valid games")
-        columns=['Row','Team','Pos','Player','Opponent','Line','L10','L5','H2H','H2H N',
-                 'Projection','Points','Rebounds','Assists','3PM','Matchup','Sample','Status']
-        def color(score):
-            if pd.isna(score): return ''
-            return 'color:'+('#7cf286' if score>=60 else '#fa757b' if score<=40 else '#f4d568')+';font-weight:700;'
-        def row_style(row):
-            styles=['background-color:#111521;color:#e9eaf3;border-bottom:1px solid #303342;' for _ in columns]
-            for label in STATS.values():
-                score=frame.loc[row.name,'score_'+label]
-                if not pd.isna(row[label]): styles[columns.index(label)]+=color(score)
-            styles[columns.index('Matchup')]+=color(row['Matchup'])
-            if not pd.isna(row['Line']):
-                for label in ['L10','L5','H2H']:
-                    if not pd.isna(row[label]):
-                        styles[columns.index(label)]+=('background-color:#174c37;color:#96f4ac;' if row[label]>row['Line']
-                                                    else 'background-color:#43232c;color:#ffafb7;' if row[label]<row['Line'] else '')
-            return styles
-        numeric=['Line','L10','L5','H2H','Projection','Points','Rebounds','Assists','3PM','Matchup']
-        for label in numeric:
-            frame[label]=pd.to_numeric(frame[label],errors="coerce")
-        st.dataframe(frame[columns].style.apply(row_style,axis=1).format(na_rep="—"),hide_index=True,use_container_width=True,height=640,
-            column_config={**{k:st.column_config.NumberColumn(k,format='%.1f') for k in numeric},
-                           'Projection':st.column_config.NumberColumn('Proj',format='%.1f'),
-                           'Row':st.column_config.NumberColumn('#',help='Display order, not a betting ranking.'),
-                           'Matchup':st.column_config.NumberColumn('Match / 100',format='%.1f'),
-                           'H2H N':st.column_config.NumberColumn('H2H games'),
-                           'Status':st.column_config.TextColumn('Reported status')})
+        st.caption(f"{len(frame)} players shown · {int(frame['Def Rank'].notna().sum())} with ranked position evidence · blank projection = insufficient current-team history")
+        columns=['Row','Team','Pos','Group','Player','Opponent','Line','L10','L5','H2H','H2H N',
+                 'Projection','Model Min','Recent Min','Points','Rebounds','Assists','3PM','Steals','Blocks',
+                 'Def Rank','Rank Teams','Defense Games','Sample','Status']
+        st.html(defensive_table_html(frame,show_ranks=show_ranks))
+        with st.expander("Board data and sample counts"):
+            st.dataframe(frame[columns],hide_index=True,use_container_width=True)
         st.download_button('Export board CSV',frame[columns].map(safe_spreadsheet_cell).to_csv(index=False),
             file_name=f'nba_matchup_board_{day.isoformat()}.csv',mime='text/csv')
     else:
@@ -196,8 +181,8 @@ def render_dashboard():
     with st.expander("How to read this board"):
         st.write('L10 and L5 are means of up to ten and five available games, not guaranteed full samples. '
                  'H2H is the observed average against this opponent within the loaded window; its sample is shown. '
-                 'Proj and the four stat columns are unadjusted player baselines requiring five valid games. '
-                 'Color describes team-wide opponent allowance context, not positional ranks or hit probability. '
+                 'Proj uses median last-five minutes times weighted per-minute production, requiring five valid games on the current historical team. '
+                 'Colored stats show observed allowance to the full position group. Rank 1 is the most allowed among qualified sample teams, not a league-wide rank unless all 30 qualify. '
                  'Position is shown only when provided by a completed-game source. '
                  'Lines are blank until entered in Player details or copied from the configured provider feed.')
 
@@ -225,8 +210,8 @@ def render_schedule(day):
 
 
 @st.cache_data(ttl=3600, show_spinner=False)
-def validation_for(observations, day, schema_version=2):
-    return evaluate_baselines(observations, day, min_training_games=5)
+def validation_for(observations, day, schema_version=3):
+    return evaluate_baselines(observations, day, min_training_games=5,model="minutes")
 
 
 def render_validation(history, day):
@@ -234,7 +219,7 @@ def render_validation(history, day):
     st.caption("Retrospective walk-forward check: each forecast uses at least five appearances "
                "from strictly earlier dates. Same-day results never enter training. "
                "These are reconstructed forecasts, not saved pregame predictions.")
-    result = validation_for(history.get("observations", []), day, schema_version=2)
+    result = validation_for(history.get("observations", []), day, schema_version=3)
     summary = pd.DataFrame(result["summary"])
     evaluated = int(summary["evaluated"].sum())
     if not evaluated:
@@ -251,21 +236,22 @@ def render_validation(history, day):
             abs(d["baseline"] - d["last5_baseline"]) > 0.005
             for d in result.get("details", []) if d.get("prop") == prop))
     if int(summary["different_from_last5"].sum()) == 0:
-        st.info("The blend and last-five forecasts are identical in this evaluation sample. "
+        st.info("The model and reference forecasts are identical in this evaluation sample. "
                 "This comparison cannot yet establish an advantage for either method.")
+    st.caption("Reference: " + result.get("reference", "last-five average") + ". Forecast weights are not selected by these results.")
     summary["prop"] = summary["prop"].map(PROPS)
     labels = {"prop": "Prop", "evaluated": "Scored forecasts", "players_evaluated": "Players",
               "dates_evaluated": "Dates", "coverage_pct": "Evaluated coverage %",
-              "mae": "Blend MAE", "last5_mae": "Last-5 MAE",
+              "mae": "Model MAE", "last5_mae": "Reference MAE",
               "different_from_last5": "Different forecasts",
-              "mae_delta_vs_last5": "Blend minus Last-5", "mean_error": "Bias", "rmse": "RMSE",
+              "mae_delta_vs_last5": "Model minus reference", "mean_error": "Bias", "rmse": "RMSE",
               "first_evaluation_date": "First result", "last_evaluation_date": "Last result"}
     table = summary[list(labels)].rename(columns=labels)
     st.dataframe(table, hide_index=True, use_container_width=True,
         column_config={k: st.column_config.NumberColumn(k, format="%.3f")
-            for k in ("Blend MAE", "Last-5 MAE", "Blend minus Last-5", "Bias", "RMSE")})
+            for k in ("Model MAE", "Reference MAE", "Model minus reference", "Bias", "RMSE")})
     st.caption("MAE is the average size of a miss in that prop's units; lower is better. "
-               "A negative Blend minus Last-5 favors the blend. Positive bias means overprediction. "
+               "A negative Model minus reference favors the new model. Positive bias means overprediction. "
                "Coverage includes appearances that had too little earlier history to forecast. "
                "Small, potentially preseason samples do not establish betting accuracy; no formula is auto-tuned here.")
     with st.expander("Audit scored forecasts and training dates"):
@@ -294,9 +280,8 @@ def render_player_research(forecasts, history, day):
                "does not establish calibrated probabilities; historical hit counts are not a substitute.")
     a, b, c = st.columns(3)
     a.metric("Baseline", f"{selected['baseline']:.1f}")
-    b.metric("Recent minutes", f"{selected['recent_minutes']:.1f}")
-    matchup = selected.get("matchup_score")
-    c.metric("Matchup context", f"{matchup:.1f} / 100" if matchup is not None else "Insufficient history")
+    b.metric("Model minutes", f"{selected.get('forecast_minutes',selected['recent_minutes']):.1f}")
+    c.metric("Training appearances", str(selected["sample_games"]))
     cols = st.columns(2)
     with cols[0]:
         line = st.number_input("Sportsbook line (manual)", min_value=0.0, value=None, step=0.5,
@@ -322,10 +307,11 @@ def render_player_research(forecasts, history, day):
     with st.expander("Recent completed games and minutes scenario"):
         if games:
             st.dataframe(pd.DataFrame(games), hide_index=True, use_container_width=True)
+        scenario_base = selected.get("forecast_minutes", selected["recent_minutes"])
         expected = st.number_input("Scenario minutes (your assumption)", min_value=0.0,
-            max_value=48.0, value=min(48.0, float(selected['recent_minutes'])), step=1.0,
+            max_value=48.0, value=min(48.0, float(scenario_base)), step=1.0,
             key="scenario_" + str(selected['player_id']) + selected['prop'])
-        scenario = minutes_scenario(selected['baseline'], selected['recent_minutes'], expected)
+        scenario = minutes_scenario(selected['baseline'], scenario_base, expected)
         st.metric("Minutes-only scenario", f"{scenario:.1f}")
         st.caption("Scales the baseline in proportion to your minutes assumption. "
                    "This is a sensitivity check, not an injury-adjusted forecast; it does not change the main board.")
