@@ -85,3 +85,20 @@ release does not change projection weights or claim calibrated betting probabili
 
 Validation tests cover ESPN IDs, identical benchmark samples, training cutoff,
 team changes, malformed IDs, and the rendered Streamlit accuracy/audit tables.
+
+## Player line research release
+
+The deployed research workflow now includes a player/prop selector, last-ten
+verified completed results strictly before the slate date, manually entered line
+and optional American over odds, separate over/under/push counts, and break-even
+probability from those odds. Inputs are scoped per player/prop. A minutes-only
+scenario scales the baseline without changing the main board. The CSV export
+records manual source provenance, recorded-at time, inputs and research outputs.
+Historical overs and odds break-even are not model win probabilities.
+
+The research board, coverage accounting, matchup context, historical validation
+and manual line comparison form the current usable release. Outstanding betting
+release requirements remain: authorized live sportsbook data, confirmed player
+availability, sufficiently broad held-out evaluation, calibrated probabilities,
+and validated opponent/minutes adjustments. No auto-generated betting tier or
+expected value is supplied in their absence.

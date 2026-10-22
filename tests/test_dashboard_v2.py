@@ -102,3 +102,24 @@ def test_validation_accepts_previous_cached_summary_schema(monkeypatch):
     at = AppTest.from_file(str(Path(__file__).resolve().parents[1] / 'app.py'), default_timeout=20).run()
     assert not at.exception
     assert any('identical in this evaluation sample' in item.value for item in at.info)
+
+
+def test_manual_line_workbench_counts_and_keeps_player_inputs_separate(monkeypatch):
+    forecasts = [dict(player=name, player_id=pid, team='NYK', prop='points',
+        baseline=20, sample_games=5, recent_minutes=30, research_readiness='limited_sample')
+        for name, pid in [('Alpha','espn:1'),('Beta','espn:2')]]
+    fixtures(monkeypatch, forecasts)
+    rows = [dict(player='Alpha', player_id='espn:1', team='NYK', game_date='2026-10-10',
+        game_id='espn:1', is_final=True, minutes=30, points=20)]
+    loader = lambda *a: {'observations':rows}
+    loader.clear = lambda: None
+    monkeypatch.setattr(dashboard, 'history_for', loader)
+    at = AppTest.from_file(str(Path(__file__).resolve().parents[1] / 'app.py'), default_timeout=20).run()
+    at.number_input[0].set_value(20.0).run()
+    at.number_input[1].set_value(-110).run()
+    assert not at.exception
+    assert next(m.value for m in at.metric if m.label == 'Historical pushes') == '1'
+    assert next(m.value for m in at.metric if m.label == 'Odds break-even probability') == '52.4%'
+    at.selectbox[1].select('Beta · NYK · Points').run()
+    assert not at.exception
+    assert at.number_input[0].value is None

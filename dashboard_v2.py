@@ -11,6 +11,7 @@ from matchup_scoring import matchup_context, attach_matchups
 from csv_export import safe_spreadsheet_cell
 from slate_coverage import slate_coverage
 from baseline_backtest import evaluate_baselines
+from player_research import player_games, compare_line, minutes_scenario
 
 ET = ZoneInfo("America/New_York")
 PROPS = {"points": "Points", "rebounds": "Rebounds",
@@ -40,7 +41,7 @@ def tipoff_et(value):
 def render_dashboard():
     st.set_page_config(page_title="NBA Prop Board", page_icon="🏀", layout="wide")
     st.title("NBA Player Prop Board")
-    st.caption("Rebuild milestone 3 · Prediction validation")
+    st.caption("Research board · Player lines, coverage and validation")
     st.caption("Player baselines • Opponent matchup context • Points, rebounds, assists and threes")
     with st.sidebar:
         st.header("Slate controls")
@@ -224,6 +225,8 @@ def render_dashboard():
         else:
             st.warning("No eligible projections for this slate with the loaded history. "
                        "Increase the history window or game cap; do not treat missing players as zero projections.")
+    if ready and forecasts:
+        render_player_research(forecasts, history, day.isoformat())
     if ready:
         render_validation(st.session_state["nba_v2_history"], day.isoformat())
     render_schedule(day.isoformat())
@@ -314,3 +317,64 @@ def render_validation(history, day):
         st.download_button("Download scored forecast audit CSV",
             details.map(safe_spreadsheet_cell).to_csv(index=False),
             file_name=f"nba_validation_{day}.csv", mime="text/csv")
+
+
+def render_player_research(forecasts, history, day):
+    st.subheader("Player line comparison")
+    st.caption("Choose a player and enter the line you see at your sportsbook. "
+               "Recent outcomes are historical counts, not a predicted hit probability.")
+    options = {f"{r['player']} · {r['team']} · {PROPS[r['prop']]}": r for r in forecasts}
+    label = st.selectbox("Player and prop", sorted(options))
+    selected = options[label]
+    games = player_games(history.get("observations", []), selected['player_id'], selected['prop'], day)
+    a, b, c = st.columns(3)
+    a.metric("Baseline", f"{selected['baseline']:.1f}")
+    b.metric("Recent minutes", f"{selected['recent_minutes']:.1f}")
+    matchup = selected.get("matchup_score")
+    c.metric("Matchup context", f"{matchup:.1f} / 100" if matchup is not None else "Insufficient history")
+    cols = st.columns(2)
+    with cols[0]:
+        line = st.number_input("Sportsbook line (manual)", min_value=0.0, value=None, step=0.5,
+                               placeholder="Enter the current line", key="line_" + str(selected["player_id"]) + selected["prop"])
+    with cols[1]:
+        odds = st.number_input("Over American odds (optional)", value=None, step=1,
+                               placeholder="For example, -110", key="odds_" + str(selected["player_id"]) + selected["prop"])
+    if line is not None:
+        result = compare_line(games, line, odds)
+        a, b, c = st.columns(3)
+        a.metric("Historical overs", f"{result['over']} / {result['sample_games']}")
+        b.metric("Historical unders", str(result['under']))
+        c.metric("Historical pushes", str(result['push']))
+        st.caption(f"Baseline minus entered line: {selected['baseline'] - line:+.1f}. "
+                   "A projection gap alone does not establish an edge.")
+        if odds is not None:
+            if result['break_even'] is None:
+                st.warning("American odds must be an integer of -100 or lower, or +100 or higher.")
+            else:
+                st.metric("Odds break-even probability", f"{100 * result['break_even']:.1f}%")
+                st.caption("Break-even is calculated from your entered odds, before any vig adjustment. "
+                           "It is not the model's predicted chance.")
+    with st.expander("Recent completed games and minutes scenario"):
+        if games:
+            st.dataframe(pd.DataFrame(games), hide_index=True, use_container_width=True)
+        expected = st.number_input("Scenario minutes (your assumption)", min_value=0.0,
+            max_value=48.0, value=min(48.0, float(selected['recent_minutes'])), step=1.0,
+            key="scenario_" + str(selected['player_id']) + selected['prop'])
+        scenario = minutes_scenario(selected['baseline'], selected['recent_minutes'], expected)
+        st.metric("Minutes-only scenario", f"{scenario:.1f}")
+        st.caption("Scales the baseline in proportion to your minutes assumption. "
+                   "This is a sensitivity check, not an injury-adjusted forecast; it does not change the main board.")
+
+    if line is not None:
+        record = {"recorded_at": datetime.now(ET).isoformat(), "slate_date": day,
+                  "player": selected['player'], "player_id": selected['player_id'],
+                  "team": selected['team'], "prop": selected['prop'],
+                  "baseline": selected['baseline'], "entered_line": line,
+                  "entered_over_odds": odds, "line_source": "manual user entry; not live-verified",
+                  "historical_games": result['sample_games'], "historical_overs": result['over'],
+                  "historical_unders": result['under'], "historical_pushes": result['push'],
+                  "odds_break_even": result['break_even'], "scenario_minutes": expected,
+                  "minutes_only_scenario": scenario}
+        st.download_button("Download player line research CSV",
+            pd.DataFrame([record]).map(safe_spreadsheet_cell).to_csv(index=False),
+            file_name=f"nba_player_research_{day}.csv", mime="text/csv")
