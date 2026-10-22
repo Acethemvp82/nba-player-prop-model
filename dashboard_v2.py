@@ -49,7 +49,7 @@ def injuries_for():
 def render_dashboard():
     st.set_page_config(page_title="NBA Matchup Board", page_icon="🏀", layout="wide", initial_sidebar_state="collapsed")
     st.markdown("""<style>
-    .block-container {max-width:1600px;padding-top:1.5rem;padding-bottom:2rem;}
+    .block-container {max-width:1600px;padding-top:4.5rem;padding-bottom:2rem;}
     h1 {font-size:1.9rem!important;letter-spacing:-.035em;}
     [data-testid="stDataFrame"] {border:1px solid #353344;border-radius:8px;}
     [data-testid="stMetricValue"] {font-size:1.5rem;}
@@ -163,7 +163,9 @@ def render_dashboard():
                                                     else 'background-color:#43232c;color:#ffafb7;' if row[label]<row['Line'] else '')
             return styles
         numeric=['Line','L10','L5','H2H','Projection','Points','Rebounds','Assists','3PM','Matchup']
-        st.dataframe(frame[columns].style.apply(row_style,axis=1),hide_index=True,use_container_width=True,height=640,
+        for label in numeric:
+            frame[label]=pd.to_numeric(frame[label],errors="coerce")
+        st.dataframe(frame[columns].style.apply(row_style,axis=1).format(na_rep="—"),hide_index=True,use_container_width=True,height=640,
             column_config={**{k:st.column_config.NumberColumn(k,format='%.1f') for k in numeric},
                            'Projection':st.column_config.NumberColumn('Proj',format='%.1f'),
                            'Row':st.column_config.NumberColumn('#',help='Display order, not a betting ranking.'),
