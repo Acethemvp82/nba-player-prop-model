@@ -16,6 +16,7 @@ from projection_core import core_projections as build_pregame_baseline_board
 from position_defense import positional_allowance as matchup_context
 from defensive_table import interactive_table_html
 from csv_export import safe_spreadsheet_cell
+from prop_signal import prop_signal
 from slate_coverage import slate_coverage
 from baseline_backtest import evaluate_baselines
 from player_research import player_games, compare_line, minutes_scenario
@@ -171,9 +172,19 @@ def render_dashboard():
         frame=pd.DataFrame(rows)
         for i,r in frame.iterrows():
             frame.at[i,'Line']=st.session_state.get('line_'+str(r['player_id'])+prop)
+        signals=[prop_signal(r) for _,r in frame.iterrows()]
+        frame['Prop signal']=[s[0] for s in signals]
+        frame['Signal reason']=[s[2] for s in signals]
+        st.caption("PLAYER PROP COLORS: Green = current-season estimate above your entered line; red = below line or reported unavailable; amber = research only, small sample or uncertain minutes; gray = missing estimate/line. These are comparisons, not proven betting tiers.")
         frame=frame[frame['Opponent'].isin(teams) & frame['Player'].str.contains(search,case=False,regex=False,na=False)]
         if position!='All': frame=frame[frame['Group']==position]
         if hide_unavailable: frame=frame[~frame['Status'].str.casefold().isin(['out','doubtful'])]
+        signal_view=st.selectbox('Player prop signal',['All signals','Above line','Below line','Research only','Needs data / line'])
+        if signal_view in ('Above line','Below line','Research only'):
+            frame=frame[frame['Prop signal']==signal_view]
+        elif signal_view=='Needs data / line':
+            frame=frame[frame['Prop signal'].isin(['No estimate','Add line'])]
+        st.caption(f"Player comparisons: {int((frame['Prop signal']=='Above line').sum())} above line · {int((frame['Prop signal']=='Below line').sum())} below line · {int((frame['Prop signal']=='Research only').sum())} research only. No automatic sportsbook lines are connected.")
         sorting={'Highest positional allowance':(['Matchup','Sample','Player'],[False,False,True]),
                  'Highest projection':(['Projection','Sample','Player'],[False,False,True]),
                  'Most historical games':(['Sample','Player'],[False,True]),
@@ -184,7 +195,7 @@ def render_dashboard():
         st.caption(f"{len(frame)} players shown · {int(frame['Def Rank'].notna().sum())} with ranked position evidence · blank projection = insufficient same-team regular-season history")
         columns=['Row','Team','Pos','Group','Player','Opponent','Line','L10','L5','H2H','H2H N',
                  'Projection','Model Min','Recent Min','Points','Rebounds','Assists','3PM','Steals','Blocks',
-                 'Def Rank','Rank Teams','Defense Games','Sample','Evidence','Current GP','Minutes note','Status']
+                 'Prop signal','Signal reason','Def Rank','Rank Teams','Defense Games','Sample','Evidence','Current GP','Minutes note','Status']
         components.html(interactive_table_html(frame,show_ranks=show_ranks), height=750, scrolling=True)
         st.caption("Click headings to sort. Click a defense or position to filter displayed rows; Clear table filters resets those clicks. Filters above control the source rows and CSV export.")
         with st.expander("Board data and sample counts"):
