@@ -30,7 +30,7 @@ def test_populated_board_filters_and_sort(monkeypatch):
     board = next(d.value for d in at.dataframe if 'Projection' in d.value.columns)
     assert board.iloc[0]['Matchup'] == 65
     assert board.iloc[0]['Projection'] == 24
-    at.selectbox[0].select('Highest matchup score').run()
+    next(w for w in at.selectbox if w.label=='Sort by').select('Highest matchup score').run()
     assert not at.exception
     at.text_input[0].input('nobody').run()
     assert len(next(d.value for d in at.dataframe if 'Projection' in d.value.columns)) == 0
@@ -70,10 +70,10 @@ def test_sparse_history_is_visible_without_creating_forecasts(monkeypatch):
     sparse = next(d.value for d in at.dataframe if 'Appearances' in d.value.columns)
     assert sparse.iloc[0]['Appearances'] == 3
     assert sparse.iloc[0]['Points avg'] == 15
-    assert not any('Projection' in d.value.columns for d in at.dataframe)
+    assert next(d.value for d in at.dataframe if 'Projection' in d.value.columns)['Projection'].isna().all()
     coverage = next(d.value for d in at.dataframe if 'Coverage' in d.value.columns)
     assert set(coverage['Team']) == {'NYK', 'BOS'}
-    assert any('No five-game baselines for:' in item.value for item in at.warning)
+    assert 'Fewer than 5 appearances' in set(coverage['Coverage'])
 
 
 def test_validation_reports_auditable_espn_forecasts(monkeypatch):
@@ -124,7 +124,7 @@ def test_manual_line_workbench_counts_and_keeps_player_inputs_separate(monkeypat
     assert not at.exception
     assert next(m.value for m in at.metric if m.label == 'Historical pushes') == '1'
     assert next(m.value for m in at.metric if m.label == 'Odds break-even probability') == '52.4%'
-    at.selectbox[1].select('Beta · NYK · Points').run()
+    next(w for w in at.selectbox if w.label=='Player and prop').select('Beta · NYK · Points').run()
     assert not at.exception
     assert at.number_input[0].value is None
 
@@ -165,4 +165,4 @@ def test_reported_out_players_hidden_without_claiming_others_active(monkeypatch)
     at.checkbox[0].set_value(False).run()
     assert not at.exception
     board=next(d.value for d in at.dataframe if 'Projection' in d.value.columns)
-    assert board.iloc[0]['Reported Status']=='Out'
+    assert board.iloc[0]['Status']=='Out'

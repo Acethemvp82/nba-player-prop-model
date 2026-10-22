@@ -128,3 +128,25 @@ A validated probability feed is still not available. The 13 evaluated player
 appearances and absence of independently frozen market forecasts do not support
 claiming calibrated win probabilities. The app states this rather than presenting
 historical hit counts or an unvalidated normal approximation as model probabilities.
+
+## Reference-led matchup board layout
+
+The default screen is now a dark, compact cheatsheet with one row per historical
+player rather than four rows per player. Above-table controls select prop,
+position (only when supplied), teams, player search, sort and availability filter.
+Line/L10/L5/H2H/Proj follow the selected prop; the four stat baselines remain
+side by side. H2H sample count is shown, unknown values stay blank, and sparse
+players remain visible without qualifying baseline values. CSV follows filters.
+The selected prop's manual comparison line appears on the board after entry.
+
+The stat colors reflect existing **team-wide** allowance context. They are not
+position-specific defensive ranks, league ranks, or hit probabilities. H2H only
+covers retrieved history. Source-supplied positions are preserved from ESPN
+finals; missing positions remain unknown. Cached older boxscores need a refresh
+before newly added position metadata can be available.
+
+Coverage, short-history averages and validation are below the table in a closed
+expander. Player line tools remain in a separate expander. Streamlit theme settings
+live in `.streamlit/config.toml`; a hosted restart may be needed for the theme.
+Validation checks one-row pivoting, zero/missing handling, L10/L5/H2H cutoff and
+deduplication, provider positions, and all previous Streamlit interactions.

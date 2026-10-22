@@ -134,6 +134,9 @@ def parse_final_espn_boxscore(payload, expected_event_id):
                        "assists": assists, "threes": threes, "minutes": minutes,
                        "is_final": True,
                        "source": "ESPN verified final boxscore"}
+                position = athlete.get("position")
+                if isinstance(position, dict) and isinstance(position.get("abbreviation"), str):
+                    row["position"] = position["abbreviation"]
                 if key in seen:
                     if any(seen[key][stat] != row[stat]
                            for stat in ("points", "rebounds", "assists", "threes", "minutes")):

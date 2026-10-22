@@ -189,3 +189,9 @@ def test_invalid_labels_fall_back_to_valid_names():
     section["names"] = list(section["labels"])
     section["labels"] = ["Minutes", "Three Pointers", "Rebounds", "Assists", "Points"]
     assert parse_final_espn_boxscore(data, "4012")[0]["threes"] == 3
+
+
+def test_provider_position_is_preserved_when_present():
+    payload = sample()
+    payload['boxscore']['players'][0]['statistics'][0]['athletes'][0]['athlete']['position'] = {'abbreviation':'PG'}
+    assert parse_final_espn_boxscore(payload,'4012')[0]['position'] == 'PG'
