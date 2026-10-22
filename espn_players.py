@@ -121,7 +121,8 @@ def espn_team_roster(team_id, expected_team):
             continue
         seen.add(str(identifier))
         result.append({"player_id": f"espn:{identifier}", "player": name.strip(),
-                       "team": expected_team, "source": "ESPN team roster (unconfirmed)"})
+                       "team": expected_team, "position": (profile.get("position") or {}).get("abbreviation"),
+                       "source": "ESPN team roster (unconfirmed)"})
     if not result:
         raise NBADataError("ESPN team roster has no usable athletes")
     return result

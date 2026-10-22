@@ -37,7 +37,10 @@ def defensive_table_html(frame, show_ranks=True):
             cls='def-over' if not pd.isna(value) and not pd.isna(line) and value>line else ''
             tip=f'{int(r["H2H N"])} head-to-head games in loaded window' if field=='H2H' else 'Observed average, not a hit probability'
             cells.append(f'<td class="{cls}" title="{tip}">{number(value)}</td>')
-        cells += [f'<td>{number(r["Projection"])}</td>',f'<td>{number(r.get("Model Min"))}</td>']
+        evidence=escape(str(r.get('Evidence','Unclassified history')))
+        minutes_tip=escape(str(r.get('Minutes note','Role unconfirmed'))+f" · last-five range: {number(r.get('Minutes low'))}–{number(r.get('Minutes high'))} minutes")
+        cells += [f'<td title="{evidence}">{number(r["Projection"])}<small style="display:block;font-size:9px;color:#c7a6dd">{evidence}</small></td>',
+                  f'<td title="{minutes_tip}">{number(r.get("Model Min"))}</td>']
         for label in DEF_STATS.values():
             value=r.get(label)
             rank=r.get('rank_'+label)
@@ -100,7 +103,7 @@ def interactive_table_html(frame, show_ranks=True):
         for(const th of table.tHead.rows[0].cells)th.removeAttribute('aria-sort');
         cell.setAttribute('aria-sort',ascending?'ascending':'descending');
         function value(row){const text=row.cells[index].textContent.trim();
-          return index<3?text:(text==='—'?null:parseFloat(text));}
+          return index<3?text:(text.startsWith('—')?null:parseFloat(text));}
         rows.sort((a,b)=>{const x=value(a),y=value(b);
           if(x===null||Number.isNaN(x))return y===null||Number.isNaN(y)?0:1;
           if(y===null||Number.isNaN(y))return -1;

@@ -166,3 +166,6 @@ never zero-filled. Tests cover projection math, future filtering, traded-player
 history, conflicting duplicates, positional rank direction/ties/coverage,
 HTML escaping, rank visibility, and parity of walk-forward comparison dates.
 The new projection formula is a research model, not a demonstrated improvement.
+
+
+Regular-roster v2: Live October 22, 2026 audit retrieved 57 verified regular-season games, no collection failures, 68 current roster entries, 152 labeled prop references for 38 players. McCain 3PM previous-season reference 0.90 at 16 historical minutes replaces the preseason-derived 3.8. First 152 pre-tip records saved before scheduled games. No scored future results exist. NBA.com schedule returned 403; stats endpoint timed out locally. Offline suite: 430 tests, including season isolation, roster exclusion, pre-tip capture, append-only records and missing/DNP handling.

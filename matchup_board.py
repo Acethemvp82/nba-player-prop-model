@@ -44,6 +44,10 @@ def build_matchup_board(observations, forecasts, opponents, slate_date, prop='po
                   'Model Min':selected.get('forecast_minutes'), 'Recent Min':selected.get('recent_minutes'),
                   'Sample':selected.get('sample_games',len(sample)),
                   'Status':any_forecast.get('availability','Unknown — no current report'),
+                  'Evidence':selected.get('evidence','Insufficient history'),
+                  'Current GP':selected.get('current_season_games',0),
+                  'Minutes note':selected.get('minutes_note','Role unconfirmed'),
+                  'Minutes low':selected.get('minutes_low'), 'Minutes high':selected.get('minutes_high'),
                   'Readiness':selected.get('research_readiness','below_minimum')}
         for key,label in STATS.items():
             defense=context.get((opponent,group,key),{})

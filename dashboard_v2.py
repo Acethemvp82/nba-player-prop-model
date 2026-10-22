@@ -1,12 +1,16 @@
 """Clean NBA research dashboard. No fabricated betting probabilities or odds."""
 from datetime import datetime, timezone
 import os
+import json
+from pathlib import Path
 from zoneinfo import ZoneInfo
 import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
 
 from espn_schedule import espn_games_on
+from season_schedule import games_on as nba_games_on
+from slate_evidence import collect_slate_evidence, roster_observations
 from espn_history import collect_espn_history, espn_final_game_players
 from projection_core import core_projections as build_pregame_baseline_board
 from position_defense import positional_allowance as matchup_context
@@ -27,14 +31,23 @@ def schedule_for(day):
     return espn_games_on(day)
 
 @st.cache_data(ttl=3600, show_spinner=False)
+def official_schedule_check(day, matchups):
+    try:
+        games=nba_games_on(day)
+        if not games: return 'NBA.com: no matching date in available schedule; not cross-checked'
+        official={(g['awayTeam']['teamTricode'],g['homeTeam']['teamTricode']) for g in games}
+        return 'NBA.com schedule agrees with ESPN' if official==set(matchups) else 'NBA.com / ESPN schedule disagreement — verify slate'
+    except Exception as exc:
+        return 'NBA.com cross-check unavailable: '+str(exc)
+
+
+@st.cache_data(ttl=3600, show_spinner=False)
 def final_for(event_id, schema_version=2):
     return espn_final_game_players(event_id)
 
 @st.cache_data(ttl=3600, show_spinner=False)
-def history_for(day, days, cap, schema_version="positional-core-v1"):
-    return collect_espn_history(
-        day, days=days, max_games=cap,
-        schedule_loader=schedule_for, boxscore_loader=final_for)
+def history_for(day, days, cap, schema_version="regular-roster-v2"):
+    return collect_slate_evidence(day, schedule_for(day), max_games=cap, boxscore_loader=final_for)
 
 def tipoff_et(value):
     try:
@@ -62,11 +75,12 @@ def render_dashboard():
     with st.sidebar:
         st.header("Slate controls")
         day = st.date_input("Slate date", datetime.now(ET).date())
-        lookback = st.select_slider("History window (days)", options=[7,14,21,30], value=21)
-        cap = st.select_slider("Completed games to retrieve", options=[10,20,30,50,75,100], value=100)
+        lookback = 21
+        st.caption("Regular season only · latest 15 games per slate team, including the previous season when needed.")
+        cap = st.select_slider("Completed games to retrieve", options=[100,200,300,450], value=300)
         refresh = st.button("Build / refresh projections", type="primary", use_container_width=True)
         st.caption("History cached for one hour. Line feed requires a configured provider key.")
-    key = (day.isoformat(),lookback,cap,"positional-core-v1")
+    key = (day.isoformat(),lookback,cap,"regular-roster-v2")
     if refresh:
         schedule_for.clear(); final_for.clear(); history_for.clear(); injuries_for.clear()
     render_schedule(day.isoformat())
@@ -93,8 +107,21 @@ def render_dashboard():
         st.info("History has not loaded for these settings. Use **Build / refresh projections** to retry.")
         return
     history = st.session_state["nba_v2_history"]
-    observations = history.get("observations",[])
-    context = matchup_context(observations,day.isoformat())
+    all_observations = history.get("observations",[])
+    observations = roster_observations(history)
+    # Defensive evidence must keep every observed opposing player, including traded players.
+    current_year=history.get('season_year')
+    defense_rows=[r for r in all_observations if r.get('season_year')==current_year] if current_year else all_observations
+    if current_year:
+        current_games=len({r['game_id'] for r in defense_rows})
+        defense_period=st.selectbox('Defensive evidence season',['Current regular season','Previous regular season — reference'],index=1 if current_games<5 else 0)
+        defense_year=current_year if defense_period=='Current regular season' else current_year-1
+        defense_rows=[r for r in all_observations if r.get('season_year')==defense_year]
+        st.caption(f'Defensive allowance: {defense_year-1}–{str(defense_year)[-2:]} regular season, latest loaded games. Previous-season ranks describe past defenses and do not confirm current strength.')
+    context = matchup_context(defense_rows,day.isoformat())
+    if history.get('roster_checked'):
+        st.info("Regular-season evidence only. Prior-season references use last season's production and minutes; current roles and starters remain unconfirmed. Defensive evidence season is selectable and labeled.")
+        st.caption(f"Roster identities checked for {len({r['team'] for r in history.get('roster',[])})} of {len(opponents)} slate teams. Preseason is excluded.")
     forecasts = [{**r,'opponent':opponents[r['team']]} for r in
                  build_pregame_baseline_board(observations,day.isoformat(),min_games=5)
                  if r.get('team') in opponents]
@@ -112,6 +139,9 @@ def render_dashboard():
         selected_label=st.selectbox("Selected prop",list(PROPS.values()))
     prop=next(k for k,v in PROPS.items() if v==selected_label)
     rows=build_matchup_board(observations,forecasts,opponents,day.isoformat(),prop,context)
+    if history.get('roster_checked'):
+        members={(r['player_id'],r['team']) for r in history.get('roster',[])}
+        rows=[r for r in rows if (r['player_id'],r['Team']) in members]
     # Reported status also applies to players with sparse history.
     if injury_feed:
         for r in rows: r['Status']=reported_status(injury_feed,r['Player'],r['Team'],now)
@@ -131,7 +161,7 @@ def render_dashboard():
     covered=sum(any(f['team']==t for f in forecasts) for t in opponents)
     st.caption(f"{len(games)} games · {len(opponents)} teams · {covered} teams with minutes-based projections · "
                + st.session_state.get("nba_v2_loaded_at","Unknown build time"))
-    st.caption(f"Line, L10, L5, H2H and Proj follow {selected_label}. The team column is the DEFENSE. "
+    st.caption(f"Line, L10, L5, H2H and Proj follow {selected_label}. L10/L5 may span regular seasons when current history is short. The team column is the DEFENSE. "
                "Colored stats are per-game allowance to all Guards (G), Forwards (F), or Centers (C). "
                "Ranks compare qualified teams in this loaded sample; the denominator is shown. "
                "Broad G/F labels are not inferred PG/SG roles.")
@@ -151,10 +181,10 @@ def render_dashboard():
         by,asc=sorting[sort_choice]
         frame=frame.sort_values(by,ascending=asc,na_position='last').reset_index(drop=True)
         frame.insert(0,'Row',range(1,len(frame)+1))
-        st.caption(f"{len(frame)} players shown · {int(frame['Def Rank'].notna().sum())} with ranked position evidence · blank projection = insufficient current-team history")
+        st.caption(f"{len(frame)} players shown · {int(frame['Def Rank'].notna().sum())} with ranked position evidence · blank projection = insufficient same-team regular-season history")
         columns=['Row','Team','Pos','Group','Player','Opponent','Line','L10','L5','H2H','H2H N',
                  'Projection','Model Min','Recent Min','Points','Rebounds','Assists','3PM','Steals','Blocks',
-                 'Def Rank','Rank Teams','Defense Games','Sample','Status']
+                 'Def Rank','Rank Teams','Defense Games','Sample','Evidence','Current GP','Minutes note','Status']
         components.html(interactive_table_html(frame,show_ranks=show_ranks), height=750, scrolling=True)
         st.caption("Click headings to sort. Click a defense or position to filter displayed rows; Clear table filters resets those clicks. Filters above control the source rows and CSV export.")
         with st.expander("Board data and sample counts"):
@@ -168,10 +198,14 @@ def render_dashboard():
     with st.expander("Player details, lines and minutes scenarios"):
         if forecasts: render_player_research(forecasts,history,day.isoformat())
         else: st.caption('Player line comparison needs a qualifying baseline.')
+    render_saved_results()
     with st.expander("Data coverage and model checks"):
+        if history.get('roster_checked'):
+            st.write(official_schedule_check(day.isoformat(),tuple(sorted((g['awayTeam']['teamTricode'],g['homeTeam']['teamTricode']) for g in games))))
+            st.caption('Working statistics source: ESPN verified final boxscores. NBA.com IDs are never substituted for ESPN IDs.')
         coverage,sparse=slate_coverage(observations,day.isoformat(),opponents,forecasts)
         if coverage: st.dataframe(pd.DataFrame(coverage),hide_index=True,use_container_width=True)
-        st.caption('Historical team membership does not confirm current roster or starters. Samples may include preseason.')
+        st.caption('Current roster membership does not confirm availability or starters. Regular-season history is used; prior-season references are labeled.')
         st.write({k:history.get(k) for k in ['games_loaded','games_requested','dates_checked','eligible_games_omitted']})
         if history.get('failures'): st.dataframe(pd.DataFrame(history['failures']),hide_index=True)
         if injury_feed: st.caption('Injury feed retrieved: '+injury_feed['retrieved_at'])
@@ -182,7 +216,7 @@ def render_dashboard():
     with st.expander("How to read this board"):
         st.write('L10 and L5 are means of up to ten and five available games, not guaranteed full samples. '
                  'H2H is the observed average against this opponent within the loaded window; its sample is shown. '
-                 'Proj uses median last-five minutes times weighted per-minute production, requiring five valid games on the current historical team. '
+                 'Proj uses median last-five minutes times weighted per-minute production, requiring five valid regular-season games on the same team. Previous-season references are separated from current-season forecasts. '
                  'Colored stats show observed allowance to the full position group. Rank 1 is the most allowed among qualified sample teams, not a league-wide rank unless all 30 qualify. '
                  'Position is shown only when provided by a completed-game source. '
                  'Lines are blank until entered in Player details or copied from the configured provider feed.')
@@ -275,12 +309,14 @@ def render_player_research(forecasts, history, day):
     label = st.selectbox("Player and prop", sorted(options))
     selected = options[label]
     games = player_games(history.get("observations", []), selected['player_id'], selected['prop'], day)
+    st.write('Evidence: ' + selected.get('evidence','Unclassified history'))
+    st.caption(selected.get('minutes_note','Role unconfirmed') + f" · current-season appearances: {selected.get('current_season_games',0)}")
     st.write("Reported availability: " + selected.get("availability", "Unknown"))
     render_live_quote(selected, day)
     st.caption("Validated model hit probability: unavailable. The current evaluation sample "
                "does not establish calibrated probabilities; historical hit counts are not a substitute.")
     a, b, c = st.columns(3)
-    a.metric("Baseline", f"{selected['baseline']:.1f}")
+    a.metric("Reference estimate" if selected.get("evidence")=="Prior-season reference" else "Projection", f"{selected['baseline']:.1f}")
     b.metric("Model minutes", f"{selected.get('forecast_minutes',selected['recent_minutes']):.1f}")
     c.metric("Training appearances", str(selected["sample_games"]))
     cols = st.columns(2)
@@ -374,3 +410,26 @@ def render_live_quote(selected, day):
             else:
                 st.info("No unique fresh FanDuel over quote for this player and prop. "
                         "The market may be unavailable, stale, ambiguous or already started.")
+
+
+def render_saved_results():
+    with st.expander("Saved pregame forecasts and actual results"):
+        st.caption("First pre-tip estimates are saved by a scheduled GitHub workflow. Prior-season references are tracked separately. Missing or DNP results are not treated as zero.")
+        root=Path(__file__).resolve().parent/'data'
+        snapshots=list((root/'forecasts').glob('*.json'))
+        st.caption(f"{len(snapshots)} saved slate dates. Automatic capture runs three times daily; only games still scheduled before tipoff qualify.")
+        path=root/'forecast-results.json'
+        if not path.exists():
+            st.info("No saved results yet. Tracking starts with the next successful pregame capture.")
+            return
+        try: result=json.loads(path.read_text());rows=result.get('results',[])
+        except (ValueError,OSError):
+            st.warning("Saved results could not be read.");return
+        if not rows:
+            st.info("No scored saved forecasts yet; accuracy remains unknown.")
+        else:
+            frame=pd.DataFrame(rows)
+            summary=frame.groupby(['evidence','prop']).agg(Scored=('actual','count'),Model_MAE=('absolute_error','mean'),Recent_average_MAE=('reference_error','mean')).reset_index()
+            st.dataframe(summary,hide_index=True,use_container_width=True)
+            st.dataframe(frame[['slate_date','player','team','prop','evidence','baseline','actual','reference_last5','absolute_error']],hide_index=True,use_container_width=True)
+        st.caption('Results updated: '+str(result.get('updated_at','Unknown')))

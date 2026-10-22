@@ -9,7 +9,7 @@ from historical_stats import _day
 
 ESPN_URL = "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard"
 # ESPN occasionally uses two-letter team abbreviations; NBA feeds use tricodes.
-ESPN_TO_NBA = {"NY": "NYK", "GS": "GSW", "SA": "SAS", "NO": "NOP"}
+ESPN_TO_NBA = {"NY": "NYK", "GS": "GSW", "SA": "SAS", "NO": "NOP", "UTAH": "UTA"}
 
 
 def espn_games_on(day):
