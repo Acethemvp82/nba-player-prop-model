@@ -18,13 +18,16 @@ from defensive_table import interactive_table_html
 from csv_export import safe_spreadsheet_cell
 from prop_signal import prop_signal
 from validation_panel import render_paper_capture, render_market_validation
+from market_validation import make_market_record, deduplicate
+from prospective_probability import load_forecast_archive
 from slate_coverage import slate_coverage
 from baseline_backtest import evaluate_baselines
+from role_validation import evaluate_role_scenario
 from player_research import player_games, compare_line, minutes_scenario
 from matchup_board import build_matchup_board, STATS
-from live_sources import fetch_injuries, reported_status, fetch_event_odds, select_quote
+from live_sources import fetch_injuries, reported_status, fetch_event_odds, select_quote, select_quote_pair, quote_matches_game
 
-BOARD_RELEASE = "grading-audit-v2"
+BOARD_RELEASE = "role-checks-v1"
 
 ET = ZoneInfo("America/New_York")
 PROPS = {"points": "Points", "rebounds": "Rebounds",
@@ -174,17 +177,19 @@ def render_dashboard():
     if rows:
         frame=pd.DataFrame(rows)
         for i,r in frame.iterrows():
-            frame.at[i,'Line']=st.session_state.get('line_'+str(r['player_id'])+prop)
+            frame.at[i,'Line']=st.session_state.get('line_'+day.isoformat()+'_'+str(r['player_id'])+prop)
         signals=[prop_signal(r) for _,r in frame.iterrows()]
         frame['Prop signal']=[s[0] for s in signals]
         frame['Signal reason']=[s[2] for s in signals]
-        st.caption("PLAYER PROP COLORS: Green = current-season estimate above your entered line; red = below line or reported unavailable; amber = research only, small sample or uncertain minutes; gray = missing estimate/line. These are comparisons, not proven betting tiers.")
+        st.caption("PLAYER PROP COLORS: Green = current-season estimate above your entered line after sample, role and availability checks; red = below line or reported unavailable; amber = research only, small sample or uncertain minutes; gray = missing estimate/line. These are comparisons, not proven betting tiers.")
         frame=frame[frame['Opponent'].isin(teams) & frame['Player'].str.contains(search,case=False,regex=False,na=False)]
         if position!='All': frame=frame[frame['Group']==position]
         if hide_unavailable: frame=frame[~frame['Status'].str.casefold().isin(['out','doubtful'])]
-        signal_view=st.selectbox('Player prop signal',['All signals','Above line','Below line','Research only','Needs data / line'])
+        signal_view=st.selectbox('Player prop signal',['All signals','Above line','Below line','Research only','Role / minutes review','Needs data / line'])
         if signal_view in ('Above line','Below line','Research only'):
             frame=frame[frame['Prop signal']==signal_view]
+        elif signal_view=='Role / minutes review':
+            frame=frame[frame['Prop signal'].isin(['Role changed','Role unconfirmed','Minutes uncertain'])]
         elif signal_view=='Needs data / line':
             frame=frame[frame['Prop signal'].isin(['No estimate','Add line'])]
         st.caption(f"Player comparisons: {int((frame['Prop signal']=='Above line').sum())} above line · {int((frame['Prop signal']=='Below line').sum())} below line · {int((frame['Prop signal']=='Research only').sum())} research only. No automatic sportsbook lines are connected.")
@@ -198,7 +203,7 @@ def render_dashboard():
         st.caption(f"{len(frame)} players shown · {int(frame['Def Rank'].notna().sum())} with ranked position evidence · blank projection = insufficient same-team regular-season history")
         columns=['Row','Team','Pos','Group','Player','Opponent','Line','L10','L5','H2H','H2H N',
                  'Projection','Model Min','Recent Min','Points','Rebounds','Assists','3PM','Steals','Blocks',
-                 'Prop signal','Signal reason','Def Rank','Rank Teams','Defense Games','Sample','Evidence','Current GP','Minutes note','Status']
+                 'Prop signal','Signal reason','Def Rank','Rank Teams','Defense Games','Sample','Evidence','Current GP','Minutes note','Role status','Role note','Current Min','Status']
         components.html(interactive_table_html(frame,show_ranks=show_ranks), height=750, scrolling=True)
         st.caption("Click headings to sort. Click a defense or position to filter displayed rows; Clear table filters resets those clicks. Filters above control the source rows and CSV export.")
         with st.expander("Board data and sample counts"):
@@ -228,6 +233,7 @@ def render_dashboard():
             st.caption('Short-history averages — observed results, not forecasts')
             st.dataframe(pd.DataFrame(sparse),hide_index=True,use_container_width=True)
         render_validation(history,day.isoformat())
+        render_role_validation(history,day.isoformat())
     with st.expander("How to read this board"):
         st.write('L10 and L5 are means of up to ten and five available games, not guaranteed full samples. '
                  'H2H is the observed average against this opponent within the loaded window; its sample is shown. '
@@ -322,10 +328,15 @@ def render_player_research(forecasts, history, day):
                "Recent outcomes are historical counts, not a predicted hit probability.")
     options = {f"{r['player']} · {r['team']} · {PROPS[r['prop']]}": r for r in forecasts}
     label = st.selectbox("Player and prop", sorted(options))
-    selected = options[label]
+    selected = {**options[label],'slate_date':day}
     games = player_games(history.get("observations", []), selected['player_id'], selected['prop'], day)
     st.write('Evidence: ' + selected.get('evidence','Unclassified history'))
     st.caption(selected.get('minutes_note','Role unconfirmed') + f" · current-season appearances: {selected.get('current_season_games',0)}")
+    st.caption(selected.get('role_note','Current role unconfirmed'))
+    if selected.get('role_recent_minutes') is not None:
+        st.caption(f"Latest current-season minutes median: {selected['role_recent_minutes']:.1f} over {selected.get('role_current_games',0)} appearances. This is observed usage, not confirmed minutes for today.")
+    if selected.get('role_status')=='changed':
+        st.warning('Observed minutes changed. Treat this estimate as research only until the current role is clearer.')
     st.write("Reported availability: " + selected.get("availability", "Unknown"))
     render_live_quote(selected, day)
     st.caption("Validated model hit probability: unavailable. The current evaluation sample "
@@ -337,10 +348,10 @@ def render_player_research(forecasts, history, day):
     cols = st.columns(2)
     with cols[0]:
         line = st.number_input("Sportsbook line (manual)", min_value=0.0, value=None, step=0.5,
-                               placeholder="Enter the current line", key="line_" + str(selected["player_id"]) + selected["prop"])
+                               placeholder="Enter the current line", key="line_" + day + "_" + str(selected["player_id"]) + selected["prop"])
     with cols[1]:
         odds = st.number_input("Over American odds (optional)", value=None, step=1,
-                               placeholder="For example, -110", key="odds_" + str(selected["player_id"]) + selected["prop"])
+                               placeholder="For example, -110", key="odds_" + day + "_" + str(selected["player_id"]) + selected["prop"])
     if line is not None:
         result = compare_line(games, line, odds)
         a, b, c = st.columns(3)
@@ -415,17 +426,29 @@ def render_live_quote(selected, day):
                 st.session_state.pop('nba_live_quote', None)
         cached = st.session_state.get('nba_live_quote')
         if cached and cached[0] == identity:
-            quote = select_quote(cached[1], selected['player'], selected['prop'], datetime.now(timezone.utc))
-            if quote:
-                st.write(f"FanDuel Over {quote['line']} at {quote['odds']:+d}; provider updated {quote['updated_at']}")
-                st.caption("Quotes older than 30 minutes and started events are rejected. "
-                           "Confirm the current offer in your sportsbook.")
+            pair = select_quote_pair(cached[1], selected['player'], selected['prop'], datetime.now(timezone.utc))
+            if pair:
+                st.write(f"FanDuel {pair['line']:g} · Over {pair['over_odds']:+d} / Under {pair['under_odds']:+d}")
+                st.caption('Provider updated: '+pair['updated_at']+'. Both sides must be fresh, on the same line, and before tipoff.')
                 if st.button("Copy fetched quote into comparison"):
-                    st.session_state['line_' + str(selected['player_id']) + selected['prop']] = float(quote['line'])
-                    st.session_state['odds_' + str(selected['player_id']) + selected['prop']] = int(quote['odds'])
+                    st.session_state['line_' + day + '_' + str(selected['player_id']) + selected['prop']] = float(pair['line'])
+                    st.session_state['odds_' + day + '_' + str(selected['player_id']) + selected['prop']] = int(pair['over_odds'])
+                    st.session_state['paper_under_' + day + '_' + str(selected['player_id']) + selected['prop']] = int(pair['under_odds'])
+                if st.button('Freeze fetched FanDuel quote for paper tracking'):
+                    try:
+                        matches=[g for g in schedule_for(day) if selected['team'] in [g.get(s,{}).get('teamTricode') for s in ('homeTeam','awayTeam')]]
+                        if len(matches)!=1: raise ValueError('No unique scheduled game for this player')
+                        if not quote_matches_game(cached[1],matches[0]): raise ValueError('Sportsbook and NBA schedule disagree on matchup or tipoff; refresh before freezing')
+                        record=make_market_record(selected,matches[0],pair['line'],pair['over_odds'],pair['under_odds'],
+                            'provider_fanduel',datetime.now(timezone.utc),pair['updated_at'],probability_archive=load_forecast_archive())
+                        saved,invalid=deduplicate(st.session_state.get('nba_paper_records',[])+[record])
+                        st.session_state['nba_paper_records']=saved
+                        st.success('Provider quote frozen in this session. Download the paper ledger below to keep it across restarts.')
+                        if not record['eligible']: st.info(record['signal']+': research only; no simulated bet.')
+                    except ValueError as exc: st.error(str(exc))
             else:
-                st.info("No unique fresh FanDuel over quote for this player and prop. "
-                        "The market may be unavailable, stale, ambiguous or already started.")
+                st.info('No unique fresh two-sided FanDuel quote for this player and prop. The market may be missing, stale, ambiguous or already started.')
+
 
 
 def render_saved_results():
@@ -456,3 +479,19 @@ def render_saved_results():
             st.dataframe(summary,hide_index=True,use_container_width=True)
             st.dataframe(frame[['slate_date','player','team','prop','evidence','baseline','actual','reference_last5','absolute_error']],hide_index=True,use_container_width=True)
         st.caption('Results updated: '+str(result.get('updated_at','Unknown')))
+
+
+@st.cache_data(show_spinner=False)
+def role_validation_for(observations,day):
+    return evaluate_role_scenario(observations,day)
+
+
+def render_role_validation(history,day):
+    st.subheader('Current-role minutes comparison')
+    st.caption('Tests a candidate using the latest three current-season minutes against the unchanged model and last-five benchmark on identical outcomes. Training ends before each result date; only the selected slate season is scored. Reconstructed historical forecasts; no automatic formula changes.')
+    result=role_validation_for(history.get('observations',[]),day)
+    if result['summary']:
+        st.dataframe(pd.DataFrame(result['summary']).round(3),hide_index=True,use_container_width=True)
+        st.download_button('Download current-role comparison audit',pd.DataFrame(result['details']).map(safe_spreadsheet_cell).to_csv(index=False),file_name='nba-role-validation.csv',mime='text/csv')
+    else:
+        st.info('Not enough earlier regular-season history for a paired current-role test yet. Three current-season same-team appearances and a qualifying baseline are required before the result date.')

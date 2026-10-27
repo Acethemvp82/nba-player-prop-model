@@ -3,6 +3,7 @@ from collections import defaultdict
 from math import isfinite
 from statistics import median
 from historical_stats import _day, _valid_game_id
+from role_checks import minutes_role
 
 PROPS = ('points','rebounds','assists','threes')
 
@@ -43,7 +44,7 @@ def core_projections(observations, slate_date, min_games=5):
         # Do not forecast a new team using a former team's role/minutes.
         recent=[r for r in games if r['team']==latest['team']][:10]
         current_year=cutoff.year+(cutoff.month>=7)
-        current=[r for r in recent if r.get('season_year')==current_year]
+        current=[r for r in games if r['team']==latest['team'] and r.get('season_year')==current_year]
         tagged=any(r.get('season_year') for r in recent)
         if tagged:
             # Never blend preseason or old-season minutes into a current-season forecast.
@@ -56,6 +57,7 @@ def core_projections(observations, slate_date, min_games=5):
         low=min(r['minutes'] for r in recent[:5]); high=max(r['minutes'] for r in recent[:5])
         minutes_note='Variable minutes' if high-low>12 else 'Historical minutes; role unconfirmed'
         minutes=min(48.0,float(median(r['minutes'] for r in recent[:5])))
+        role=minutes_role(current,minutes,evidence)
         age=(cutoff-_day(latest['game_date'])).days
         for prop in PROPS:
             sample=[(i,r) for i,r in enumerate(recent) if valid_number(r.get(prop))]
@@ -63,7 +65,7 @@ def core_projections(observations, slate_date, min_games=5):
             weighted_stat=sum((0.85**i)*r[prop] for i,r in sample)
             weighted_minutes=sum((0.85**i)*r['minutes'] for i,r in sample)
             rate=weighted_stat/weighted_minutes
-            output.append({'player_id':pid,'player':latest.get('player'),'team':latest['team'],
+            output.append({**role,'player_id':pid,'player':latest.get('player'),'team':latest['team'],
                 'evidence':evidence,'source_season':source_year,'current_season_games':len(current),
                 'minutes_low':round(low,1),'minutes_high':round(high,1),'minutes_note':minutes_note,
                 'reference_last5':round(sum(r[prop] for _,r in sample[:5])/len(sample[:5]),2),

@@ -6,7 +6,8 @@ from math import isfinite
 import json
 from prop_signal import prop_signal
 
-POLICY='line-gap-v1'
+POLICY='line-gap-role-v2'
+SUPPORTED_POLICIES=('line-gap-v1',POLICY)
 
 
 def stamp(value):
@@ -28,7 +29,7 @@ def direction(estimate,line):
     return 'over' if estimate>line else 'under' if estimate<line else 'pass'
 
 
-def make_market_record(forecast,game,line,over_odds,under_odds,source,now=None,quote_updated=None):
+def make_market_record(forecast,game,line,over_odds,under_odds,source,now=None,quote_updated=None,probability_archive=None):
     now=now or datetime.now(timezone.utc)
     tip=stamp(game.get('gameTimeUTC'))
     if now.tzinfo is None or tip is None or now>=tip: raise ValueError('Only pre-tip entries can be frozen')
@@ -49,14 +50,20 @@ def make_market_record(forecast,game,line,over_odds,under_odds,source,now=None,q
     if q is None or not -120<=(now-q).total_seconds()<=1800 or q>=tip: raise ValueError('Quote is stale, future-dated or after tip')
     label,_,reason=prop_signal({'Projection':forecast['baseline'],'Line':line,'Evidence':forecast.get('evidence'),
         'Sample':forecast.get('sample_games'),'Minutes low':forecast.get('minutes_low'),'Minutes high':forecast.get('minutes_high'),
-        'Readiness':forecast.get('research_readiness'),'Status':forecast.get('availability','Unknown')})
+        'Readiness':forecast.get('research_readiness'),'Status':forecast.get('availability','Unknown'),
+        'Role status':forecast.get('role_status'),'Role note':forecast.get('role_note')})
     eligible=label in ('Above line','Below line','At line')
     row={k:forecast.get(k) for k in ('player_id','player','team','prop','baseline','reference_last5','evidence','slate_date','sample_games','forecast_minutes')}
+    from role_checks import ROLE_FIELDS
+    row.update({k:forecast.get(k) for k in ROLE_FIELDS+('availability','minutes_low','minutes_high','research_readiness')})
     row.update(event_id=str(game['espnEventId']),tipoff=tip.isoformat(),captured_at=now.isoformat(),quote_updated=q.isoformat(),
         line=float(line),over_odds=int(over_odds),under_odds=int(under_odds),source=source,
         model_version='regular-roster-v2',policy_version=POLICY,eligible=eligible,signal=label,signal_reason=reason,
         model_side=direction(forecast['baseline'],line) if eligible else 'pass',
         reference_side=direction(forecast['reference_last5'],line) if eligible else 'pass',stake_units=1)
+    from prospective_probability import estimate_probability, VERSION
+    row['probability_evidence']=(estimate_probability(forecast,line,probability_archive or {}) if eligible else
+        {'version':VERSION,'status':'forecast_ineligible'})
     row['record_id']=record_id(row)
     return row
 
@@ -67,7 +74,7 @@ def record_id(row):
 
 def validate_record(row):
     try:
-        if row['record_id']!=record_id(row) or row['policy_version']!=POLICY: return False
+        if row['record_id']!=record_id(row) or row['policy_version'] not in SUPPORTED_POLICIES: return False
         captured,tip,q=(stamp(row[k]) for k in ('captured_at','tipoff','quote_updated'))
         if None in (captured,tip,q) or not captured<tip or not q<tip or not -120<=(captured-q).total_seconds()<=1800: return False
         if not all(number(row[k]) for k in ('baseline','reference_last5','line')) or row['line']*2!=int(row['line']*2): return False
@@ -75,6 +82,15 @@ def validate_record(row):
         if row['source'] not in ('manual_unverified','provider_fanduel') or row['stake_units']!=1 or type(row['eligible']) is not bool: return False
         if row['prop'] not in ('points','rebounds','assists','threes') or not str(row['event_id']).isdigit(): return False
         if row['eligible'] and row['signal'] not in ('Above line','Below line','At line'): return False
+        if row['policy_version']==POLICY:
+            from prospective_probability import valid_evidence
+            if not valid_evidence(row.get('probability_evidence'),row['slate_date']):return False
+            label,_,_=prop_signal({'Projection':row['baseline'],'Line':row['line'],'Evidence':row['evidence'],
+                'Sample':row.get('sample_games'),'Status':row.get('availability'),
+                'Minutes low':row.get('minutes_low'),'Minutes high':row.get('minutes_high'),
+                'Readiness':row.get('research_readiness'),'Role status':row.get('role_status'),
+                'Role note':row.get('role_note')})
+            if row['signal']!=label or row['eligible']!=(label in ('Above line','Below line','At line')): return False
         for key,estimate in (('model_side','baseline'),('reference_side','reference_last5')):
             if row[key]!=(direction(row[estimate],row['line']) if row['eligible'] else 'pass'): return False
         return True
@@ -105,7 +121,7 @@ def grade_records(records,finals):
     clean,invalid=deduplicate(records);graded=[]
     for row in clean:
         matches=[r for r in finals.get(row['event_id'],[]) if r.get('player_id')==row['player_id'] and r.get('team')==row['team'] and r.get('is_final') is True]
-        actual=matches[0].get(row['prop']) if len(matches)==1 and number(matches[0].get('minutes')) and matches[0]['minutes']>0 else None
+        actual=matches[0].get(row['prop']) if len(matches)==1 and number(matches[0].get('minutes')) and 0<matches[0]['minutes']<=60 else None
         result={**row,'actual':actual if number(actual) else None,
                 'actual_minutes':matches[0]['minutes'] if number(actual) else None}
         for method in ('model','reference'):

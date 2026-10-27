@@ -41,7 +41,7 @@ def defensive_table_html(frame, show_ranks=True):
             tip=f'{int(r["H2H N"])} head-to-head games in loaded window' if field=='H2H' else 'Observed average, not a hit probability'
             cells.append(f'<td class="{cls}" title="{tip}">{number(value)}</td>')
         evidence=escape(str(r.get('Evidence','Unclassified history')))
-        minutes_tip=escape(str(r.get('Minutes note','Role unconfirmed'))+f" · last-five range: {number(r.get('Minutes low'))}–{number(r.get('Minutes high'))} minutes")
+        minutes_tip=escape(str(r.get('Minutes note','Role unconfirmed'))+' · '+str(r.get('Role note','Current role unconfirmed'))+f" · last-five range: {number(r.get('Minutes low'))}–{number(r.get('Minutes high'))} minutes")
         cells += [f'<td title="{evidence}">{number(r["Projection"])}<small style="display:block;font-size:9px;color:#c7a6dd">{evidence}</small></td>',
                   f'<td title="{minutes_tip}">{number(r.get("Model Min"))}</td>']
         for label in DEF_STATS.values():

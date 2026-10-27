@@ -138,7 +138,8 @@ def test_authorized_feed_quote_can_fill_comparison_without_exposing_key(monkeypa
     now=datetime.now(timezone.utc)
     payload={'commence_time':(now+timedelta(hours=3)).isoformat(),'bookmakers':[
         {'key':'fanduel','markets':[{'key':'player_points','last_update':now.isoformat(),
-          'outcomes':[{'name':'Over','description':'Alpha','point':20.5,'price':-110}]}]}]}
+          'outcomes':[{'name':'Over','description':'Alpha','point':20.5,'price':-110},
+                          {'name':'Under','description':'Alpha','point':20.5,'price':-105}]}]}]}
     monkeypatch.setattr(dashboard,'fetch_event_odds',lambda *a:payload)
     at=AppTest.from_file(str(Path(__file__).resolve().parents[1] / 'app.py'),default_timeout=20).run()
     next(b for b in at.button if b.label=='Fetch current FanDuel lines for this matchup').click().run()
@@ -166,3 +167,37 @@ def test_reported_out_players_hidden_without_claiming_others_active(monkeypatch)
     assert not at.exception
     board=next(d.value for d in at.dataframe if 'Projection' in d.value.columns)
     assert board.iloc[0]['Status']=='Out'
+
+
+def test_two_sided_provider_quote_can_be_frozen_and_downloaded(monkeypatch):
+    from datetime import datetime,timezone,timedelta
+    from zoneinfo import ZoneInfo
+    now=datetime.now(timezone.utc); tip=now+timedelta(hours=2)
+    day=tip.astimezone(ZoneInfo('America/New_York')).date().isoformat()
+    game={'espnEventId':'123','homeTeam':{'teamTricode':'NYK'},'awayTeam':{'teamTricode':'BOS'},
+          'gameTimeUTC':tip.isoformat(),'gameStatusText':'Scheduled','espnCompleted':False}
+    payload={'id':'abc','home_team':'New York Knicks','away_team':'Boston Celtics','commence_time':tip.isoformat(),
+        'bookmakers':[{'key':'fanduel','markets':[{'key':'player_points','last_update':now.isoformat(),
+            'outcomes':[{'name':'Over','description':'Alpha','point':18.5,'price':-110},
+                        {'name':'Under','description':'Alpha','point':18.5,'price':125}]}]}]}
+    monkeypatch.setattr(dashboard,'odds_key',lambda:'do-not-display')
+    monkeypatch.setattr(dashboard,'fetch_event_odds',lambda *a:payload)
+    monkeypatch.setattr(dashboard,'schedule_for',lambda *a:[game])
+    code=f'''
+from dashboard_v2 import render_live_quote
+from validation_panel import render_paper_capture
+selected={{'player_id':'espn:1','player':'Alpha','team':'NYK','opponent':'BOS','prop':'points',
+'baseline':20.,'reference_last5':18.,'evidence':'Current season','sample_games':10,
+'forecast_minutes':30.,'minutes_low':28.,'minutes_high':34.,'role_status':'stable',
+'availability':'Not listed — unconfirmed','slate_date':{day!r}}}
+render_live_quote(selected,{day!r})
+render_paper_capture(selected,None,None,[])
+'''
+    at=AppTest.from_string(code).run()
+    next(b for b in at.button if b.label=='Fetch current FanDuel lines for this matchup').click().run()
+    next(b for b in at.button if b.label=='Freeze fetched FanDuel quote for paper tracking').click().run()
+    assert not at.exception
+    record=at.session_state['nba_paper_records'][0]
+    assert record['source']=='provider_fanduel' and record['under_odds']==125 and record['eligible']
+    assert any('Download frozen paper ledger JSON' in b.label for b in at.get('download_button'))
+    assert all('do-not-display' not in m.value for m in at.markdown)

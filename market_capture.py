@@ -2,14 +2,16 @@
 from datetime import datetime,timezone
 from pathlib import Path
 import json
-from live_sources import fetch_event_odds,select_quote,fetch_injuries,reported_status
+from live_sources import fetch_event_odds,select_quote_pair,quote_matches_game,fetch_injuries,reported_status
 from market_validation import make_market_record,deduplicate
+from prospective_probability import load_forecast_archive
 
 
 def capture_market_records(forecasts,games,key,now=None):
     clock=lambda:now if now is not None else datetime.now(timezone.utc)
     records=[];failures=[]
     if not key: return [],['Provider key absent; no market records created']
+    archive=load_forecast_archive()
     try: injury=fetch_injuries()
     except ValueError: injury=None
     for game in games:
@@ -18,16 +20,17 @@ def capture_market_records(forecasts,games,key,now=None):
         if not candidates: continue
         try: payload=fetch_event_odds(key,home,away,candidates[0]['slate_date'],clock())
         except ValueError as exc: failures.append(str(exc));continue
+        if not quote_matches_game(payload,game):
+            failures.append('Sportsbook and scheduled matchup/tipoff disagree; no records frozen');continue
         for r in candidates:
             observed_at=clock()
-            over=select_quote(payload,r['player'],r['prop'],observed_at,'Over')
-            under=select_quote(payload,r['player'],r['prop'],observed_at,'Under')
-            if not over or not under or over['line']!=under['line']: continue
+            pair=select_quote_pair(payload,r['player'],r['prop'],observed_at)
+            if not pair: continue
             status=reported_status(injury,r['player'],r['team'],observed_at) if injury else 'Report stale / unavailable'
             forecast={**r,'availability':status}
             try:
-                records.append(make_market_record(forecast,game,over['line'],over['odds'],under['odds'],
-                    'provider_fanduel',observed_at, min(over['updated_at'],under['updated_at'])))
+                records.append(make_market_record(forecast,game,pair['line'],pair['over_odds'],pair['under_odds'],
+                    'provider_fanduel',observed_at, pair['updated_at'],probability_archive=archive))
             except ValueError as exc: failures.append(str(exc))
     return records,failures
 

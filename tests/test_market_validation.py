@@ -9,7 +9,7 @@ GAME={'espnEventId':'123','gameTimeUTC':'2026-10-22T23:00Z','gameStatusText':'Sc
       'homeTeam':{'teamTricode':'NYK'},'awayTeam':{'teamTricode':'BOS'}}
 F={'player_id':'espn:1','player':'Example','team':'NYK','prop':'points','baseline':20.,'reference_last5':18.,
    'evidence':'Current season','slate_date':'2026-10-22','sample_games':10,'forecast_minutes':30.,
-   'minutes_low':28.,'minutes_high':34.,'availability':'Not listed — unconfirmed'}
+   'minutes_low':28.,'minutes_high':34.,'availability':'Not listed — unconfirmed','role_status':'stable'}
 
 
 def record(**changes):

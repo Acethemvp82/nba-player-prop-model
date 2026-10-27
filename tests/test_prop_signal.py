@@ -4,7 +4,7 @@ from prop_signal import prop_signal
 
 def row(**changes):
     return dict(Projection=20.,Line=18.5,Evidence='Current season',Sample=10,
-                **{'Minutes low':28.,'Minutes high':34.},Status='Not listed — unconfirmed')|changes
+                **{'Minutes low':28.,'Minutes high':34.,'Role status':'stable'},Status='Not listed — unconfirmed')|changes
 
 
 def test_line_direction_and_gate_priority():

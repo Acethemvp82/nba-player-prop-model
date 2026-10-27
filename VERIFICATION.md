@@ -172,3 +172,11 @@ Regular-roster v2: Live October 22, 2026 audit retrieved 57 verified regular-sea
 
 
 Prospective market validation: fixed line-gap-v1 rules, two-sided American prices, strict pre-tip capture, source-separated cohorts and one-unit paper returns compared with a frozen last-five benchmark. Tests cover unequal Over/Under prices, wins/losses/pushes/passes, missing/DNP/finality, stale quotes, post-tip and wrong-game rejection, first-record retention, checksum corruption and a Streamlit freeze→grade flow. Provider requests remain disabled unless NBA_CAPTURE_QUOTES=true and ODDS_API_KEY is configured in GitHub; no live authenticated odds access or positive betting results are claimed. Manual session ledgers must be downloaded/imported and are unverified, not tamper-proof.
+
+## Current-role release — October 27, 2026
+
+Role metadata, fail-closed availability checks, the versioned `line-gap-role-v2` policy, paired current-minutes scenario evaluation, two-sided direct quote freezing and an experimental prospective probability pipeline are implemented. All numerical baseline weights remain unchanged. Legacy v1 ledgers retain their frozen rules. Historical test comparisons do not automatically replace the production formula.
+
+The existing archive contains only prior-season scored references, which cannot fit the new probability distribution. A lack of current-season residual evidence leaves percentages unavailable. Synthetic tests exercise count/coverage thresholds, duplicate/conflict handling, pre-tip and earlier-date cutoffs, separate seasons/props, discrete pushes, checksum validation, later Brier scoring, policy compatibility and Streamlit quote freeze/download controls. Synthetic test success does not verify authenticated FanDuel access.
+
+Release verification: 480 tests pass locally, compilation and diff checks pass. A live October 27 slate retrieval loaded 88 verified regular-season finals with zero collection failures. Current roster filtering produced 252 prop rows for 63 players; 40 prop rows (10 players) had a substantial observed minutes shift. The reconstructed current-role scenario comparison abstained because this loaded window did not provide enough strictly earlier current-season usage before the scored outcomes. No authenticated FanDuel request or calibrated probability is claimed.

@@ -6,6 +6,8 @@ import pandas as pd
 import streamlit as st
 from market_validation import make_market_record,deduplicate,grade_records,summarize,validate_record,record_id
 
+from prospective_probability import load_forecast_archive, score_probability_records
+
 ROOT=Path(__file__).resolve().parent/'data'
 
 
@@ -19,12 +21,12 @@ def load_rows(path):
 def render_paper_capture(selected,line,over_odds,games):
     with st.expander('Freeze a pregame paper record'):
         st.caption('One hypothetical unit per eligible signal. Enter BOTH prices from the same sportsbook and line. Manual quotes and timestamps are unverified; this does not place a bet.')
-        under=st.number_input('Under American odds (for paper tracking)',value=None,step=1,key='paper_under_'+str(selected['player_id'])+selected['prop'])
+        under=st.number_input('Under American odds (for paper tracking)',value=None,step=1,key='paper_under_'+selected.get('slate_date','unknown')+'_'+str(selected['player_id'])+selected['prop'])
         if st.button('Freeze this line and forecast',disabled=line is None or over_odds is None or under is None):
             matches=[g for g in games if selected['team'] in [g.get(s,{}).get('teamTricode') for s in ('homeTeam','awayTeam')]]
             try:
                 if len(matches)!=1:raise ValueError('No unique scheduled game for this player')
-                record=make_market_record(selected,matches[0],line,over_odds,under,'manual_unverified')
+                record=make_market_record(selected,matches[0],line,over_odds,under,'manual_unverified',probability_archive=load_forecast_archive())
                 saved,invalid=deduplicate(st.session_state.get('nba_paper_records',[])+[record])
                 st.session_state['nba_paper_records']=saved
                 st.success('Paper record frozen for this session. Download the JSON below to keep it across restarts.')
@@ -39,7 +41,7 @@ def render_paper_capture(selected,line,over_odds,games):
 
 def render_market_validation(final_loader):
     with st.expander('Prospective paper results — lines, odds and returns'):
-        st.caption('Fixed rule line-gap-v1: eligible current-season estimate above line → Over; below line → Under; equal → pass. Ten current-season appearances and a last-five minutes range of at most 12 are required. The recent-average benchmark uses the same eligibility gate and captured prices. No weights are tuned from this report.')
+        st.caption('Fixed rule line-gap-role-v2: eligible current-season estimate above line → Over; below line → Under; equal → pass. Ten current-season appearances, a last-five minutes range of at most 12 and a stable observed role comparison are required. Changed or unknown roles stay research only. Legacy line-gap-v1 records retain their frozen rules. The recent-average benchmark uses the same eligibility gate and captured prices. No weights are tuned from this report.')
         canonical=load_rows(ROOT/'market-ledger.json')
         published=ROOT/'market-results.json'
         saved_results={}
@@ -87,4 +89,11 @@ def render_market_validation(final_loader):
             frame=pd.DataFrame(graded)
             st.dataframe(frame[['slate_date','player','prop','source','evidence','signal','line','over_odds','under_odds','model_side','actual','model_outcome','model_units','reference_side','reference_units']],hide_index=True,use_container_width=True)
             st.download_button('Download paper grading audit JSON',json.dumps({'records':graded,'summary':summarize(graded)},indent=2,allow_nan=False),file_name='nba-paper-results.json',mime='application/json')
+        st.subheader('Prospective probability checks')
+        probability_report=score_probability_records(graded)
+        if probability_report:
+            st.dataframe(pd.DataFrame(probability_report),hide_index=True,use_container_width=True)
+        else:
+            st.info('No resolved, pre-tip experimental probabilities to score yet. Estimation requires 100 current-season frozen residuals covering 20 games, 10 dates and 20 players for the selected prop. Prior-season references do not qualify.')
+        st.caption('Brier scores compare frozen conditional Over estimates with later non-push results. Experimental estimates are never automatically labeled proven. Pushes and unresolved results are excluded from this probability diagnostic.')
         st.caption('Paper grading: one unit risked; win profit = price payout, loss = −1, push = 0. Win percentage excludes pushes; ROI is net units / units risked including pushes. Missing/DNP stays unresolved; research-only signals are passes. No actual wagers or sportsbook-specific settlement adjustments are assumed. Multiple props from one game are correlated; inspect Games and Dates, not just entry count. A positive sample ROI does not establish an edge.')

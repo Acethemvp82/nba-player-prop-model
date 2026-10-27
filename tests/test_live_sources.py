@@ -15,7 +15,7 @@ def test_injury_unknown_is_not_active_and_report_age_is_checked():
 
 
 def quote():
-    return {'id':'abc','commence_time':'2026-10-21T23:00Z','bookmakers':[{'key':'fanduel','markets':[{'key':'player_points','last_update':'2026-10-21T19:50Z','outcomes':[{'name':'Over','description':'Test Player','point':20.5,'price':-110}]}]}]}
+    return {'id':'abc','home_team':'New York Knicks','away_team':'Boston Celtics','commence_time':'2026-10-21T23:00Z','bookmakers':[{'key':'fanduel','markets':[{'key':'player_points','last_update':'2026-10-21T19:50Z','outcomes':[{'name':'Over','description':'Test Player','point':20.5,'price':-110}]}]}]}
 
 
 def test_quotes_require_matching_player_market_freshness_and_unstarted_game():
@@ -52,3 +52,26 @@ def test_event_matching_checks_slate_and_teams_before_odds_request():
     with patch('live_sources._odds_get',return_value=[event]) as get:
         with pytest.raises(ValueError): fetch_event_odds('key','NYK','MIA','2026-10-21',NOW)
         assert get.call_count==1
+
+
+def test_two_sided_pair_rejects_mismatched_lines_or_missing_under():
+    from live_sources import select_quote_pair
+    q=quote()
+    assert select_quote_pair(q,'Test Player','points',NOW) is None
+    outcomes=q['bookmakers'][0]['markets'][0]['outcomes']
+    outcomes.append(outcomes[0]|{'name':'Under','point':21.5,'price':125})
+    assert select_quote_pair(q,'Test Player','points',NOW) is None
+    outcomes[-1]['point']=20.5
+    pair=select_quote_pair(q,'Test Player','points',NOW)
+    assert pair['over_odds']==-110 and pair['under_odds']==125
+
+
+def test_response_event_identity_includes_tipoff_and_teams():
+    event={'id':'abc','home_team':'New York Knicks','away_team':'Boston Celtics','commence_time':'2026-10-21T23:00Z'}
+    for changed in ({'home_team':'Miami Heat'},{'commence_time':'2026-10-21T23:30Z'}):
+        with patch('live_sources._odds_get',side_effect=[[event],quote()|changed]):
+            with pytest.raises(ValueError):fetch_event_odds('key','NYK','BOS','2026-10-21',NOW)
+    from live_sources import quote_matches_game
+    game={'homeTeam':{'teamTricode':'NYK'},'awayTeam':{'teamTricode':'BOS'},'gameTimeUTC':'2026-10-21T23:00Z'}
+    assert quote_matches_game(quote(),game)
+    assert not quote_matches_game(quote(),game|{'gameTimeUTC':'2026-10-21T23:30Z'})

@@ -102,6 +102,9 @@ def fetch_event_odds(key, team, opponent, slate_date, now):
         {'bookmakers':'fanduel','markets':','.join(MARKETS.values()),'oddsFormat':'american'})
     if not isinstance(payload,dict) or payload.get('id') != event['id']:
         raise ValueError('Odds response does not match requested event')
+    response_sides={NAME_TEAMS.get(payload.get('home_team')),NAME_TEAMS.get(payload.get('away_team'))}
+    if response_sides!={team,opponent} or utc(payload.get('commence_time'))!=utc(event.get('commence_time')):
+        raise ValueError('Odds response matchup or tipoff differs from the requested event')
     return payload
 
 
@@ -126,3 +129,21 @@ def select_quote(payload, player, prop, now, side="Over"):
                     quotes.append({'line':line,'odds':odds,'updated_at':stamp,'book':'FanDuel'})
     unique = {(q['line'],q['odds'],q['updated_at']):q for q in quotes}
     return next(iter(unique.values())) if len(unique) == 1 else None
+
+
+def select_quote_pair(payload, player, prop, now):
+    """A same-line Over/Under pair, each fresh, from the selected FanDuel event."""
+    over=select_quote(payload,player,prop,now,'Over')
+    under=select_quote(payload,player,prop,now,'Under')
+    if not over or not under or over['line']!=under['line']: return None
+    return {'line':over['line'],'over_odds':over['odds'],'under_odds':under['odds'],
+            'updated_at':min((over['updated_at'],under['updated_at']),key=utc),'book':'FanDuel'}
+
+
+def quote_matches_game(payload, game):
+    """Require the sportsbook quote to agree with the scheduled matchup and tip."""
+    sides={NAME_TEAMS.get(payload.get('home_team')),NAME_TEAMS.get(payload.get('away_team'))}
+    scheduled={game.get(s,{}).get('teamTricode') for s in ('homeTeam','awayTeam')}
+    tip=utc(game.get('gameTimeUTC'))
+    return bool(tip and len(scheduled)==2 and None not in scheduled and sides==scheduled
+                and utc(payload.get('commence_time'))==tip)
