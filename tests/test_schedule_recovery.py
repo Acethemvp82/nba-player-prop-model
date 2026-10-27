@@ -32,3 +32,14 @@ def test_fresh_empty_slate_overrides_old_games():
     fresh=PRIOR|{'games':[],'retrieved_at':NOW.isoformat()}
     assert recover_schedule('2026-10-27',fresh,PRIOR,NOW)[0]==[]
     assert recover_schedule('2026-10-27',fresh,PRIOR,NOW)[1]['fresh']
+
+
+def test_saved_repository_snapshot_is_date_bound_and_stale(tmp_path):
+    import json
+    from schedule_recovery import load_schedule_snapshot
+    (tmp_path/'2026-10-27.json').write_text(json.dumps(PRIOR))
+    saved=load_schedule_snapshot('2026-10-27',tmp_path)
+    games,health=recover_schedule('2026-10-27',None,saved,NOW)
+    assert len(games)==1 and not health['fresh'] and games[0]['espnCompleted'] is None
+    assert load_schedule_snapshot('2026-10-28',tmp_path) is None
+    assert load_schedule_snapshot('../../bad',tmp_path) is None

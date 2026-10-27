@@ -19,6 +19,8 @@ if __name__=='__main__':
     history=collect_slate_evidence(day,games,max_games=300)
     games=espn_games_on(day)
     now=datetime.now(timezone.utc)
+    schedule_path=Path('data/schedules')/(day+'.json');schedule_path.parent.mkdir(parents=True,exist_ok=True)
+    schedule_path.write_text(json.dumps({'day':day,'retrieved_at':now.isoformat(),'games':games},indent=2,allow_nan=False)+'\n')
     records=capture_forecasts(history,games,day,now)
     if records: save_first_forecasts(records,Path('data/forecasts')/(day+'.json'))
     market_path=Path('data/market-ledger.json')

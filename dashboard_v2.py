@@ -27,7 +27,7 @@ from player_research import player_games, compare_line, minutes_scenario
 from matchup_board import build_matchup_board, STATS
 from live_sources import fetch_injuries, reported_status, fetch_event_odds, select_quote, select_quote_pair, quote_matches_game
 
-BOARD_RELEASE = "schedule-recovery-v1"
+BOARD_RELEASE = "schedule-recovery-v2"
 
 ET = ZoneInfo("America/New_York")
 PROPS = {"points": "Points", "rebounds": "Rebounds",
@@ -41,6 +41,9 @@ def fresh_schedule_for(day):
 def schedule_for(day):
     from schedule_recovery import recover_schedule
     prior=st.session_state.get('nba_schedule_last_good')
+    if not isinstance(prior,dict) or prior.get('day')!=day:
+        from schedule_recovery import load_schedule_snapshot
+        prior=load_schedule_snapshot(day)
     try:
         fresh=fresh_schedule_for(day)
     except Exception as exc:
