@@ -41,8 +41,8 @@ These small differences do not establish a reliable predictive or profitable adv
 
 ## Follow-up build: current-role checks and prospective estimates
 
-The `role-checks-v1` release adds observed minutes-shift flags, current-role comparison diagnostics, stricter availability handling, and `line-gap-role-v2` frozen paper eligibility without changing the production projection weights. The FanDuel workflow now uses two-sided quotes with schedule/tipoff checks and supports direct session capture. Lines and odds are separated by slate date.
+The `role-checks-v1.1` release adds observed minutes-shift flags, current-role comparison diagnostics, stricter availability handling, and `line-gap-role-v2` frozen paper eligibility without changing the production projection weights. The FanDuel workflow now uses two-sided quotes with schedule/tipoff checks and supports direct session capture. Lines and odds are separated by slate date.
 
 The experimental residual probability method freezes only after explicit current-season coverage gates; future Brier checks preserve source/model/policy/method cohorts. The current prior-season archive cannot satisfy those gates.
 
-Validation: 480 passing tests, compilation/diff checks, and a live retrieval of 88 verified finals with zero failures. The 63 projected roster players included 10 with observed substantial minutes shifts. No candidate improvement or authenticated odds success is inferred from this check.
+Validation: 481 passing tests, compilation/diff checks, and a live retrieval of 88 verified finals with zero failures. The 63 projected roster players included 10 with observed substantial minutes shifts. No candidate improvement or authenticated odds success is inferred from this check.

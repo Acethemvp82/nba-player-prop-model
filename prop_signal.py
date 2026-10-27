@@ -14,12 +14,12 @@ def prop_signal(row):
         return 'Unavailable','red','Reported '+status
     if not numeric(projection):
         return 'No estimate','muted','Insufficient same-team regular-season evidence'
+    if row.get('Role status')=='changed':
+        return 'Role changed','amber',str(row.get('Role note') or 'Observed recent minutes shifted; review the current role')
     if row.get('Evidence')!='Current season':
         return 'Research only','amber','Prior-season or unclassified estimate; current role is unconfirmed'
     if status not in ('not listed — unconfirmed','available','active','probable'):
         return 'Availability uncertain','amber','Current availability is unconfirmed: '+(status or 'missing report')
-    if row.get('Role status')=='changed':
-        return 'Role changed','amber',str(row.get('Role note') or 'Observed recent minutes shifted; review the current role')
     if row.get('Role status')!='stable':
         return 'Role unconfirmed','amber','Insufficient current-season minutes comparison'
     if row.get('Readiness')=='stale_history':

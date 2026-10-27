@@ -27,7 +27,7 @@ from player_research import player_games, compare_line, minutes_scenario
 from matchup_board import build_matchup_board, STATS
 from live_sources import fetch_injuries, reported_status, fetch_event_odds, select_quote, select_quote_pair, quote_matches_game
 
-BOARD_RELEASE = "role-checks-v1"
+BOARD_RELEASE = "role-checks-v1.1"
 
 ET = ZoneInfo("America/New_York")
 PROPS = {"points": "Points", "rebounds": "Rebounds",

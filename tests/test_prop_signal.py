@@ -26,3 +26,9 @@ def test_line_direction_and_gate_priority():
 def test_bad_values_do_not_become_green(value):
     assert prop_signal(row(Projection=value))[1]!='green'
     assert prop_signal(row(Line=value))[1]!='green'
+
+
+def test_prior_season_role_change_remains_visible_and_research_only():
+    label,color,reason=prop_signal(row(Evidence='Prior-season reference',**{'Role status':'changed','Role note':'Minutes down 10'}))
+    assert (label,color)==('Role changed','amber')
+    assert reason=='Minutes down 10'
