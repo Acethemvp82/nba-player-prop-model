@@ -3,7 +3,7 @@ import importlib
 import sys
 import dashboard_v2
 
-RELEASE = "market-validation-v1"
+RELEASE = "grading-audit-v2"
 if getattr(dashboard_v2, "BOARD_RELEASE", None) != RELEASE:
     # Long-running Streamlit processes may retain imported modules after a deploy.
     for name in ("prop_signal", "live_sources", "market_validation", "forecast_tracking",

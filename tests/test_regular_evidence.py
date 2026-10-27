@@ -47,7 +47,7 @@ def test_roster_excludes_former_team_and_capture_is_pretip_append_only(tmp_path)
     assert capture_forecasts(h,g,'2026-10-22',datetime(2026,10,23,tzinfo=timezone.utc))==[]
     path=tmp_path/'forecasts.json';save_first_forecasts(captured,path)
     assert save_first_forecasts([{**r,'baseline':999} for r in captured],path)==captured
-    scored=score_forecasts(captured,lambda _:rows()[:1]);assert len(scored)==4
+    scored=score_forecasts(captured,lambda _:[{**rows()[0],'game_id':'espn:123'}]);assert len(scored)==4
     assert all(r['absolute_error']==0 for r in scored)
     assert score_forecasts(captured,lambda _:[])==[]
 

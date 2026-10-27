@@ -24,7 +24,7 @@ from player_research import player_games, compare_line, minutes_scenario
 from matchup_board import build_matchup_board, STATS
 from live_sources import fetch_injuries, reported_status, fetch_event_odds, select_quote
 
-BOARD_RELEASE = "market-validation-v1"
+BOARD_RELEASE = "grading-audit-v2"
 
 ET = ZoneInfo("America/New_York")
 PROPS = {"points": "Points", "rebounds": "Rebounds",
@@ -441,11 +441,18 @@ def render_saved_results():
         try: result=json.loads(path.read_text());rows=result.get('results',[])
         except (ValueError,OSError):
             st.warning("Saved results could not be read.");return
+        if result.get('grading_version') == 2:
+            st.caption(f"{len(rows)} scored prop forecasts from {len(result.get('final_events',[]))} verified final games; {result.get('frozen_forecasts','unknown')} frozen forecasts in the archive, including ungraded entries.")
+        if rows and result.get('grading_version') != 2:
+            st.info("Archived grades await revalidation by the next tracking run. Legacy errors are excluded from verified accuracy.")
+            rows=[]
         if not rows:
             st.info("No scored saved forecasts yet; accuracy remains unknown.")
         else:
             frame=pd.DataFrame(rows)
-            summary=frame.groupby(['evidence','prop']).agg(Scored=('actual','count'),Model_MAE=('absolute_error','mean'),Recent_average_MAE=('reference_error','mean')).reset_index()
+            summary=frame.groupby(['model_version','evidence','prop']).agg(Scored=('actual','count'),Games=('event_id','nunique'),Dates=('slate_date','nunique'),Players=('player_id','nunique'),Model_MAE=('absolute_error','mean'),Recent_average_MAE=('reference_error','mean')).reset_index()
+            summary['MAE_difference']=summary['Model_MAE']-summary['Recent_average_MAE']
+            st.caption('Negative MAE difference favors the model. Props from the same player or game are correlated; row counts are not independent trials. Forecast accuracy does not establish OVER probability calibration.')
             st.dataframe(summary,hide_index=True,use_container_width=True)
             st.dataframe(frame[['slate_date','player','team','prop','evidence','baseline','actual','reference_last5','absolute_error']],hide_index=True,use_container_width=True)
         st.caption('Results updated: '+str(result.get('updated_at','Unknown')))
