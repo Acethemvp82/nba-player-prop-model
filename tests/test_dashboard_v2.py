@@ -201,3 +201,27 @@ render_paper_capture(selected,None,None,[])
     assert record['source']=='provider_fanduel' and record['under_odds']==125 and record['eligible']
     assert any('Download frozen paper ledger JSON' in b.label for b in at.get('download_button'))
     assert all('do-not-display' not in m.value for m in at.markdown)
+
+
+def test_schedule_outage_keeps_last_same_date_board_and_connection_status(monkeypatch):
+    original=dashboard.schedule_for
+    fixtures(monkeypatch,[dict(player='Alpha',player_id='espn:1',team='NYK',prop='points',baseline=20,
+        sample_games=10,recent_minutes=30,evidence='Current season',role_status='stable')])
+    outage=[False]
+    def fresh(day):
+        if outage[0]:raise ValueError('Temporary empty schedule response')
+        return {'day':day,'retrieved_at':__import__('datetime').datetime.now(__import__('datetime').timezone.utc).isoformat(),
+                'games':[{'espnEventId':'123','awayTeam':{'teamTricode':'NYK'},'homeTeam':{'teamTricode':'BOS'},
+                          'gameTimeUTC':day+'T23:00Z','gameStatusText':'Scheduled','espnCompleted':False}]}
+    monkeypatch.setattr(dashboard,'fresh_schedule_for',fresh)
+    monkeypatch.setattr(dashboard,'schedule_for',original)
+    at=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app.py'),default_timeout=20).run()
+    assert not at.exception
+    assert len(next(d.value for d in at.dataframe if 'Projection' in d.value.columns))==1
+    outage[0]=True
+    at.run()
+    assert not at.exception
+    board=next(d.value for d in at.dataframe if 'Projection' in d.value.columns)
+    assert len(board)==1 and board.iloc[0]['Status']=='Unknown — cached schedule'
+    assert any('last successful slate' in x.value for x in at.warning)
+    assert any('provider key is missing' in x.value for x in at.info)

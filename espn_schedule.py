@@ -16,17 +16,23 @@ def espn_games_on(day):
     parsed = _day(day)
     if parsed is None:
         raise ValueError("day must be a valid date")
-    try:
-        response = requests.get(ESPN_URL, params={"dates": parsed.strftime("%Y%m%d")},
-                                headers={"User-Agent": "Mozilla/5.0", "Accept": "application/json"},
-                                timeout=12)
-        response.raise_for_status()
-        payload = response.json()
-    except (requests.RequestException, ValueError) as exc:
-        raise NBADataError(f"Backup NBA schedule unavailable: {exc}") from exc
-    events = payload.get("events") if isinstance(payload, dict) else None
-    if not isinstance(events, list):
-        raise NBADataError("Backup NBA schedule has no events list")
+    # One bounded retry handles transient empty/HTML responses and connection errors.
+    # Neither failures nor malformed payloads are represented as an empty slate.
+    payload=None
+    for attempt in range(2):
+        try:
+            response = requests.get(ESPN_URL, params={"dates": parsed.strftime("%Y%m%d")},
+                                    headers={"User-Agent": "Mozilla/5.0", "Accept": "application/json"},
+                                    timeout=12)
+            response.raise_for_status()
+            payload = response.json()
+            if not isinstance(payload,dict) or not isinstance(payload.get('events'),list):
+                raise ValueError('Schedule response has no events list')
+            break
+        except (requests.RequestException, ValueError) as exc:
+            if attempt==1:
+                raise NBADataError('NBA schedule temporarily unavailable after two attempts') from exc
+    events=payload['events']
     games = []
     seen = set()
     for event in events:

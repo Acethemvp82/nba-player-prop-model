@@ -237,3 +237,14 @@ def test_espn_schedule_rejects_duplicate_home_or_away_entries():
 
     with patch("espn_schedule.requests.get", return_value=Response()):
         assert espn_games_on("2026-10-21") == []
+
+
+def test_empty_or_html_response_is_retried_once():
+    from unittest.mock import Mock
+    bad=Mock();bad.json.side_effect=ValueError('HTML response')
+    good=Mock();good.json.return_value={'events':[]}
+    with patch('espn_schedule.requests.get',side_effect=[bad,good]) as get:
+        assert espn_games_on('2026-10-27')==[] and get.call_count==2
+    with patch('espn_schedule.requests.get',return_value=bad) as get:
+        with pytest.raises(NBADataError):espn_games_on('2026-10-27')
+        assert get.call_count==2

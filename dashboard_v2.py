@@ -27,15 +27,33 @@ from player_research import player_games, compare_line, minutes_scenario
 from matchup_board import build_matchup_board, STATS
 from live_sources import fetch_injuries, reported_status, fetch_event_odds, select_quote, select_quote_pair, quote_matches_game
 
-BOARD_RELEASE = "role-checks-v1.1"
+BOARD_RELEASE = "schedule-recovery-v1"
 
 ET = ZoneInfo("America/New_York")
 PROPS = {"points": "Points", "rebounds": "Rebounds",
          "assists": "Assists", "threes": "3-Pointers"}
 
 @st.cache_data(ttl=300, show_spinner=False)
+def fresh_schedule_for(day):
+    return {'day':day,'games':espn_games_on(day),'retrieved_at':datetime.now(timezone.utc).isoformat()}
+
+
 def schedule_for(day):
-    return espn_games_on(day)
+    from schedule_recovery import recover_schedule
+    prior=st.session_state.get('nba_schedule_last_good')
+    try:
+        fresh=fresh_schedule_for(day)
+    except Exception as exc:
+        fresh=None;error=str(exc)
+    else:error=None
+    games,health=recover_schedule(day,fresh,prior,datetime.now(timezone.utc),error)
+    st.session_state['nba_schedule_health']=health
+    if health['fresh']:st.session_state['nba_schedule_last_good']=fresh
+    if games is None:raise ValueError(health['message'])
+    return games
+
+
+schedule_for.clear=fresh_schedule_for.clear
 
 @st.cache_data(ttl=3600, show_spinner=False)
 def official_schedule_check(day, matchups):
@@ -91,6 +109,7 @@ def render_dashboard():
     if refresh:
         schedule_for.clear(); final_for.clear(); history_for.clear(); injuries_for.clear()
     render_schedule(day.isoformat())
+    render_connection_status()
     if refresh or st.session_state.get("nba_v2_attempted_key") != key:
         st.session_state["nba_v2_attempted_key"] = key
         with st.spinner("Loading completed-game history…"):
@@ -104,6 +123,8 @@ def render_dashboard():
         games = schedule_for(day.isoformat())
     except Exception as exc:
         games = []; st.warning(f"ESPN schedule unavailable: {exc}")
+    if not st.session_state.get('nba_schedule_health',{}).get('fresh',True):
+        st.warning(st.session_state['nba_schedule_health']['message'])
     opponents = {}
     for game in games:
         away=game.get("awayTeam",{}).get("teamTricode")
@@ -141,6 +162,8 @@ def render_dashboard():
     now=datetime.now(timezone.utc)
     forecasts=[{**r,"availability":reported_status(injury_feed,r['player'],r['team'],now)
                 if injury_feed else "Unknown — no current report"} for r in forecasts]
+    if not st.session_state.get('nba_schedule_health',{}).get('fresh',True):
+        forecasts=[{**r,'availability':'Unknown — cached schedule'} for r in forecasts]
     a,b,c,d=st.columns([1.4,1.2,2,2])
     with a:
         selected_label=st.selectbox("Selected prop",list(PROPS.values()))
@@ -150,7 +173,7 @@ def render_dashboard():
         members={(r['player_id'],r['team']) for r in history.get('roster',[])}
         rows=[r for r in rows if (r['player_id'],r['Team']) in members]
     # Reported status also applies to players with sparse history.
-    if injury_feed:
+    if injury_feed and st.session_state.get('nba_schedule_health',{}).get('fresh',True):
         for r in rows: r['Status']=reported_status(injury_feed,r['Player'],r['Team'],now)
     with b:
         position_options=["All"]+sorted({r['Group'] for r in rows})
@@ -495,3 +518,16 @@ def render_role_validation(history,day):
         st.download_button('Download current-role comparison audit',pd.DataFrame(result['details']).map(safe_spreadsheet_cell).to_csv(index=False),file_name='nba-role-validation.csv',mime='text/csv')
     else:
         st.info('Not enough earlier regular-season history for a paired current-role test yet. Three current-season same-team appearances and a qualifying baseline are required before the result date.')
+
+
+def render_connection_status():
+    with st.expander('Live feed connection status'):
+        if odds_key():
+            st.success('FanDuel provider key is configured. Use Player details → FanDuel line feed to test current market access.')
+            st.caption('A configured key does not confirm access, quota or player-prop coverage until a request succeeds.')
+        else:
+            st.info('FanDuel live lines are not connected: the provider key is missing.')
+            st.markdown('Get a key from [The Odds API](https://the-odds-api.com/), then open your Streamlit app settings → Secrets and add:')
+            st.code('ODDS_API_KEY = "your-provider-key"',language='toml')
+            st.caption('Save the key in Streamlit Secrets. Keep it out of chat and GitHub. Then reload and fetch a matchup to verify both prices.')
+        st.caption('This connection panel is available even when the schedule or player-stat feed is temporarily unavailable.')
