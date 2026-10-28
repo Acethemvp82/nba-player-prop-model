@@ -101,6 +101,7 @@ def render_dashboard():
       background:linear-gradient(110deg,#30203f,#141825 65%);font-size:1.15rem;font-weight:700;}
     </style><div class="nba-banner">NBA DEFENSIVE MATCHUPS</div>""", unsafe_allow_html=True)
     with st.sidebar:
+        st.page_link('pages/1_First_Basket.py', label='First Basket Board', icon='🏀')
         st.header("Slate controls")
         day = st.date_input("Slate date", datetime.now(ET).date())
         lookback = 21
