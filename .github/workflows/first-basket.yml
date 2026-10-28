@@ -1,0 +1,33 @@
+name: Build and grade first-basket research
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 7,14,19,22 * * *'
+permissions:
+  contents: write
+concurrency:
+  group: first-basket-history
+  cancel-in-progress: false
+jobs:
+  first-basket:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -r requirements.txt
+      - run: python scripts/track_first_baskets.py
+      - name: Persist first-basket records
+        run: |
+          git config user.name 'nba-model-tracker[bot]'
+          git config user.email 'nba-model-tracker@users.noreply.github.com'
+          git add data/first-basket/
+          if ! git diff --cached --quiet; then
+            git commit -m 'Update first-basket research and paper results'
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
