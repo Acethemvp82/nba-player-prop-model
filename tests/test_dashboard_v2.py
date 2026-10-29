@@ -25,7 +25,7 @@ def test_populated_board_filters_and_sort(monkeypatch):
     fixtures(monkeypatch, [dict(player='Test Player', player_id='espn:1', team='NYK',
         prop='points', baseline=24, sample_games=10, recent_minutes=32,
         research_readiness='history_ready')])
-    at = AppTest.from_file(str(Path(__file__).resolve().parents[1] / 'app.py'), default_timeout=20).run()
+    at = AppTest.from_string('from dashboard_v2 import render_dashboard; render_dashboard()', default_timeout=20).run()
     assert not at.exception
     board = next(d.value for d in at.dataframe if 'Projection' in d.value.columns)
     assert board['Def Rank'].isna().all()
@@ -40,14 +40,14 @@ def test_populated_board_filters_and_sort(monkeypatch):
 
 def test_empty_and_feed_failure(monkeypatch):
     fixtures(monkeypatch, [])
-    at = AppTest.from_file(str(Path(__file__).resolve().parents[1] / 'app.py'), default_timeout=20).run()
+    at = AppTest.from_string('from dashboard_v2 import render_dashboard; render_dashboard()', default_timeout=20).run()
     assert not at.exception
     assert any('No eligible projections' in item.value for item in at.warning)
     def fail(*args):
         raise ValueError('feed unavailable')
     fail.clear = lambda: None
     monkeypatch.setattr(dashboard, 'history_for', fail)
-    at = AppTest.from_file(str(Path(__file__).resolve().parents[1] / 'app.py'), default_timeout=20).run()
+    at = AppTest.from_string('from dashboard_v2 import render_dashboard; render_dashboard()', default_timeout=20).run()
     assert not at.exception
     assert any('feed unavailable' in item.value for item in at.error)
 
@@ -65,7 +65,7 @@ def test_sparse_history_is_visible_without_creating_forecasts(monkeypatch):
     history = lambda *a: {'observations': rows}
     history.clear = lambda: None
     monkeypatch.setattr(dashboard, 'history_for', history)
-    at = AppTest.from_file(str(Path(__file__).resolve().parents[1] / 'app.py'), default_timeout=20).run()
+    at = AppTest.from_string('from dashboard_v2 import render_dashboard; render_dashboard()', default_timeout=20).run()
     assert not at.exception
     sparse = next(d.value for d in at.dataframe if 'Appearances' in d.value.columns)
     assert sparse.iloc[0]['Appearances'] == 3
@@ -85,7 +85,7 @@ def test_validation_reports_auditable_espn_forecasts(monkeypatch):
     history = lambda *a: {'observations': rows}
     history.clear = lambda: None
     monkeypatch.setattr(dashboard, 'history_for', history)
-    at = AppTest.from_file(str(Path(__file__).resolve().parents[1] / 'app.py'), default_timeout=20).run()
+    at = AppTest.from_string('from dashboard_v2 import render_dashboard; render_dashboard()', default_timeout=20).run()
     assert not at.exception
     scores = next(d.value for d in at.dataframe if 'Model MAE' in d.value.columns)
     assert scores.iloc[0]['Model MAE'] == 10
@@ -103,7 +103,7 @@ def test_validation_accepts_previous_cached_summary_schema(monkeypatch):
     for row in legacy['summary']:
         row.pop('different_from_last5')
     monkeypatch.setattr(dashboard, 'validation_for', lambda *a, **k: legacy)
-    at = AppTest.from_file(str(Path(__file__).resolve().parents[1] / 'app.py'), default_timeout=20).run()
+    at = AppTest.from_string('from dashboard_v2 import render_dashboard; render_dashboard()', default_timeout=20).run()
     assert not at.exception
     assert any('identical in this evaluation sample' in item.value for item in at.info)
 
@@ -118,7 +118,7 @@ def test_manual_line_workbench_counts_and_keeps_player_inputs_separate(monkeypat
     loader = lambda *a: {'observations':rows}
     loader.clear = lambda: None
     monkeypatch.setattr(dashboard, 'history_for', loader)
-    at = AppTest.from_file(str(Path(__file__).resolve().parents[1] / 'app.py'), default_timeout=20).run()
+    at = AppTest.from_string('from dashboard_v2 import render_dashboard; render_dashboard()', default_timeout=20).run()
     at.number_input[0].set_value(20.0).run()
     at.number_input[1].set_value(-110).run()
     assert not at.exception
@@ -141,7 +141,7 @@ def test_authorized_feed_quote_can_fill_comparison_without_exposing_key(monkeypa
           'outcomes':[{'name':'Over','description':'Alpha','point':20.5,'price':-110},
                           {'name':'Under','description':'Alpha','point':20.5,'price':-105}]}]}]}
     monkeypatch.setattr(dashboard,'fetch_event_odds',lambda *a:payload)
-    at=AppTest.from_file(str(Path(__file__).resolve().parents[1] / 'app.py'),default_timeout=20).run()
+    at=AppTest.from_string('from dashboard_v2 import render_dashboard; render_dashboard()',default_timeout=20).run()
     next(b for b in at.button if b.label=='Fetch current FanDuel lines for this matchup').click().run()
     assert not at.exception
     next(b for b in at.button if b.label=='Copy fetched quote into comparison').click().run()
@@ -160,7 +160,7 @@ def test_reported_out_players_hidden_without_claiming_others_active(monkeypatch)
                    'feed_timestamp':datetime.now(timezone.utc).isoformat(),'retrieved_at':'test'}
     loader.clear=lambda:None
     monkeypatch.setattr(dashboard,'injuries_for',loader)
-    at=AppTest.from_file(str(Path(__file__).resolve().parents[1] / 'app.py'),default_timeout=20).run()
+    at=AppTest.from_string('from dashboard_v2 import render_dashboard; render_dashboard()',default_timeout=20).run()
     board=next(d.value for d in at.dataframe if 'Projection' in d.value.columns)
     assert len(board)==0
     next(w for w in at.checkbox if w.label=='Hide players reported Out or Doubtful').set_value(False).run()
@@ -215,7 +215,7 @@ def test_schedule_outage_keeps_last_same_date_board_and_connection_status(monkey
                           'gameTimeUTC':day+'T23:00Z','gameStatusText':'Scheduled','espnCompleted':False}]}
     monkeypatch.setattr(dashboard,'fresh_schedule_for',fresh)
     monkeypatch.setattr(dashboard,'schedule_for',original)
-    at=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app.py'),default_timeout=20).run()
+    at=AppTest.from_string('from dashboard_v2 import render_dashboard; render_dashboard()',default_timeout=20).run()
     assert not at.exception
     assert len(next(d.value for d in at.dataframe if 'Projection' in d.value.columns))==1
     outage[0]=True
@@ -225,3 +225,4 @@ def test_schedule_outage_keeps_last_same_date_board_and_connection_status(monkey
     assert len(board)==1 and board.iloc[0]['Status']=='Unknown — cached schedule'
     assert any('last successful slate' in x.value for x in at.warning)
     assert any('provider key is missing' in x.value for x in at.info)
+
