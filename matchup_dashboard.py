@@ -10,11 +10,11 @@ from defensive_table import interactive_table_html
 from matchup_csv import read_matchup_csv
 from team_identity import SHORT_NAMES
 
-BOARD_RELEASE='clean-matchup-v4'
+BOARD_RELEASE='league-data-v5'
 
 ET=ZoneInfo('America/New_York')
 ROOT=Path(__file__).resolve().parent
-PROPS={'Points':'points','Rebounds':'rebounds','Assists':'assists','3PTM':'threes'}
+PROPS={'Points':'points','Rebounds':'rebounds','Assists':'assists','3PTM':'threes','Steals':'steals','Blocks':'blocks'}
 
 
 def filter_board(frame, search='', defenses=None, positions=None):
@@ -52,75 +52,61 @@ def render_imported_board():
     components.html(interactive_table_html(frame,metadata=metadata),height=1120,scrolling=False)
 
 
-@st.cache_data(ttl=300,show_spinner=False)
+@st.cache_data(ttl=900,show_spinner=False)
+def league_feed_for(day):
+    from dashboard_v2 import schedule_for
+    from league_feed import load_saved_feed,collect_league_feed
+    games=schedule_for(day)
+    if not games: return None,games
+    saved=load_saved_feed(ROOT/'data'/'league-feed.json.gz',day)
+    if saved is not None: return saved,games
+    try:
+        import gzip
+        cache=json.loads(gzip.decompress((ROOT/'data'/'league-boxscores.json.gz').read_bytes()).decode())
+    except (OSError,ValueError): cache={}
+    feed,_=collect_league_feed(day,games,cache=cache)
+    return feed,games
+
+
+@st.cache_data(ttl=900,show_spinner=False)
 def live_board(day,prop,defense_season):
-    # Reuse the existing verified game collectors; avoid estimates in the display.
-    from dashboard_v2 import schedule_for,history_for,injuries_for
-    from slate_evidence import roster_observations
-    from matchup_board import build_matchup_board
-    from position_defense import positional_allowance
+    from league_feed import build_data_board
+    from dashboard_v2 import injuries_for
     from live_sources import reported_status
     from datetime import timezone
-    games=schedule_for(day)
-    if not games: return pd.DataFrame(),games,{'message':'No NBA games scheduled for this date.'}
-    history=history_for(day,21,450,'regular-roster-v2')
-    opponents={}
-    for game in games:
-        away=game.get('awayTeam',{}).get('teamTricode');home=game.get('homeTeam',{}).get('teamTricode')
-        if away and home: opponents.update({away:home,home:away})
-    all_observations=history.get('observations',[])
-    observations=roster_observations(history)
-    year=history.get('season_year')
-    selected_year=year if defense_season=='Current season' else year-1 if year else None
-    defensive=[r for r in all_observations if not selected_year or r.get('season_year')==selected_year]
-    context=positional_allowance(defensive,day)
-    rows=build_matchup_board(observations,[],opponents,day,prop,context)
-    if history.get('roster_checked'):
-        members={(r['player_id'],r['team']) for r in history.get('roster',[])}
-        rows=[r for r in rows if (r['player_id'],r['Team']) in members]
+    feed,games=league_feed_for(day)
+    if feed is None: return pd.DataFrame(),games,{'message':'No NBA games scheduled for this date.'}
+    rows=build_data_board(feed,games,prop,defense_season)
     now=datetime.now(timezone.utc)
     if day==datetime.now(ET).date().isoformat():
         try:
-            feed=injuries_for()
-            for row in rows: row['Status']=reported_status(feed,row['Player'],row['Team'],now)
-        except Exception:
-            pass
-    for row in rows: row['Source']='Live NBA history · latest 15 team games'
+            injuries=injuries_for()
+            for row in rows: row['Status']=reported_status(injuries,row['Player'],row['Team'],now)
+        except Exception: pass
     return pd.DataFrame(rows),games,{
-        'failures':len(history.get('failures',[])),
-        'loaded':history.get('games_loaded',0),
-        'defense_season':selected_year,
-        'positions':'G / F / C',
-        'built_at':datetime.now(ET).strftime('%b %d, %I:%M %p ET'),
+        'failures':len(feed.get('failures',[])),'loaded':feed.get('games_loaded',0),
+        'current_games':feed.get('current_games',0),
+        'defense_season':feed['season_year'] if defense_season=='Current season' else feed['season_year']-1,
+        'positions':'PG / SG / SF / PF / C',
+        'built_at':datetime.fromisoformat(feed['updated_at']).astimezone(ET).strftime('%b %d, %I:%M %p ET'),
         'schedule':dict(st.session_state.get('nba_schedule_health',{})),
+        'teams':len(feed.get('teams',{})),
+        'catalog_players':len(feed.get('positions',{}).get(str(feed['season_year']),{})),
     }
 
 
-def apply_provider_lines(frame,payloads,games,prop,now):
-    from live_sources import select_quote_pair,quote_matches_game
-    result=frame.copy();result['Line']=None
-    for i,row in result.iterrows():
-        matches=[g for g in games if {g.get(s,{}).get('teamTricode') for s in ('homeTeam','awayTeam')}=={row['Team'],row['Opponent']}]
-        payload=payloads.get(tuple(sorted((row['Team'],row['Opponent']))))
-        if not payload or len(matches)!=1 or not quote_matches_game(payload,matches[0]): continue
-        pair=select_quote_pair(payload,row['Player'],prop,now)
-        if pair: result.at[i,'Line']=pair['line']
-    return result
 
-
+@st.fragment(run_every="15m")
 def render_live_board():
-    from dashboard_v2 import odds_key,schedule_for,history_for,final_for,injuries_for
-    from live_sources import fetch_event_odds
-    from datetime import timezone
+    from dashboard_v2 import schedule_for,history_for,final_for,injuries_for
     cols=st.columns([1.1,1.1,1.4,.65])
     day=cols[0].date_input('Slate date',datetime.now(ET).date(),key='clean_day').isoformat()
-    label=cols[1].selectbox('Player prop',list(PROPS),key='clean_prop')
+    label=cols[1].selectbox('Player stat',list(PROPS),key='clean_prop')
     season=cols[2].selectbox('Defensive history',['Current season','Previous season reference'],key='clean_season')
     if cols[3].button('Refresh',use_container_width=True):
-        live_board.clear();schedule_for.clear();history_for.clear();final_for.clear();injuries_for.clear()
-        st.session_state.pop('clean_quotes',None)
+        live_board.clear();league_feed_for.clear();schedule_for.clear();history_for.clear();final_for.clear();injuries_for.clear()
     try:
-        with st.spinner('Loading the slate and completed games…'):
+        with st.spinner('Loading league-wide stats and projected positions…'):
             frame,games,health=live_board(day,PROPS[label],season)
     except Exception as exc:
         st.error('Live NBA data could not load: '+str(exc))
@@ -133,29 +119,17 @@ def render_live_board():
         st.info(health.get('message') or 'No verified player history is available for this slate.');return
     if health.get('schedule') and not health['schedule'].get('fresh',True):
         st.warning(health['schedule'].get('message','Schedule is from a saved snapshot.'))
-    st.caption(f"Live NBA history · updated {health.get('built_at','')} · {health.get('loaded',0)} completed games loaded. L10/L5 use the latest available regular-season appearances and may span seasons.")
-    st.caption(f"Defensive groups: G / F / C from the source · latest 15 loaded games per slate team · {season.lower()}. Ranks compare qualified teams in this sample, not all 30 teams. Hover a rank for its comparison count. Use an imported export for the exact PG/SG/SF/PF/C matchups shown in your reference.")
-    if health.get('failures'): st.warning('Some history could not load; missing defensive values stay blank.')
-    hide=st.checkbox('Hide reported Out / Doubtful',value=True,key='clean_hide')
+    st.caption(f"Updated {health.get('built_at','')} · {health.get('teams',30)} league teams · {health.get('current_games',0)} current-season games. Checks for updates every 15 minutes while open.")
+    st.caption('PG / SG / SF / PF / C matchups from ESPN depth charts. Defensive buckets use primary positions, with explicit depth-chart slots when a primary position is missing. Lineups are projected.')
+    if health.get('failures'): st.warning('Some source requests failed. Missing values stay N/A; rank tooltips show the actual comparison count.')
+    filter_cols=st.columns(2)
+    starters=filter_cols[0].checkbox('Projected starters only',value=True,key='clean_starters')
+    hide=filter_cols[1].checkbox('Hide reported Out / Doubtful',value=True,key='clean_hide')
+    if starters and 'Projected starter' in frame: frame=frame[frame['Projected starter']]
     if hide: frame=frame[~frame['Status'].str.casefold().isin(['out','doubtful'])]
-    key=odds_key();identity=(day,PROPS[label])
-    if key:
-        if st.button('Load FanDuel lines',key='clean_load_lines'):
-            payloads={};failures=0
-            with st.spinner('Loading FanDuel lines…'):
-                for g in games:
-                    away=g['awayTeam']['teamTricode'];home=g['homeTeam']['teamTricode']
-                    try: payloads[tuple(sorted((away,home)))]=fetch_event_odds(key,away,home,day,datetime.now(timezone.utc))
-                    except ValueError: failures+=1
-            st.session_state['clean_quotes']=(identity,payloads)
-            if failures: st.caption(f'{failures} games have no usable upcoming FanDuel feed.')
-        cached=st.session_state.get('clean_quotes')
-        if cached and cached[0]==identity:
-            frame=apply_provider_lines(frame,cached[1],games,PROPS[label],datetime.now(timezone.utc))
-        st.caption(f"FanDuel lines: {int(frame['Line'].notna().sum())} of {len(frame)} players. Only fresh, two-sided pregame lines are shown.")
-    else:
-        st.caption('Live sportsbook lines are not connected. Lines stay N/A. Your imported CSV includes its exported lines.')
-    meta={'Source':'Live NBA history','Slate date':day,'Player prop':label,'Window':'Latest 15 team games','Defensive history':season,'Position groups':'G/F/C'}
+    st.caption(f"{len(frame)} players · {season.lower()} defensive averages. Early-season ranks can be based on few games; tap a player or hover a value for sample counts. L10/L5 can cross seasons or teams; H2H uses current- and previous-season completed meetings.")
+    meta={'Source':'ESPN verified finals','Slate date':day,'Player stat':label,'Window':'Full current regular season' if season=='Current season' else 'Loaded previous-season reference',
+          'Defensive history':season,'Position groups':'PG/SG/SF/PF/C','Updated':health.get('built_at','')}
     components.html(interactive_table_html(frame,metadata=meta),height=1120,scrolling=False)
 
 
@@ -170,8 +144,7 @@ def render_dashboard():
     else: render_live_board()
     with st.sidebar:
         st.header('Board settings')
-        st.caption('Live NBA uses verified completed games. Imported matchup CSV preserves your exported values and exact positions.')
-        st.caption('Optional FanDuel feed: add ODDS_API_KEY in Streamlit Secrets. Never paste API keys into chat or GitHub.')
+        st.caption('Live NBA combines verified completed games, five-position depth charts and league-wide defensive averages. Imported CSV preserves your exported values.')
         if st.button('Open advanced research',key='open_advanced'): st.session_state['clean_advanced']=True
     if st.session_state.get('clean_advanced'):
         with st.expander('Advanced research',expanded=True):

@@ -7,7 +7,7 @@ import json
 import pandas as pd
 from team_identity import TEAM_NAMES, SHORT_NAMES, ESPN_LOGOS
 
-TABLE_RELEASE='clean-matchup-v4'
+TABLE_RELEASE='league-data-v5'
 
 DEF_STATS={'points':'Points','rebounds':'Rebounds','assists':'Assists','threes':'3PM','steals':'Steals','blocks':'Blocks'}
 HEADERS=['TEAM','POS','OPPOSING PLAYER','LINE','L10 AVG','L5 AVG','H2H','POINTS','REBOUNDS','ASSISTS','3PTM','STEALS','BLOCKS']
@@ -47,6 +47,7 @@ def defensive_table_html(frame, show_ranks=True):
             cls='def-over' if field!='Line' and valid(value) and valid(line) and value>line else ''
             tooltip='Imported value; sample count not supplied' if str(r.get('Source','')).startswith('Imported') else 'Observed average, not a hit probability'
             if field=='H2H' and valid(r.get('H2H N')): tooltip=f'{int(r["H2H N"])} head-to-head games in loaded history'
+            if field in ('L10','L5') and valid(r.get(field+' N')): tooltip=f'{int(r[field+" N"])} completed appearances; season/team boundaries may be crossed'
             cells.append(f'<td class="{cls}" data-value="{value if valid(value) else ""}" title="{escape(tooltip)}">{number(value)}</td>')
             export.append(value if valid(value) else 'N/A')
         for label in DEF_STATS.values():
@@ -57,13 +58,19 @@ def defensive_table_html(frame, show_ranks=True):
                     cls='def-green' if rank<=ceil(teams/3) else 'def-amber' if rank<=ceil(2*teams/3) else 'def-red'
                 if show_ranks:
                     badge=f'<span class="def-rank" title="Rank {int(rank)} of {int(teams)} qualified teams">#{int(rank)}</span>'
-            cells.append(f'<td class="{cls}" data-value="{value if valid(value) else ""}" title="Per-game defensive allowance to this position group">{number(value)}{badge}</td>')
+            sample=r.get('games_'+label)
+            tip='Per-game defensive allowance to this position group'
+            if valid(sample): tip+=f'; {int(sample)} completed games'
+            omitted=r.get('omitted_'+label)
+            if valid(omitted) and omitted: tip+=f'; {int(omitted)} games omitted for incomplete positions'
+            cells.append(f'<td class="{cls}" data-value="{value if valid(value) else ""}" title="{escape(tip)}">{number(value)}{badge}</td>')
             export.append(number(value)+(f' #{int(rank)}' if valid(rank) else ''))
         summary={}
-        for key in ('Projection','Model Min','Evidence','Status','Sample','Role note','Source'):
+        for key in ('Projection','Model Min','Evidence','Status','Sample','Role note','Source','L10 N','L5 N','H2H N','Latest game','Position source','History window','games_Points','games_Rebounds','games_Assists','games_3PM','games_Steals','games_Blocks'):
             value=r.get(key)
-            if valid(value): summary[key]=float(value)
-            elif isinstance(value,str) and value: summary[key]=value
+            display={'L10 N':'Last 10 sample','L5 N':'Last 5 sample','H2H N':'H2H games','games_Points':'Points allowance games','games_Rebounds':'Rebound allowance games','games_Assists':'Assist allowance games','games_3PM':'3PTM allowance games','games_Steals':'Steal allowance games','games_Blocks':'Block allowance games'}.get(key,key)
+            if valid(value): summary[display]=float(value)
+            elif isinstance(value,str) and value: summary[display]=value
         details=escape(json.dumps(summary),quote=True)
         values=escape(json.dumps(export,default=lambda v:float(v)),quote=True)
         rows.append(f'<tr data-summary="{details}" data-export="{values}">'+''.join(cells)+'</tr>')
