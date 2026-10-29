@@ -1,6 +1,6 @@
 {
   "day": "2026-10-28",
-  "retrieved_at": "2026-10-28T19:28:56.287131+00:00",
+  "retrieved_at": "2026-10-29T01:45:12.702389+00:00",
   "games": [
     {
       "gameId": null,
@@ -16,10 +16,10 @@
         "away": "14"
       },
       "gameTimeUTC": "2026-10-28T23:00Z",
-      "homeScore": 0,
-      "awayScore": 0,
-      "espnCompleted": false,
-      "gameStatusText": "Scheduled",
+      "homeScore": 117,
+      "awayScore": 129,
+      "espnCompleted": true,
+      "gameStatusText": "Final",
       "source": "ESPN schedule fallback"
     },
     {
@@ -36,10 +36,10 @@
         "away": "27"
       },
       "gameTimeUTC": "2026-10-28T23:00Z",
-      "homeScore": 0,
-      "awayScore": 0,
-      "espnCompleted": false,
-      "gameStatusText": "Scheduled",
+      "homeScore": 121,
+      "awayScore": 111,
+      "espnCompleted": true,
+      "gameStatusText": "Final",
       "source": "ESPN schedule fallback"
     },
     {
@@ -56,10 +56,10 @@
         "away": "30"
       },
       "gameTimeUTC": "2026-10-28T23:00Z",
-      "homeScore": 0,
-      "awayScore": 0,
-      "espnCompleted": false,
-      "gameStatusText": "Scheduled",
+      "homeScore": 97,
+      "awayScore": 89,
+      "espnCompleted": true,
+      "gameStatusText": "Final",
       "source": "ESPN schedule fallback"
     },
     {
@@ -76,10 +76,10 @@
         "away": "20"
       },
       "gameTimeUTC": "2026-10-28T23:00Z",
-      "homeScore": 0,
-      "awayScore": 0,
+      "homeScore": 102,
+      "awayScore": 105,
       "espnCompleted": false,
-      "gameStatusText": "Scheduled",
+      "gameStatusText": "In Progress",
       "source": "ESPN schedule fallback"
     },
     {
@@ -96,10 +96,10 @@
         "away": "19"
       },
       "gameTimeUTC": "2026-10-28T23:30Z",
-      "homeScore": 0,
-      "awayScore": 0,
+      "homeScore": 111,
+      "awayScore": 87,
       "espnCompleted": false,
-      "gameStatusText": "Scheduled",
+      "gameStatusText": "In Progress",
       "source": "ESPN schedule fallback"
     },
     {
@@ -116,10 +116,10 @@
         "away": "18"
       },
       "gameTimeUTC": "2026-10-29T00:00Z",
-      "homeScore": 0,
-      "awayScore": 0,
+      "homeScore": 89,
+      "awayScore": 74,
       "espnCompleted": false,
-      "gameStatusText": "Scheduled",
+      "gameStatusText": "In Progress",
       "source": "ESPN schedule fallback"
     },
     {
@@ -136,10 +136,10 @@
         "away": "10"
       },
       "gameTimeUTC": "2026-10-29T00:00Z",
-      "homeScore": 0,
-      "awayScore": 0,
+      "homeScore": 61,
+      "awayScore": 83,
       "espnCompleted": false,
-      "gameStatusText": "Scheduled",
+      "gameStatusText": "In Progress",
       "source": "ESPN schedule fallback"
     },
     {
@@ -156,10 +156,10 @@
         "away": "9"
       },
       "gameTimeUTC": "2026-10-29T00:00Z",
-      "homeScore": 0,
-      "awayScore": 0,
+      "homeScore": 53,
+      "awayScore": 75,
       "espnCompleted": false,
-      "gameStatusText": "Scheduled",
+      "gameStatusText": "In Progress",
       "source": "ESPN schedule fallback"
     },
     {
@@ -176,10 +176,10 @@
         "away": "7"
       },
       "gameTimeUTC": "2026-10-29T00:00Z",
-      "homeScore": 0,
-      "awayScore": 0,
+      "homeScore": 64,
+      "awayScore": 77,
       "espnCompleted": false,
-      "gameStatusText": "Scheduled",
+      "gameStatusText": "In Progress",
       "source": "ESPN schedule fallback"
     },
     {
@@ -196,10 +196,10 @@
         "away": "24"
       },
       "gameTimeUTC": "2026-10-29T01:00Z",
-      "homeScore": 0,
-      "awayScore": 0,
+      "homeScore": 32,
+      "awayScore": 27,
       "espnCompleted": false,
-      "gameStatusText": "Scheduled",
+      "gameStatusText": "In Progress",
       "source": "ESPN schedule fallback"
     },
     {
