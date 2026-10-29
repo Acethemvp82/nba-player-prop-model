@@ -40,7 +40,12 @@ def render_imported_board():
     except ValueError as exc: st.error(str(exc));return
     # The CSV does not carry offensive team IDs. Do not guess them from names.
     metadata={**metadata,'File':source_name,'Source':'Imported matchup CSV'}
-    if not upload: metadata['Snapshot date']='2026-10-29'
+    if not upload:
+        metadata['Snapshot date']='2026-10-29'
+        # These three pairings are visible in the user's accompanying screenshots.
+        # Apply only to that bundled reference, never to arbitrary uploaded files.
+        opponents={'ATL':'CLE','CLE':'ATL','MEM':'POR','POR':'MEM','NOP':'SAC','SAC':'NOP'}
+        frame['Team']=frame['Opponent'].map(opponents)
     summary=' · '.join(f'{k}: {v}' for k,v in metadata.items() if k in ('Season','Window','Snapshot date'))
     st.caption(f'Imported snapshot · {len(frame)} players · {summary}')
     st.caption('Green averages exceed the exported line. Defensive ranks: green 1–10, amber 11–20, red 21–30. TEAM is the defense; POS is the matchup position. Player badges preserve the source position.')
