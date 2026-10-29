@@ -1,4 +1,5 @@
 """Escaped, compact defensive matchup table with rank badges."""
+import json
 from html import escape
 from math import ceil
 from prop_signal import prop_signal
@@ -13,16 +14,16 @@ def number(value):
 
 
 def defensive_table_html(frame, show_ranks=True):
-    headers=['TEAM / DEFENSE','POS','OPPOSING PLAYER','LINE','L10 AVG','L5 AVG','H2H','PROJ','MIN']+list(DEF_STATS.values())+['PROP SIGNAL']
+    headers=['TEAM','POS','OPPOSING PLAYER','LINE','L10 AVG','L5 AVG','H2H']+list(DEF_STATS.values())
     css='''<style>
-    .def-wrap{overflow:auto;max-height:730px;border:1px solid #303039;border-radius:7px;background:#0e0f13}
+    .def-wrap{overflow:auto;max-height:730px;border:1px solid #303039;border-radius:0;background:#101010}
     .def-table{width:100%;border-collapse:collapse;white-space:nowrap;color:#ededf3;font:13px system-ui,sans-serif}
-    .def-table th{position:sticky;top:0;background:#15151c;z-index:1;padding:12px 10px;border-bottom:2px solid #45434e;font-size:10px;letter-spacing:.06em;color:#bcb9c7;text-align:center}
-    .def-table td{padding:10px 12px;border-bottom:1px solid #36343e;text-align:center;vertical-align:middle}
+    .def-table th{position:sticky;top:0;background:#111111;z-index:1;padding:12px 10px;border-bottom:2px solid #45434e;font-size:10px;letter-spacing:.06em;color:#bcb9c7;text-align:center}
+    .def-table td{padding:12px 10px;border-bottom:1px solid #36343e;text-align:center;vertical-align:middle}
     .def-table tr:hover{background:#1b1823}.def-team{text-align:left!important;max-width:155px;white-space:normal;font-weight:600}
-    .def-player{text-align:left!important;min-width:150px;border-right:1px solid #54505d;font-weight:600}
-    .def-pos{background:#302337;color:#d9b1f0;border:1px solid #533c61;border-radius:4px;padding:3px 5px;font-size:10px;margin-left:6px}
-    .def-rank{display:block;max-width:58px;margin:4px auto 0;border:1px solid currentColor;border-radius:5px;padding:2px 4px;font-size:10px;background:#ffffff06}
+    .def-player{position:sticky;left:0;z-index:2;background:#111111;text-align:left!important;min-width:220px;border-right:1px solid #54505d;font-weight:600}
+    .def-table th:nth-child(3){position:sticky;left:0;z-index:4;min-width:220px;text-align:left}.def-logo{width:24px;height:24px;object-fit:contain;vertical-align:middle;margin-right:8px}.def-pos{background:#302337;color:#d9b1f0;border:1px solid #533c61;border-radius:4px;padding:3px 5px;font-size:10px;margin-left:6px}
+    .def-rank{display:block;max-width:38px;margin:4px auto 0;border:1px solid currentColor;border-radius:5px;padding:2px 4px;font-size:10px;background:#ffffff06}
     .def-green{color:#8ade99}.def-amber{color:#eac967}.def-red{color:#e77f85}.def-muted{color:#85838e}
     .def-over{background:#19743d!important;color:#e8ffed;font-weight:700}.def-under{color:#df939b}
     </style>'''
@@ -31,8 +32,14 @@ def defensive_table_html(frame, show_ranks=True):
         position=escape(str(r.get('Pos','—')))
         player=escape(str(r['Player']))
         signal_label,signal_color,signal_reason=prop_signal(r)
-        player+=f'<small class="def-{signal_color}" style="display:block;margin-top:7px;font-size:11px" title="{escape(signal_reason)}">{escape(signal_label)}</small>'
+        # Player signal remains available in the tap-to-open summary.
         defense=escape(TEAM_NAMES.get(r['Opponent'],str(r['Opponent'])))
+        def logo(code):
+            if code not in TEAM_NAMES: return ''
+            espn={'NOP':'no','NYK':'ny','GSW':'gs','SAS':'sa','UTA':'utah','WSH':'wsh'}.get(code,code.lower())
+            return f'<img class="def-logo" src="https://a.espncdn.com/i/teamlogos/nba/500/{espn}.png" alt="" loading="lazy">'
+        player=logo(r.get('Team'))+player
+        defense=logo(r['Opponent'])+defense
         cells=[f'<td class="def-team">{defense}</td>',f'<td>{escape(str(r.get("Group","Unknown")))}</td>',
                f'<td class="def-player">{player}<span class="def-pos">{position}</span></td>',f'<td>{number(r["Line"])}</td>']
         for field in ['L10','L5','H2H']:
@@ -40,10 +47,6 @@ def defensive_table_html(frame, show_ranks=True):
             cls='def-over' if not pd.isna(value) and not pd.isna(line) and value>line else ''
             tip=f'{int(r["H2H N"])} head-to-head games in loaded window' if field=='H2H' else 'Observed average, not a hit probability'
             cells.append(f'<td class="{cls}" title="{tip}">{number(value)}</td>')
-        evidence=escape(str(r.get('Evidence','Unclassified history')))
-        minutes_tip=escape(str(r.get('Minutes note','Role unconfirmed'))+' · '+str(r.get('Role note','Current role unconfirmed'))+f" · last-five range: {number(r.get('Minutes low'))}–{number(r.get('Minutes high'))} minutes")
-        cells += [f'<td title="{evidence}">{number(r["Projection"])}<small style="display:block;font-size:9px;color:#c7a6dd">{evidence}</small></td>',
-                  f'<td title="{minutes_tip}">{number(r.get("Model Min"))}</td>']
         for label in DEF_STATS.values():
             value=r.get(label)
             rank=r.get('rank_'+label)
@@ -51,13 +54,12 @@ def defensive_table_html(frame, show_ranks=True):
             cls='def-muted'
             if not pd.isna(rank) and teams and r.get('varies_'+label,False):
                 cls='def-green' if rank<=ceil(teams/3) else 'def-amber' if rank<=ceil(2*teams/3) else 'def-red'
-            badge=f'<span class="def-rank">#{int(rank)}/{int(teams)}</span>' if show_ranks and not pd.isna(rank) and teams else ''
+            badge=f'<span class="def-rank" title="Rank {int(rank)} of {int(teams)} qualified teams">#{int(rank)}</span>' if show_ranks and not pd.isna(rank) and teams else ''
             cells.append(f'<td class="{cls}" title="Per-game allowance to all players in this position group">{number(value)}{badge}</td>')
-        label,color,reason=prop_signal(r)
-        cells.append(f'<td class="def-{color}" title="{escape(reason)}"><strong>{escape(label)}</strong></td>')
-        rows.append('<tr>'+''.join(cells)+'</tr>')
-    if not rows: rows=['<tr><td colspan="16">No players match these filters.</td></tr>']
-    return css+'<div class="def-wrap"><table class="def-table"><thead><tr>'+''.join(f'<th>{h}</th>' for h in headers)+'</tr></thead><tbody>'+''.join(rows)+'</tbody></table></div>'
+        summary={'Projection':number(r.get('Projection')), 'Model minutes':number(r.get('Model Min')), 'Evidence':str(r.get('Evidence','Unclassified history')), 'Prop signal':signal_label, 'Signal reason':signal_reason}
+        rows.append('<tr data-summary="'+escape(json.dumps(summary),quote=True)+'">'+''.join(cells)+'</tr>')
+    if not rows: rows=['<tr><td colspan="13">No players match these filters.</td></tr>']
+    return css+'<div class="def-wrap"><table class="def-table"><thead><tr>'+''.join(f'<th>{"3PTM" if h == "3PM" else h.upper()}</th>' for h in headers)+'</tr></thead><tbody>'+''.join(rows)+'</tbody></table></div>'
 
 
 def interactive_table_html(frame, show_ranks=True):
@@ -74,7 +76,7 @@ def interactive_table_html(frame, show_ranks=True):
     <div class="table-tools"><button id="reset">Clear table filters</button><span id="filter-status" role="status"></span></div><div id="player-detail" role="status" hidden style="padding:12px;border:1px solid #77538d;margin-bottom:10px"></div>
     <script>
     const table=document.querySelector('.def-table'),body=table.tBodies[0];
-    const rows=Array.from(body.rows).filter(r=>r.cells.length===16);
+    const rows=Array.from(body.rows).filter(r=>r.cells.length===13);
     const filters={};let sorted=-1,ascending=false;
     const status=document.getElementById('filter-status');
     table.parentElement.before(document.querySelector('.table-tools'));
@@ -85,8 +87,9 @@ def interactive_table_html(frame, show_ranks=True):
       button.title='Show player summary';button.onclick=()=>{
         const panel=document.getElementById('player-detail');panel.replaceChildren();panel.hidden=false;
         const title=document.createElement('strong');title.textContent=cell.textContent;panel.append(title);
-        for(const i of [0,3,4,5,6,7,8,15]){const item=document.createElement('div');
+        for(const i of [0,3,4,5,6]){const item=document.createElement('div');
           item.textContent=table.tHead.rows[0].cells[i].textContent.replace(' ↕','')+': '+row.cells[i].textContent;panel.append(item);}
+        for(const [label,value] of Object.entries(JSON.parse(row.dataset.summary||'{}'))){const item=document.createElement('div');item.textContent=label+': '+value;panel.append(item);}
         const close=document.createElement('button');close.textContent='Close summary';close.onclick=()=>panel.hidden=true;panel.append(close);
       };
     }
@@ -102,20 +105,22 @@ def interactive_table_html(frame, show_ranks=True):
     }}
     Array.from(table.tHead.rows[0].cells).forEach((cell,index)=>{
       const label=cell.textContent,button=document.createElement('button');
-      button.textContent=label+' ↕';button.title='Sort by '+label;button.type='button';
+      button.textContent=label;button.title='Sort by '+label;button.type='button';
       button.onclick=()=>{
-        ascending=sorted===index?!ascending:(index<3||index===15);sorted=index;
+        ascending=sorted===index?!ascending:(index<3);sorted=index;
         for(const th of table.tHead.rows[0].cells)th.removeAttribute('aria-sort');
         cell.setAttribute('aria-sort',ascending?'ascending':'descending');
+        for(const th of table.tHead.rows[0].cells){const b=th.querySelector('button');b.textContent=b.textContent.replace(/ [↑↓]$/,'');}button.textContent=label+(ascending?' ↑':' ↓');
         function value(row){const text=row.cells[index].textContent.trim();
-          return (index<3||index===15)?text:(text.startsWith('—')?null:parseFloat(text));}
+          return (index<3)?text:(text.startsWith('—')?null:parseFloat(text));}
         rows.sort((a,b)=>{const x=value(a),y=value(b);
           if(x===null||Number.isNaN(x))return y===null||Number.isNaN(y)?0:1;
           if(y===null||Number.isNaN(y))return -1;
-          return ((index<3||index===15)?x.localeCompare(y):x-y)*(ascending?1:-1);});
+          return ((index<3)?x.localeCompare(y):x-y)*(ascending?1:-1);});
         for(const row of rows)body.append(row);
       };cell.replaceChildren(button);
     });
     document.getElementById('reset').onclick=()=>{for(const k of Object.keys(filters))delete filters[k];apply();};
     apply();
     </script>'''
+

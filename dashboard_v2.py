@@ -27,7 +27,7 @@ from player_research import player_games, compare_line, minutes_scenario
 from matchup_board import build_matchup_board, STATS
 from live_sources import fetch_injuries, reported_status, fetch_event_odds, select_quote, select_quote_pair, quote_matches_game
 
-BOARD_RELEASE = "schedule-recovery-v2"
+BOARD_RELEASE = "reference-table-v3"
 
 ET = ZoneInfo("America/New_York")
 PROPS = {"points": "Points", "rebounds": "Rebounds",
@@ -180,7 +180,7 @@ def render_dashboard():
         for r in rows: r['Status']=reported_status(injury_feed,r['Player'],r['Team'],now)
     with b:
         position_options=["All"]+sorted({r['Group'] for r in rows})
-        position=st.selectbox("Position group",position_options,index=position_options.index("G") if "G" in position_options else 0)
+        position=st.selectbox("Position group",position_options,index=0)
     with c:
         teams=st.multiselect("Defenses",sorted(opponents),default=sorted(opponents))
     with d:
@@ -194,9 +194,9 @@ def render_dashboard():
     covered=sum(any(f['team']==t for f in forecasts) for t in opponents)
     st.caption(f"{len(games)} games · {len(opponents)} teams · {covered} teams with minutes-based projections · "
                + st.session_state.get("nba_v2_loaded_at","Unknown build time"))
-    st.caption(f"Line, L10, L5, H2H and Proj follow {selected_label}. L10/L5 may span regular seasons when current history is short. The team column is the DEFENSE. "
+    st.caption(f"Line, L10, L5 and H2H follow {selected_label}. L10/L5 may span regular seasons when current history is short. The team column is the DEFENSE. "
                "Colored stats are per-game allowance to all Guards (G), Forwards (F), or Centers (C). "
-               "Ranks compare qualified teams in this loaded sample; the denominator is shown. "
+               "Ranks compare qualified teams in this loaded sample; hover a badge for its comparison count. "
                "Broad G/F labels are not inferred PG/SG roles.")
     if history.get('failures') or history.get('history_truncated'):
         st.warning("Retrieved history is incomplete. Coverage details are below the board.")
@@ -534,3 +534,4 @@ def render_connection_status():
             st.code('ODDS_API_KEY = "your-provider-key"',language='toml')
             st.caption('Save the key in Streamlit Secrets. Keep it out of chat and GitHub. Then reload and fetch a matchup to verify both prices.')
         st.caption('This connection panel is available even when the schedule or player-stat feed is temporarily unavailable.')
+
