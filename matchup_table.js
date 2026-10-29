@@ -5,7 +5,9 @@ const rows=Array.from(body.rows).filter(row=>row.cells.length===13);
 const search=document.getElementById('table-search'),defense=document.getElementById('defense-filter'),position=document.getElementById('position-filter');
 const status=document.getElementById('filter-status');
 const meta=JSON.parse(document.getElementById('table-metadata').dataset.value);
-let sorted=7,ascending=false;
+const statColumns={Points:7,Rebounds:8,Assists:9,'3PTM':10,Steals:11,Blocks:12};
+const defaultSort=statColumns[meta['Player stat']]??7;
+let sorted=defaultSort,ascending=false;
 const value=(row,index)=>row.cells[index].dataset.value;
 for(const [select,index] of [[defense,0],[position,1]]){
  for(const text of [...new Set(rows.map(row=>value(row,index)))].sort()){
@@ -42,5 +44,5 @@ document.getElementById('export').onclick=()=>{
  for(const row of rows)if(!row.hidden)lines.push(JSON.parse(row.dataset.export).map(csvCell).join(','));
  const url=URL.createObjectURL(new Blob(['\ufeff'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='nba-defensive-matchups.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 };
-sort(7,false);apply();
+sort(defaultSort,false);apply();
 })();
