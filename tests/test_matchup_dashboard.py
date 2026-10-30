@@ -21,7 +21,8 @@ def test_main_live_and_imported_sources_render_without_exceptions(monkeypatch):
     assert not at.exception
     assert at.title[0].value=='NBA DEFENSIVE MATCHUPS'
     assert any('PG / SG / SF / PF / C' in c.value for c in at.caption)
-    assert not any('FanDuel' in c.value or 'sportsbook lines' in c.value for c in at.caption)
+    assert any('FanDuel lines via PropFinder' in c.value for c in at.caption)
+    assert any('not a live sportsbook feed' in c.value for c in at.caption)
     at.radio[0].set_value('Imported matchup CSV').run()
     assert not at.exception
     assert any('30 players' in c.value for c in at.caption)

@@ -7,7 +7,7 @@ import json
 import pandas as pd
 from team_identity import TEAM_NAMES, SHORT_NAMES, ESPN_LOGOS
 
-TABLE_RELEASE='league-data-v5'
+TABLE_RELEASE='fanduel-snapshots-v6'
 
 DEF_STATS={'points':'Points','rebounds':'Rebounds','assists':'Assists','threes':'3PM','steals':'Steals','blocks':'Blocks'}
 HEADERS=['TEAM','POS','OPPOSING PLAYER','LINE','L10 AVG','L5 AVG','H2H','POINTS','REBOUNDS','ASSISTS','3PTM','STEALS','BLOCKS']
@@ -48,7 +48,14 @@ def defensive_table_html(frame, show_ranks=True):
             tooltip='Imported value; sample count not supplied' if str(r.get('Source','')).startswith('Imported') else 'Observed average, not a hit probability'
             if field=='H2H' and valid(r.get('H2H N')): tooltip=f'{int(r["H2H N"])} head-to-head games in loaded history'
             if field in ('L10','L5') and valid(r.get(field+' N')): tooltip=f'{int(r[field+" N"])} completed appearances; season/team boundaries may be crossed'
-            cells.append(f'<td class="{cls}" data-value="{value if valid(value) else ""}" title="{escape(tooltip)}">{number(value)}</td>')
+            extra=''
+            if field=='Line' and valid(value) and isinstance(r.get('Line source'),str):
+                tooltip=f"{r['Line source']} · Captured {r.get('Line captured','Unknown')} · {r.get('Line status','Export snapshot')}"
+                extra='<small class="line-book">FD snapshot</small>'
+            count=r.get('PF '+field+' over')
+            if field in ('L5','L10') and isinstance(count,str):
+                extra=f'<small class="line-hit" title="PropFinder historical overs at this exported line">O {escape(count)}</small>'
+            cells.append(f'<td class="{cls}" data-value="{value if valid(value) else ""}" title="{escape(tooltip)}">{number(value)}{extra}</td>')
             export.append(value if valid(value) else 'N/A')
         for label in DEF_STATS.values():
             value,rank,teams=r.get(label),r.get('rank_'+label),r.get('teams_'+label)
@@ -66,7 +73,7 @@ def defensive_table_html(frame, show_ranks=True):
             cells.append(f'<td class="{cls}" data-value="{value if valid(value) else ""}" title="{escape(tip)}">{number(value)}{badge}</td>')
             export.append(number(value)+(f' #{int(rank)}' if valid(rank) else ''))
         summary={}
-        for key in ('Projection','Model Min','Evidence','Status','Sample','Role note','Source','L10 N','L5 N','H2H N','Latest game','Position source','History window','games_Points','games_Rebounds','games_Assists','games_3PM','games_Steals','games_Blocks'):
+        for key in ('Line source','Line captured','Line stat','Line status','PF L5 over','PF L10 over','PF H2H over','Projection','Model Min','Evidence','Status','Sample','Role note','Source','L10 N','L5 N','H2H N','Latest game','Position source','History window','games_Points','games_Rebounds','games_Assists','games_3PM','games_Steals','games_Blocks'):
             value=r.get(key)
             display={'L10 N':'Last 10 sample','L5 N':'Last 5 sample','H2H N':'H2H games','games_Points':'Points allowance games','games_Rebounds':'Rebound allowance games','games_Assists':'Assist allowance games','games_3PM':'3PTM allowance games','games_Steals':'Steal allowance games','games_Blocks':'Block allowance games'}.get(key,key)
             if valid(value): summary[display]=float(value)

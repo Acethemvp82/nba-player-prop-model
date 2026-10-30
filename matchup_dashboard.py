@@ -10,7 +10,7 @@ from defensive_table import interactive_table_html
 from matchup_csv import read_matchup_csv
 from team_identity import SHORT_NAMES
 
-BOARD_RELEASE='league-data-v5'
+BOARD_RELEASE='fanduel-snapshots-v6'
 
 ET=ZoneInfo('America/New_York')
 ROOT=Path(__file__).resolve().parent
@@ -111,6 +111,8 @@ def render_live_board():
     except Exception as exc:
         st.error('Live NBA data could not load: '+str(exc))
         st.info('The imported CSV board remains available from the source selector above.');return
+    from propfinder_lines import apply_snapshot,load_snapshot
+    frame,line_health=apply_snapshot(frame,load_snapshot(ROOT/'data'/'propfinder-fanduel.json'),day,PROPS[label])
     with st.expander('Games and tipoffs'):
         from dashboard_v2 import tipoff_et
         for g in games:
@@ -122,6 +124,9 @@ def render_live_board():
     st.caption(f"Updated {health.get('built_at','')} · {health.get('teams',30)} league teams · {health.get('current_games',0)} current-season games. Checks for updates every 15 minutes while open.")
     st.caption('PG / SG / SF / PF / C matchups from ESPN depth charts. Defensive buckets use primary positions, with explicit depth-chart slots when a primary position is missing. Lineups are projected.')
     if health.get('failures'): st.warning('Some source requests failed. Missing values stay N/A; rank tooltips show the actual comparison count.')
+    st.caption(f"FanDuel lines via PropFinder · Captured {line_health.get('captured_at','not available')} · Export snapshot, not a live sportsbook feed.")
+    st.caption(line_health['message'])
+    st.caption('L5/L10 over counts shown beneath averages come from PropFinder at the exported line. They describe past games, not win probabilities. NBA averages retain their existing history source.')
     filter_cols=st.columns(2)
     starters=filter_cols[0].checkbox('Projected starters only',value=True,key='clean_starters')
     hide=filter_cols[1].checkbox('Hide reported Out / Doubtful',value=True,key='clean_hide')
@@ -129,7 +134,7 @@ def render_live_board():
     if hide: frame=frame[~frame['Status'].str.casefold().isin(['out','doubtful'])]
     st.caption(f"{len(frame)} players · {season.lower()} defensive averages. Early-season ranks can be based on few games; tap a player or hover a value for sample counts. L10/L5 can cross seasons or teams; H2H uses current- and previous-season completed meetings.")
     meta={'Source':'ESPN verified finals','Slate date':day,'Player stat':label,'Window':'Full current regular season' if season=='Current season' else 'Loaded previous-season reference',
-          'Defensive history':season,'Position groups':'PG/SG/SF/PF/C','Updated':health.get('built_at','')}
+          'Defensive history':season,'Position groups':'PG/SG/SF/PF/C','Updated':health.get('built_at',''),'Line source':'FanDuel via PropFinder export','Line captured':line_health.get('captured_at','Unavailable'),'Line refresh':'Snapshot; requires a new published export','Hit counts':'PropFinder historical overs at the exported line'}
     components.html(interactive_table_html(frame,metadata=meta),height=1120,scrolling=False)
 
 
