@@ -1,6 +1,6 @@
 {
   "day": "2026-10-29",
-  "retrieved_at": "2026-10-29T19:33:14.779466+00:00",
+  "retrieved_at": "2026-10-30T01:52:59.761215+00:00",
   "games": [
     {
       "gameId": null,
@@ -16,10 +16,10 @@
         "away": "5"
       },
       "gameTimeUTC": "2026-10-30T00:00Z",
-      "homeScore": 0,
-      "awayScore": 0,
+      "homeScore": 89,
+      "awayScore": 82,
       "espnCompleted": false,
-      "gameStatusText": "Scheduled",
+      "gameStatusText": "End of Period",
       "source": "ESPN schedule fallback"
     },
     {
@@ -36,10 +36,10 @@
         "away": "23"
       },
       "gameTimeUTC": "2026-10-30T00:00Z",
-      "homeScore": 0,
-      "awayScore": 0,
+      "homeScore": 102,
+      "awayScore": 88,
       "espnCompleted": false,
-      "gameStatusText": "Scheduled",
+      "gameStatusText": "In Progress",
       "source": "ESPN schedule fallback"
     },
     {
