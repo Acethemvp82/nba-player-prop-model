@@ -65,11 +65,16 @@ def test_conflicting_lines_and_invalid_counts_are_not_used():
     assert apply_snapshot(board(),s,'2026-10-30','points',NOW)[1]['matched']==0
 
 
-def test_saved_export_has_206_unique_core_markets_with_explicit_game_context():
+def test_saved_export_has_unique_supported_markets_with_explicit_game_context():
     s=json.loads((Path(__file__).resolve().parents[1]/'data/propfinder-fanduel.json').read_text())
-    assert len(s['records'])==206
-    assert {r['stat'] for r in s['records']}=={'points','rebounds','assists','threes','steals','blocks'}
-    assert all(r['day']=='2026-10-30' and r['team'] not in ('MEM','POR') for r in s['records'])
+    from propfinder_lines import MARKETS,stamp,ET,finite
+    assert s['version']==1 and s['bookmaker']=='FanDuel'
+    assert s['records']
+    assert {r['stat'] for r in s['records']}.issubset(set(MARKETS.values()))
+    for r in s['records']:
+        assert r['team'] != r['opponent']
+        assert stamp(r['start']).astimezone(ET).date().isoformat()==r['day']
+        assert finite(r['line']) and r['line']>=0
     assert player_key('Luka Dončić')==player_key('Luka Doncic')
     keys=[(r['day'],r['team'],r['opponent'],player_key(r['player']),r['stat']) for r in s['records']]
     assert len(keys)==len(set(keys))

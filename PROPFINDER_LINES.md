@@ -12,3 +12,9 @@ To publish another snapshot:
 4. Run the tests and publish the updated data file. Verify the live board on the corresponding date and stat.
 
 The importer accepts full-game points, rebounds, assists, three-pointers, steals and blocks only. Duplicate conflicting lines, wrong matchups, unsupported markets, malformed counts, and missing data are excluded. The runtime removes lines after tipoff or after 24 hours, and never carries a line to another date or stat. Exported over counts are descriptive history at that line, not model probabilities; under counts are not inferred because push counts are absent.
+
+## Scheduled refresh handoff
+
+A ChatGPT task can perform the signed-in browser export and publish a new snapshot. This depends on browser access and an active PropFinder session; if sign-in expires or a download fails, it must report the blocker and leave existing data untouched. It must not store or transfer login credentials into GitHub or Streamlit. The task should fetch this repository's current files instead of depending on a previous scratch directory.
+
+Use `python scripts/import_propfinder_lines.py --csv EXPORT.csv --games VERIFIED_GAMES.json --captured-at TIMESTAMP --verified-fanduel-only` after verifying the UI settings, selected games and timestamp. The game manifest is a JSON list of `away`, `home`, `start` (timezone-aware ISO timestamp) objects observed in PropFinder's Games selector. Cross-check against the current NBA schedule; skip ambiguous games. The script excludes already-started games and refuses to overwrite a snapshot with no supported records. Commit only `data/propfinder-fanduel.json` after validation. Preserve automated stats/tracker changes by fetching the current branch head before publishing.
