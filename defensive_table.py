@@ -7,7 +7,7 @@ import json
 import pandas as pd
 from team_identity import TEAM_NAMES, SHORT_NAMES, ESPN_LOGOS
 
-TABLE_RELEASE='fanduel-snapshots-v6'
+TABLE_RELEASE='hammer-candidates-v7'
 
 DEF_STATS={'points':'Points','rebounds':'Rebounds','assists':'Assists','threes':'3PM','steals':'Steals','blocks':'Blocks'}
 HEADERS=['TEAM','POS','OPPOSING PLAYER','LINE','L10 AVG','L5 AVG','H2H','POINTS','REBOUNDS','ASSISTS','3PTM','STEALS','BLOCKS']
@@ -37,6 +37,8 @@ def defensive_table_html(frame, show_ranks=True):
         new_team=r.get('New team',False)
         new_team=isinstance(new_team,(bool,Real)) and not pd.isna(new_team) and bool(new_team)
         player=f'{logo(r.get("Team"))}<span class="def-name">{escape(name)}</span><span class="def-pos">{escape(position)}</span>'
+        if str(r.get('Hammer'))=='True':
+            player+=f'<span class="hammer-marker" role="img" aria-label="OVER research candidate" title="{escape(str(r.get("Hammer reason","OVER research candidate")))}">🔨</span>'
         if new_team: player+='<span class="def-new">NEW TEAM</span>'
         cells=[f'<td class="def-team" data-value="{escape(defense)}">{logo(opponent)}<span>{escape(defense)}</span></td>',
                f'<td class="def-match-pos" data-value="{escape(matchup_position)}">{escape(matchup_position)}</td>',
@@ -73,7 +75,7 @@ def defensive_table_html(frame, show_ranks=True):
             cells.append(f'<td class="{cls}" data-value="{value if valid(value) else ""}" title="{escape(tip)}">{number(value)}{badge}</td>')
             export.append(number(value)+(f' #{int(rank)}' if valid(rank) else ''))
         summary={}
-        for key in ('Line source','Line captured','Line stat','Line status','PF L5 over','PF L10 over','PF H2H over','Projection','Model Min','Evidence','Status','Sample','Role note','Source','L10 N','L5 N','H2H N','Latest game','Position source','History window','games_Points','games_Rebounds','games_Assists','games_3PM','games_Steals','games_Blocks'):
+        for key in ('Hammer reason','Line source','Line captured','Line stat','Line status','PF L5 over','PF L10 over','PF H2H over','Projection','Model Min','Evidence','Status','Sample','Role note','Source','L10 N','L5 N','H2H N','Latest game','Position source','History window','games_Points','games_Rebounds','games_Assists','games_3PM','games_Steals','games_Blocks'):
             value=r.get(key)
             display={'L10 N':'Last 10 sample','L5 N':'Last 5 sample','H2H N':'H2H games','games_Points':'Points allowance games','games_Rebounds':'Rebound allowance games','games_Assists':'Assist allowance games','games_3PM':'3PTM allowance games','games_Steals':'Steal allowance games','games_Blocks':'Block allowance games'}.get(key,key)
             if valid(value): summary[display]=float(value)

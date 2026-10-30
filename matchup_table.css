@@ -6,3 +6,5 @@
 @media(max-width:600px){.def-table{font-size:12px}.def-player{min-width:210px;max-width:300px}.player-button{font-size:11px}.table-tools input{width:145px}.table-tools select{max-width:140px}.table-tools{gap:6px}#export{margin-left:0}#reset{margin-left:auto}.def-table td{height:61px;padding:8px}.def-logo{width:21px;height:21px;margin-right:6px}}
 
 .line-book,.line-hit{display:block;font-size:9px;line-height:1.4;white-space:nowrap;margin-top:3px}.line-book{color:#78b9de}.line-hit{color:#bbb}
+
+.hammer-marker{font-size:15px;flex-shrink:0;margin-left:3px;cursor:help}

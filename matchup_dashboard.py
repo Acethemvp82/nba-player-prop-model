@@ -10,7 +10,7 @@ from defensive_table import interactive_table_html
 from matchup_csv import read_matchup_csv
 from team_identity import SHORT_NAMES
 
-BOARD_RELEASE='fanduel-snapshots-v6'
+BOARD_RELEASE='hammer-candidates-v7'
 
 ET=ZoneInfo('America/New_York')
 ROOT=Path(__file__).resolve().parent
@@ -113,6 +113,8 @@ def render_live_board():
         st.info('The imported CSV board remains available from the source selector above.');return
     from propfinder_lines import apply_snapshot,load_snapshot
     frame,line_health=apply_snapshot(frame,load_snapshot(ROOT/'data'/'propfinder-fanduel.json'),day,PROPS[label])
+    from hammer_candidates import apply_hammers,RULES
+    frame=apply_hammers(frame,PROPS[label],season)
     with st.expander('Games and tipoffs'):
         from dashboard_v2 import tipoff_et
         for g in games:
@@ -127,14 +129,18 @@ def render_live_board():
     st.caption(f"FanDuel lines via PropFinder · Captured {line_health.get('captured_at','not available')} · Export snapshot, not a live sportsbook feed.")
     st.caption(line_health['message'])
     st.caption('L5/L10 over counts shown beneath averages come from PropFinder at the exported line. They describe past games, not win probabilities. NBA averages retain their existing history source.')
+    with st.expander('🔨 OVER candidate rules'):
+        st.write(RULES)
+        st.caption('L5 overlaps L10; these are not independent signals. Missing injury reports do not establish that a player is healthy. Tap a marked player for its qualifying evidence.')
     filter_cols=st.columns(2)
     starters=filter_cols[0].checkbox('Projected starters only',value=True,key='clean_starters')
     hide=filter_cols[1].checkbox('Hide reported Out / Doubtful',value=True,key='clean_hide')
     if starters and 'Projected starter' in frame: frame=frame[frame['Projected starter']]
     if hide: frame=frame[~frame['Status'].str.casefold().isin(['out','doubtful'])]
+    st.caption(f"🔨 {int(frame['Hammer'].sum())} OVER candidates in this view · Research filters, not guaranteed picks.")
     st.caption(f"{len(frame)} players · {season.lower()} defensive averages. Early-season ranks can be based on few games; tap a player or hover a value for sample counts. L10/L5 can cross seasons or teams; H2H uses current- and previous-season completed meetings.")
     meta={'Source':'ESPN verified finals','Slate date':day,'Player stat':label,'Window':'Full current regular season' if season=='Current season' else 'Loaded previous-season reference',
-          'Defensive history':season,'Position groups':'PG/SG/SF/PF/C','Updated':health.get('built_at',''),'Line source':'FanDuel via PropFinder export','Line captured':line_health.get('captured_at','Unavailable'),'Line refresh':'Snapshot; requires a new published export','Hit counts':'PropFinder historical overs at the exported line'}
+          'Defensive history':season,'Position groups':'PG/SG/SF/PF/C','Updated':health.get('built_at',''),'Line source':'FanDuel via PropFinder export','Line captured':line_health.get('captured_at','Unavailable'),'Line refresh':'Snapshot; requires a new published export','Hit counts':'PropFinder historical overs at the exported line','Hammer rules':RULES}
     components.html(interactive_table_html(frame,metadata=meta),height=1120,scrolling=False)
 
 

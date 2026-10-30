@@ -119,6 +119,7 @@ def apply_snapshot(frame, snapshot, day, stat, now=None):
         result.at[index, 'Line'] = r['line']
         result.at[index, 'Line source'] = 'FanDuel via PropFinder export'
         result.at[index, 'Line captured'] = health['captured_at']
+        result.at[index, 'Line captured ISO'] = captured.isoformat()
         result.at[index, 'Line stat'] = stat
         result.at[index, 'Line status'] = 'Pregame export snapshot — confirm the current line on your betting ticket'
         for key, label, limit in [('l5_over','PF L5 over',5), ('l10_over','PF L10 over',10), ('h2h_over','PF H2H over',500)]:
