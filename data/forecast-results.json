@@ -1,6 +1,6 @@
 {
   "grading_version": 2,
-  "updated_at": "2026-11-04T02:11:12.086700+00:00",
+  "updated_at": "2026-11-04T20:46:28.200286+00:00",
   "final_events": [
     "401909093",
     "401909094",
@@ -96,7 +96,7 @@
     "401909920",
     "401909921"
   ],
-  "frozen_forecasts": 6524,
+  "frozen_forecasts": 7660,
   "results": [
     {
       "player_id": "espn:4701233",
