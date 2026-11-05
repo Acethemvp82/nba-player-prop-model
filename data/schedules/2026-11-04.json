@@ -1,6 +1,6 @@
 {
   "day": "2026-11-04",
-  "retrieved_at": "2026-11-04T20:46:28.200286+00:00",
+  "retrieved_at": "2026-11-05T02:17:56.421351+00:00",
   "games": [
     {
       "gameId": null,
@@ -16,10 +16,10 @@
         "away": "20"
       },
       "gameTimeUTC": "2026-11-05T00:00Z",
-      "homeScore": 0,
-      "awayScore": 0,
+      "homeScore": 81,
+      "awayScore": 93,
       "espnCompleted": false,
-      "gameStatusText": "Scheduled",
+      "gameStatusText": "In Progress",
       "source": "ESPN schedule fallback"
     },
     {
@@ -36,10 +36,10 @@
         "away": "1"
       },
       "gameTimeUTC": "2026-11-05T00:00Z",
-      "homeScore": 0,
-      "awayScore": 0,
+      "homeScore": 101,
+      "awayScore": 115,
       "espnCompleted": false,
-      "gameStatusText": "Scheduled",
+      "gameStatusText": "In Progress",
       "source": "ESPN schedule fallback"
     },
     {
@@ -56,10 +56,10 @@
         "away": "15"
       },
       "gameTimeUTC": "2026-11-05T00:30Z",
-      "homeScore": 0,
-      "awayScore": 0,
+      "homeScore": 87,
+      "awayScore": 79,
       "espnCompleted": false,
-      "gameStatusText": "Scheduled",
+      "gameStatusText": "In Progress",
       "source": "ESPN schedule fallback"
     },
     {
@@ -76,10 +76,10 @@
         "away": "30"
       },
       "gameTimeUTC": "2026-11-05T00:30Z",
-      "homeScore": 0,
-      "awayScore": 0,
+      "homeScore": 61,
+      "awayScore": 62,
       "espnCompleted": false,
-      "gameStatusText": "Scheduled",
+      "gameStatusText": "In Progress",
       "source": "ESPN schedule fallback"
     },
     {
@@ -96,10 +96,10 @@
         "away": "4"
       },
       "gameTimeUTC": "2026-11-05T00:30Z",
-      "homeScore": 0,
-      "awayScore": 0,
+      "homeScore": 106,
+      "awayScore": 64,
       "espnCompleted": false,
-      "gameStatusText": "Scheduled",
+      "gameStatusText": "In Progress",
       "source": "ESPN schedule fallback"
     },
     {
@@ -116,10 +116,10 @@
         "away": "11"
       },
       "gameTimeUTC": "2026-11-05T01:00Z",
-      "homeScore": 0,
-      "awayScore": 0,
+      "homeScore": 52,
+      "awayScore": 54,
       "espnCompleted": false,
-      "gameStatusText": "Scheduled",
+      "gameStatusText": "Halftime",
       "source": "ESPN schedule fallback"
     },
     {
@@ -136,10 +136,10 @@
         "away": "26"
       },
       "gameTimeUTC": "2026-11-05T01:00Z",
-      "homeScore": 0,
-      "awayScore": 0,
+      "homeScore": 42,
+      "awayScore": 37,
       "espnCompleted": false,
-      "gameStatusText": "Scheduled",
+      "gameStatusText": "Halftime",
       "source": "ESPN schedule fallback"
     },
     {
@@ -156,10 +156,10 @@
         "away": "5"
       },
       "gameTimeUTC": "2026-11-05T01:00Z",
-      "homeScore": 0,
-      "awayScore": 0,
+      "homeScore": 60,
+      "awayScore": 44,
       "espnCompleted": false,
-      "gameStatusText": "Scheduled",
+      "gameStatusText": "Halftime",
       "source": "ESPN schedule fallback"
     },
     {
@@ -176,10 +176,10 @@
         "away": "16"
       },
       "gameTimeUTC": "2026-11-05T01:30Z",
-      "homeScore": 0,
-      "awayScore": 0,
+      "homeScore": 39,
+      "awayScore": 41,
       "espnCompleted": false,
-      "gameStatusText": "Scheduled",
+      "gameStatusText": "In Progress",
       "source": "ESPN schedule fallback"
     },
     {
@@ -196,10 +196,10 @@
         "away": "28"
       },
       "gameTimeUTC": "2026-11-05T02:00Z",
-      "homeScore": 0,
-      "awayScore": 0,
+      "homeScore": 12,
+      "awayScore": 16,
       "espnCompleted": false,
-      "gameStatusText": "Scheduled",
+      "gameStatusText": "In Progress",
       "source": "ESPN schedule fallback"
     },
     {
@@ -216,10 +216,10 @@
         "away": "22"
       },
       "gameTimeUTC": "2026-11-05T02:00Z",
-      "homeScore": 0,
-      "awayScore": 0,
+      "homeScore": 9,
+      "awayScore": 8,
       "espnCompleted": false,
-      "gameStatusText": "Scheduled",
+      "gameStatusText": "In Progress",
       "source": "ESPN schedule fallback"
     },
     {
