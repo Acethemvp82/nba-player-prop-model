@@ -1,6 +1,6 @@
 {
   "day": "2026-11-05",
-  "retrieved_at": "2026-11-05T21:01:57.381978+00:00",
+  "retrieved_at": "2026-11-06T02:17:14.570460+00:00",
   "games": [
     {
       "gameId": null,
@@ -16,10 +16,10 @@
         "away": "19"
       },
       "gameTimeUTC": "2026-11-06T02:00Z",
-      "homeScore": 0,
-      "awayScore": 0,
+      "homeScore": 8,
+      "awayScore": 9,
       "espnCompleted": false,
-      "gameStatusText": "Scheduled",
+      "gameStatusText": "In Progress",
       "source": "ESPN schedule fallback"
     },
     {
