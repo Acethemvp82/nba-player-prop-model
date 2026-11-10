@@ -2,10 +2,10 @@
 import importlib
 import sys
 
-RELEASE='hammer-candidates-v7'
+RELEASE='nba-prop-simulator-v1'
 # Streamlit may reuse imported modules when its entrypoint is rerun after deploy.
 if 'matchup_dashboard' in sys.modules and getattr(sys.modules['matchup_dashboard'],'BOARD_RELEASE',None)!=RELEASE or 'defensive_table' in sys.modules and getattr(sys.modules['defensive_table'],'TABLE_RELEASE',None)!=RELEASE:
-    for name in ('team_identity','matchup_csv','propfinder_lines','hammer_candidates','defensive_table','matchup_dashboard'):
+    for name in ('team_identity','matchup_csv','propfinder_lines','hammer_candidates','prop_simulator','prop_simulator_ui','defensive_table','matchup_dashboard'):
         if name in sys.modules: importlib.reload(sys.modules[name])
 
 from matchup_dashboard import render_dashboard

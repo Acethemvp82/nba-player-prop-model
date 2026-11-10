@@ -10,7 +10,7 @@ from defensive_table import interactive_table_html
 from matchup_csv import read_matchup_csv
 from team_identity import SHORT_NAMES
 
-BOARD_RELEASE='hammer-candidates-v7'
+BOARD_RELEASE='nba-prop-simulator-v1'
 
 ET=ZoneInfo('America/New_York')
 ROOT=Path(__file__).resolve().parent
@@ -141,6 +141,11 @@ def render_live_board():
     st.caption(f"{len(frame)} players · {season.lower()} defensive averages. Early-season ranks can be based on few games; tap a player or hover a value for sample counts. L10/L5 can cross seasons or teams; H2H uses current- and previous-season completed meetings.")
     meta={'Source':'ESPN verified finals','Slate date':day,'Player stat':label,'Window':'Full current regular season' if season=='Current season' else 'Loaded previous-season reference',
           'Defensive history':season,'Position groups':'PG/SG/SF/PF/C','Updated':health.get('built_at',''),'Line source':'FanDuel via PropFinder export','Line captured':line_health.get('captured_at','Unavailable'),'Line refresh':'Snapshot; requires a new published export','Hit counts':'PropFinder historical overs at the exported line','Hammer rules':RULES}
+    if st.checkbox('Open 10,000-run prop simulator', key='open_prop_simulator'):
+        with st.container(border=True):
+            from prop_simulator_ui import render_prop_simulator
+            feed, _ = league_feed_for(day)
+            render_prop_simulator(frame, feed or {}, day)
     components.html(interactive_table_html(frame,metadata=meta),height=1120,scrolling=False)
 
 

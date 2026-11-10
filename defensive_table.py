@@ -7,7 +7,7 @@ import json
 import pandas as pd
 from team_identity import TEAM_NAMES, SHORT_NAMES, ESPN_LOGOS
 
-TABLE_RELEASE='hammer-candidates-v7'
+TABLE_RELEASE='nba-prop-simulator-v1'
 
 DEF_STATS={'points':'Points','rebounds':'Rebounds','assists':'Assists','threes':'3PM','steals':'Steals','blocks':'Blocks'}
 HEADERS=['TEAM','POS','OPPOSING PLAYER','LINE','L10 AVG','L5 AVG','H2H','POINTS','REBOUNDS','ASSISTS','3PTM','STEALS','BLOCKS']
