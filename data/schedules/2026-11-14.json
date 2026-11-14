@@ -1,0 +1,106 @@
+{
+  "day": "2026-11-14",
+  "retrieved_at": "2026-11-14T19:04:12.724900+00:00",
+  "games": [
+    {
+      "gameId": null,
+      "espnEventId": "401909980",
+      "homeTeam": {
+        "teamTricode": "NOP"
+      },
+      "awayTeam": {
+        "teamTricode": "DEN"
+      },
+      "espnTeamIds": {
+        "home": "3",
+        "away": "7"
+      },
+      "gameTimeUTC": "2026-11-15T00:00Z",
+      "homeScore": 0,
+      "awayScore": 0,
+      "espnCompleted": false,
+      "gameStatusText": "Scheduled",
+      "source": "ESPN schedule fallback"
+    },
+    {
+      "gameId": null,
+      "espnEventId": "401909981",
+      "homeTeam": {
+        "teamTricode": "CLE"
+      },
+      "awayTeam": {
+        "teamTricode": "DAL"
+      },
+      "espnTeamIds": {
+        "home": "5",
+        "away": "6"
+      },
+      "gameTimeUTC": "2026-11-15T00:30Z",
+      "homeScore": 0,
+      "awayScore": 0,
+      "espnCompleted": false,
+      "gameStatusText": "Scheduled",
+      "source": "ESPN schedule fallback"
+    },
+    {
+      "gameId": null,
+      "espnEventId": "401909982",
+      "homeTeam": {
+        "teamTricode": "MIA"
+      },
+      "awayTeam": {
+        "teamTricode": "DET"
+      },
+      "espnTeamIds": {
+        "home": "14",
+        "away": "8"
+      },
+      "gameTimeUTC": "2026-11-15T01:00Z",
+      "homeScore": 0,
+      "awayScore": 0,
+      "espnCompleted": false,
+      "gameStatusText": "Scheduled",
+      "source": "ESPN schedule fallback"
+    },
+    {
+      "gameId": null,
+      "espnEventId": "401909983",
+      "homeTeam": {
+        "teamTricode": "MEM"
+      },
+      "awayTeam": {
+        "teamTricode": "BKN"
+      },
+      "espnTeamIds": {
+        "home": "29",
+        "away": "17"
+      },
+      "gameTimeUTC": "2026-11-15T01:00Z",
+      "homeScore": 0,
+      "awayScore": 0,
+      "espnCompleted": false,
+      "gameStatusText": "Scheduled",
+      "source": "ESPN schedule fallback"
+    },
+    {
+      "gameId": null,
+      "espnEventId": "401909984",
+      "homeTeam": {
+        "teamTricode": "MIN"
+      },
+      "awayTeam": {
+        "teamTricode": "CHI"
+      },
+      "espnTeamIds": {
+        "home": "16",
+        "away": "4"
+      },
+      "gameTimeUTC": "2026-11-15T01:00Z",
+      "homeScore": 0,
+      "awayScore": 0,
+      "espnCompleted": false,
+      "gameStatusText": "Scheduled",
+      "source": "ESPN schedule fallback"
+    }
+  ]
+}
