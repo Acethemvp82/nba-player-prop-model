@@ -1,0 +1,66 @@
+{
+  "day": "2026-11-24",
+  "retrieved_at": "2026-11-24T23:27:04.457022+00:00",
+  "games": [
+    {
+      "gameId": null,
+      "espnEventId": "401909314",
+      "homeTeam": {
+        "teamTricode": "ORL"
+      },
+      "awayTeam": {
+        "teamTricode": "DET"
+      },
+      "espnTeamIds": {
+        "home": "19",
+        "away": "8"
+      },
+      "gameTimeUTC": "2026-11-25T00:00Z",
+      "homeScore": 0,
+      "awayScore": 0,
+      "espnCompleted": false,
+      "gameStatusText": "Scheduled",
+      "source": "ESPN schedule fallback"
+    },
+    {
+      "gameId": null,
+      "espnEventId": "401909315",
+      "homeTeam": {
+        "teamTricode": "WSH"
+      },
+      "awayTeam": {
+        "teamTricode": "BOS"
+      },
+      "espnTeamIds": {
+        "home": "27",
+        "away": "2"
+      },
+      "gameTimeUTC": "2026-11-25T01:00Z",
+      "homeScore": 0,
+      "awayScore": 0,
+      "espnCompleted": false,
+      "gameStatusText": "Scheduled",
+      "source": "ESPN schedule fallback"
+    },
+    {
+      "gameId": null,
+      "espnEventId": "401909316",
+      "homeTeam": {
+        "teamTricode": "DEN"
+      },
+      "awayTeam": {
+        "teamTricode": "DAL"
+      },
+      "espnTeamIds": {
+        "home": "7",
+        "away": "6"
+      },
+      "gameTimeUTC": "2026-11-25T03:00Z",
+      "homeScore": 0,
+      "awayScore": 0,
+      "espnCompleted": false,
+      "gameStatusText": "Scheduled",
+      "source": "ESPN schedule fallback"
+    }
+  ]
+}
