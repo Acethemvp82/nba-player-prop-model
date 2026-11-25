@@ -1,0 +1,186 @@
+{
+  "day": "2026-11-25",
+  "retrieved_at": "2026-11-25T23:02:36.220468+00:00",
+  "games": [
+    {
+      "gameId": null,
+      "espnEventId": "401909317",
+      "homeTeam": {
+        "teamTricode": "PHI"
+      },
+      "awayTeam": {
+        "teamTricode": "MIA"
+      },
+      "espnTeamIds": {
+        "home": "20",
+        "away": "14"
+      },
+      "gameTimeUTC": "2026-11-25T22:00Z",
+      "homeScore": 51,
+      "awayScore": 47,
+      "espnCompleted": false,
+      "gameStatusText": "In Progress",
+      "source": "ESPN schedule fallback"
+    },
+    {
+      "gameId": null,
+      "espnEventId": "401909318",
+      "homeTeam": {
+        "teamTricode": "CHA"
+      },
+      "awayTeam": {
+        "teamTricode": "CHI"
+      },
+      "espnTeamIds": {
+        "home": "30",
+        "away": "4"
+      },
+      "gameTimeUTC": "2026-11-26T00:00Z",
+      "homeScore": 0,
+      "awayScore": 0,
+      "espnCompleted": false,
+      "gameStatusText": "Scheduled",
+      "source": "ESPN schedule fallback"
+    },
+    {
+      "gameId": null,
+      "espnEventId": "401909319",
+      "homeTeam": {
+        "teamTricode": "NYK"
+      },
+      "awayTeam": {
+        "teamTricode": "CLE"
+      },
+      "espnTeamIds": {
+        "home": "18",
+        "away": "5"
+      },
+      "gameTimeUTC": "2026-11-26T00:30Z",
+      "homeScore": 0,
+      "awayScore": 0,
+      "espnCompleted": false,
+      "gameStatusText": "Scheduled",
+      "source": "ESPN schedule fallback"
+    },
+    {
+      "gameId": null,
+      "espnEventId": "401909320",
+      "homeTeam": {
+        "teamTricode": "OKC"
+      },
+      "awayTeam": {
+        "teamTricode": "MIN"
+      },
+      "espnTeamIds": {
+        "home": "25",
+        "away": "16"
+      },
+      "gameTimeUTC": "2026-11-26T00:30Z",
+      "homeScore": 0,
+      "awayScore": 0,
+      "espnCompleted": false,
+      "gameStatusText": "Scheduled",
+      "source": "ESPN schedule fallback"
+    },
+    {
+      "gameId": null,
+      "espnEventId": "401909321",
+      "homeTeam": {
+        "teamTricode": "MEM"
+      },
+      "awayTeam": {
+        "teamTricode": "LAC"
+      },
+      "espnTeamIds": {
+        "home": "29",
+        "away": "12"
+      },
+      "gameTimeUTC": "2026-11-26T01:00Z",
+      "homeScore": 0,
+      "awayScore": 0,
+      "espnCompleted": false,
+      "gameStatusText": "Scheduled",
+      "source": "ESPN schedule fallback"
+    },
+    {
+      "gameId": null,
+      "espnEventId": "401909322",
+      "homeTeam": {
+        "teamTricode": "MIL"
+      },
+      "awayTeam": {
+        "teamTricode": "BKN"
+      },
+      "espnTeamIds": {
+        "home": "15",
+        "away": "17"
+      },
+      "gameTimeUTC": "2026-11-26T01:00Z",
+      "homeScore": 0,
+      "awayScore": 0,
+      "espnCompleted": false,
+      "gameStatusText": "Scheduled",
+      "source": "ESPN schedule fallback"
+    },
+    {
+      "gameId": null,
+      "espnEventId": "401909323",
+      "homeTeam": {
+        "teamTricode": "HOU"
+      },
+      "awayTeam": {
+        "teamTricode": "PHX"
+      },
+      "espnTeamIds": {
+        "home": "10",
+        "away": "21"
+      },
+      "gameTimeUTC": "2026-11-26T01:30Z",
+      "homeScore": 0,
+      "awayScore": 0,
+      "espnCompleted": false,
+      "gameStatusText": "Scheduled",
+      "source": "ESPN schedule fallback"
+    },
+    {
+      "gameId": null,
+      "espnEventId": "401909324",
+      "homeTeam": {
+        "teamTricode": "GSW"
+      },
+      "awayTeam": {
+        "teamTricode": "SAC"
+      },
+      "espnTeamIds": {
+        "home": "9",
+        "away": "23"
+      },
+      "gameTimeUTC": "2026-11-26T03:00Z",
+      "homeScore": 0,
+      "awayScore": 0,
+      "espnCompleted": false,
+      "gameStatusText": "Scheduled",
+      "source": "ESPN schedule fallback"
+    },
+    {
+      "gameId": null,
+      "espnEventId": "401909325",
+      "homeTeam": {
+        "teamTricode": "POR"
+      },
+      "awayTeam": {
+        "teamTricode": "SAS"
+      },
+      "espnTeamIds": {
+        "home": "22",
+        "away": "24"
+      },
+      "gameTimeUTC": "2026-11-26T03:00Z",
+      "homeScore": 0,
+      "awayScore": 0,
+      "espnCompleted": false,
+      "gameStatusText": "Scheduled",
+      "source": "ESPN schedule fallback"
+    }
+  ]
+}
